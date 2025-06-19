@@ -4,9 +4,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/services/currency_service.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../bloc/transaction_bloc.dart';
 import '../bloc/transaction_event.dart';
+import '../widgets/ad_banner_widget.dart';
 
 class AddTransactionPage extends StatefulWidget {
   final TransactionEntity? transactionToEdit;
@@ -114,7 +116,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               TextFormField(
                 controller: _amountController,
                 decoration: InputDecoration(
-                  labelText: 'Amount (\$)',
+                  labelText: CurrencyService.instance.getAmountPlaceholder(),
                   prefixIcon: Icon(Icons.attach_money),
                 ),
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
@@ -192,7 +194,12 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   ),
                 ),
               ),
-              SizedBox(height: 30.h),
+              SizedBox(height: 20.h),
+
+              // Ad Banner in unused space
+              AdBannerWidget(margin: EdgeInsets.symmetric(vertical: 16.h)),
+
+              SizedBox(height: 20.h),
               ElevatedButton.icon(
                 onPressed: _submitData,
                 icon: Icon(_isEditing ? Icons.save : Icons.add),
@@ -214,6 +221,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   ),
                 ),
               ],
+
+              // Additional ad space at bottom
+              SizedBox(height: 20.h),
+              AdBannerWidget(margin: EdgeInsets.only(bottom: 20.h)),
             ],
           ),
         ),

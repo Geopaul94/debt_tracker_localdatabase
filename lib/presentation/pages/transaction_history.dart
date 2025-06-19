@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/services/currency_service.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../bloc/transaction_bloc.dart';
 import '../bloc/transaction_event.dart';
@@ -192,7 +193,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
             SizedBox(height: 20.h),
             _buildDetailRow(
               'Amount',
-              '\$${currentTransaction.amount.toStringAsFixed(2)}',
+              CurrencyService.instance.formatAmount(currentTransaction.amount),
             ),
             _buildDetailRow('Description', currentTransaction.description),
             _buildDetailRow(
@@ -292,7 +293,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
               children: [
                 Text('I owe them:'),
                 Text(
-                  '\$${totalIOweThem.toStringAsFixed(2)}',
+                  CurrencyService.instance.formatAmount(totalIOweThem),
                   style: TextStyle(
                     color: Colors.red,
                     fontWeight: FontWeight.bold,
@@ -305,7 +306,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
               children: [
                 Text('They owe me:'),
                 Text(
-                  '\$${totalTheyOweMe.toStringAsFixed(2)}',
+                  CurrencyService.instance.formatAmount(totalTheyOweMe),
                   style: TextStyle(
                     color: Colors.green,
                     fontWeight: FontWeight.bold,
@@ -322,7 +323,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '${netAmount >= 0 ? '+' : ''}\$${netAmount.abs().toStringAsFixed(2)}',
+                  '${netAmount >= 0 ? '+' : ''}${CurrencyService.instance.formatAmount(netAmount.abs())}',
                   style: TextStyle(
                     color: netAmount >= 0 ? Colors.green : Colors.red,
                     fontWeight: FontWeight.bold,
@@ -385,7 +386,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              '\$${transaction.amount.toStringAsFixed(2)}',
+              CurrencyService.instance.formatAmount(transaction.amount),
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color:

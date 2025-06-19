@@ -14,6 +14,7 @@ class AdBannerWidget extends StatefulWidget {
 class _AdBannerWidgetState extends State<AdBannerWidget> {
   BannerAd? _bannerAd;
   bool _isAdLoaded = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -22,13 +23,31 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
   }
 
   Future<void> _loadBannerAd() async {
+    if (_isLoading) return; // Prevent multiple simultaneous loads
+
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      _bannerAd = await AdService.instance.createBannerAd();
-      setState(() {
-        _isAdLoaded = true;
-      });
+      final bannerAd = await AdService.instance.createBannerAd();
+      if (mounted) {
+        setState(() {
+          _bannerAd = bannerAd;
+          _isAdLoaded = true;
+          _isLoading = false;
+        });
+      } else {
+        // Widget was disposed while loading, dispose the ad
+        bannerAd.dispose();
+      }
     } catch (e) {
       print('Error loading banner ad: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -40,6 +59,20 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Container(
+        margin: widget.margin ?? EdgeInsets.symmetric(vertical: 8.0),
+        height: 50, // Standard banner height
+        child: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
     if (!_isAdLoaded || _bannerAd == null) {
       return SizedBox.shrink(); // Return empty widget if ad not loaded
     }

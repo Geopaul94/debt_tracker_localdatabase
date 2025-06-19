@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/services/ad_service.dart';
+import '../../core/services/currency_service.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../bloc/transaction_bloc.dart';
 import '../bloc/transaction_event.dart';
@@ -13,6 +14,7 @@ import '../widgets/transaction_list_item.dart';
 import '../widgets/ad_banner_widget.dart';
 import 'add_transaction_page.dart';
 import 'transaction_history.dart';
+import 'currency_selection_page.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -33,6 +35,9 @@ class _HomePageState extends State<HomePage> {
           PopupMenuButton<String>(
             onSelected: (value) {
               switch (value) {
+                case 'currency':
+                  _navigateToCurrencySelection();
+                  break;
                 case 'premium':
                   _showRewardedAdForPremium();
                   break;
@@ -50,6 +55,16 @@ class _HomePageState extends State<HomePage> {
             },
             itemBuilder:
                 (context) => [
+                  PopupMenuItem(
+                    value: 'currency',
+                    child: Row(
+                      children: [
+                        Text(CurrencyService.instance.currentCurrency.flag),
+                        SizedBox(width: 8),
+                        Text('Currency'),
+                      ],
+                    ),
+                  ),
                   if (!_isPremiumUnlocked)
                     PopupMenuItem(
                       value: 'premium',
@@ -395,5 +410,16 @@ class _HomePageState extends State<HomePage> {
         builder: (context) => TransactionHistoryPage(transaction: transaction),
       ),
     );
+  }
+
+  void _navigateToCurrencySelection() {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (context) => CurrencySelectionPage()))
+        .then((currencyChanged) {
+          if (currencyChanged == true) {
+            // Reload transactions to update currency formatting
+            context.read<TransactionBloc>().add(LoadTransactionsEvent());
+          }
+        });
   }
 }

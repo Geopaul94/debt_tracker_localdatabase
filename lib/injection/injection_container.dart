@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 // Core
 import '../core/database/database_helper.dart';
 import '../core/services/ad_service.dart';
+import '../core/services/currency_service.dart';
 
 // Data
 import '../data/datasources/transaction_sqlite_data_source.dart';
@@ -26,6 +27,7 @@ Future<void> initializeDependencies() async {
     // External dependencies
     serviceLocator.registerLazySingleton(() => DatabaseHelper());
     serviceLocator.registerLazySingleton(() => AdService.instance);
+    serviceLocator.registerLazySingleton(() => CurrencyService.instance);
 
     // Initialize AdMob
     try {
@@ -36,6 +38,15 @@ Future<void> initializeDependencies() async {
     } catch (e) {
       print('AdMob initialization error: $e');
       // Continue without ads
+    }
+
+    // Initialize Currency Service
+    try {
+      await CurrencyService.instance.initialize();
+      print('Currency service initialized successfully');
+    } catch (e) {
+      print('Currency service initialization error: $e');
+      // Continue with default currency
     }
 
     // Data sources

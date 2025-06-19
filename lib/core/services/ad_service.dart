@@ -7,7 +7,6 @@ class AdService {
   AdService._internal();
 
   bool _isInitialized = false;
-  BannerAd? _bannerAd;
   InterstitialAd? _interstitialAd;
   RewardedAd? _rewardedAd;
 
@@ -48,11 +47,12 @@ class AdService {
     }
   }
 
-  // Banner Ad Methods
+  // Banner Ad Methods - Create unique instances for each widget
   Future<BannerAd> createBannerAd() async {
     if (!_isInitialized) await initialize();
 
-    _bannerAd = BannerAd(
+    // Create a new BannerAd instance each time - don't reuse _bannerAd
+    final bannerAd = BannerAd(
       adUnitId: _bannerAdUnitId,
       size: AdSize.banner,
       request: const AdRequest(),
@@ -73,13 +73,8 @@ class AdService {
       ),
     );
 
-    await _bannerAd!.load();
-    return _bannerAd!;
-  }
-
-  void disposeBannerAd() {
-    _bannerAd?.dispose();
-    _bannerAd = null;
+    await bannerAd.load();
+    return bannerAd;
   }
 
   // Interstitial Ad Methods
@@ -192,7 +187,6 @@ class AdService {
   bool get isInitialized => _isInitialized;
 
   void dispose() {
-    _bannerAd?.dispose();
     _interstitialAd?.dispose();
     _rewardedAd?.dispose();
   }

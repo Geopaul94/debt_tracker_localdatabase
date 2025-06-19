@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:debit_tracker/presentation/pages/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -156,7 +157,7 @@ class OweTrackerApp extends StatelessWidget {
               ),
               useMaterial3: true,
             ),
-            home: HomePage(),
+            home: SplashScreen(),
             debugShowCheckedModeBanner: false,
           ),
         );
