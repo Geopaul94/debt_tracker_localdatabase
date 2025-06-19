@@ -12,6 +12,7 @@ import '../widgets/summary_card.dart';
 import '../widgets/transaction_list_item.dart';
 import '../widgets/ad_banner_widget.dart';
 import 'add_transaction_page.dart';
+import 'transaction_history.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -179,7 +180,10 @@ class _HomePageState extends State<HomePage> {
                       return TransactionListItem(
                         transaction: transaction,
                         onTap:
-                            () => _showTransactionDetails(context, transaction),
+                            () => _navigateToTransactionHistory(
+                              context,
+                              transaction,
+                            ),
                       );
                     },
                   ),
@@ -382,37 +386,14 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _showTransactionDetails(
+  void _navigateToTransactionHistory(
     BuildContext context,
     TransactionEntity transaction,
   ) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Text(transaction.name),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Description: ${transaction.description}'),
-                SizedBox(height: 8.h),
-                Text('Amount: \$${transaction.amount.toStringAsFixed(2)}'),
-                SizedBox(height: 8.h),
-                Text(
-                  'Type: ${transaction.type == TransactionType.iOwe ? 'I Owe' : 'Owes Me'}',
-                ),
-                SizedBox(height: 8.h),
-                Text('Date: ${DateFormat.yMMMd().format(transaction.date)}'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text('Close'),
-              ),
-            ],
-          ),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => TransactionHistoryPage(transaction: transaction),
+      ),
     );
   }
 }

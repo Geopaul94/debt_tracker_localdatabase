@@ -13,7 +13,13 @@ import 'presentation/pages/home_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  unawaited(MobileAds.instance.initialize());
+  // Initialize AdMob early
+  try {
+    await MobileAds.instance.initialize();
+    print('AdMob initialized successfully in main');
+  } catch (e) {
+    print('AdMob initialization failed in main: $e');
+  }
   try {
     print('Start ing app initialization...');
     await initializeDependencies();

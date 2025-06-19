@@ -5,6 +5,8 @@ import '../../core/usecases/usecase.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../../domain/usecases/add_transaction.dart';
 import '../../domain/usecases/get_all_transactions.dart';
+import '../../domain/usecases/update_transaction.dart';
+import '../../domain/usecases/delete_transaction.dart';
 import '../../domain/usecases/watch_transactions.dart';
 import 'transaction_event.dart';
 import 'transaction_state.dart';
@@ -12,6 +14,8 @@ import 'transaction_state.dart';
 class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   final GetAllTransactions getAllTransactions;
   final AddTransaction addTransaction;
+  final UpdateTransaction updateTransaction;
+  final DeleteTransaction deleteTransaction;
   final WatchTransactions watchTransactions;
 
   StreamSubscription? _transactionSubscription;
@@ -19,6 +23,8 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   TransactionBloc({
     required this.getAllTransactions,
     required this.addTransaction,
+    required this.updateTransaction,
+    required this.deleteTransaction,
     required this.watchTransactions,
   }) : super(const TransactionInitial()) {
     on<LoadTransactionsEvent>(_onLoadTransactions);
@@ -110,10 +116,17 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     UpdateTransactionEvent event,
     Emitter<TransactionState> emit,
   ) async {
-    // Implementation would be similar to add, but we need to create the use case first
-    emit(
-      const TransactionOperationSuccess(
-        message: 'Transaction updated successfully',
+    final result = await updateTransaction(
+      UpdateTransactionParams(transaction: event.transaction),
+    );
+
+    result.fold(
+      (failure) =>
+          emit(TransactionError(message: _mapFailureToMessage(failure))),
+      (_) => emit(
+        const TransactionOperationSuccess(
+          message: 'Transaction updated successfully',
+        ),
       ),
     );
   }
@@ -122,10 +135,17 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     DeleteTransactionEvent event,
     Emitter<TransactionState> emit,
   ) async {
-    // Implementation would be similar to add, but we need to create the use case first
-    emit(
-      const TransactionOperationSuccess(
-        message: 'Transaction deleted successfully',
+    final result = await deleteTransaction(
+      DeleteTransactionParams(transactionId: event.transactionId),
+    );
+
+    result.fold(
+      (failure) =>
+          emit(TransactionError(message: _mapFailureToMessage(failure))),
+      (_) => emit(
+        const TransactionOperationSuccess(
+          message: 'Transaction deleted successfully',
+        ),
       ),
     );
   }

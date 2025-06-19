@@ -12,6 +12,8 @@ import '../data/repositories/transaction_repository_impl.dart';
 import '../domain/repositories/transaction_repository.dart';
 import '../domain/usecases/add_transaction.dart';
 import '../domain/usecases/get_all_transactions.dart';
+import '../domain/usecases/update_transaction.dart';
+import '../domain/usecases/delete_transaction.dart';
 import '../domain/usecases/watch_transactions.dart';
 
 // Presentation
@@ -54,6 +56,12 @@ Future<void> initializeDependencies() async {
       () => AddTransaction(serviceLocator()),
     );
     serviceLocator.registerLazySingleton(
+      () => UpdateTransaction(repository: serviceLocator()),
+    );
+    serviceLocator.registerLazySingleton(
+      () => DeleteTransaction(repository: serviceLocator()),
+    );
+    serviceLocator.registerLazySingleton(
       () => WatchTransactions(serviceLocator()),
     );
 
@@ -62,6 +70,8 @@ Future<void> initializeDependencies() async {
       () => TransactionBloc(
         getAllTransactions: serviceLocator(),
         addTransaction: serviceLocator(),
+        updateTransaction: serviceLocator(),
+        deleteTransaction: serviceLocator(),
         watchTransactions: serviceLocator(),
       ),
     );

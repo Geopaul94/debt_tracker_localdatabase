@@ -9,6 +9,15 @@ import '../bloc/transaction_bloc.dart';
 import '../bloc/transaction_event.dart';
 
 class AddTransactionPage extends StatefulWidget {
+  final TransactionEntity? transactionToEdit;
+  final String? prefilledName;
+
+  const AddTransactionPage({
+    Key? key,
+    this.transactionToEdit,
+    this.prefilledName,
+  }) : super(key: key);
+
   @override
   _AddTransactionPageState createState() => _AddTransactionPageState();
 }
@@ -23,10 +32,25 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   DateTime? _selectedDate;
   final _uuid = Uuid();
 
+  bool get _isEditing => widget.transactionToEdit != null;
+
   @override
   void initState() {
     super.initState();
     _selectedDate = DateTime.now();
+
+    if (_isEditing) {
+      // Populate fields for editing
+      final transaction = widget.transactionToEdit!;
+      _nameController.text = transaction.name;
+      _descriptionController.text = transaction.description;
+      _amountController.text = transaction.amount.toString();
+      _selectedType = transaction.type;
+      _selectedDate = transaction.date;
+    } else if (widget.prefilledName != null) {
+      // Prefill name for new transaction with same person
+      _nameController.text = widget.prefilledName!;
+    }
   }
 
   @override
@@ -40,7 +64,19 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Add New Transaction')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Edit Transaction' : 'Add New Transaction'),
+        actions:
+            _isEditing
+                ? [
+                  IconButton(
+                    icon: Icon(Icons.delete),
+                    onPressed: _showDeleteConfirmation,
+                    tooltip: 'Delete Transaction',
+                  ),
+                ]
+                : null,
+      ),
       body: Padding(
         padding: EdgeInsets.all(20.w),
         child: Form(
@@ -49,7 +85,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             children: <Widget>[
               TextFormField(
                 controller: _nameController,
-                decoration: InputDecoration(labelText: 'Name'),
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  prefixIcon: Icon(Icons.person),
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a name.';
@@ -60,7 +99,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               SizedBox(height: 20.h),
               TextFormField(
                 controller: _descriptionController,
-                decoration: InputDecoration(labelText: 'Description'),
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  prefixIcon: Icon(Icons.description),
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a description.';
@@ -71,7 +113,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               SizedBox(height: 20.h),
               TextFormField(
                 controller: _amountController,
-                decoration: InputDecoration(labelText: 'Amount (\$)'),
+                decoration: InputDecoration(
+                  labelText: 'Amount (\$)',
+                  prefixIcon: Icon(Icons.attach_money),
+                ),
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -89,15 +134,33 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               SizedBox(height: 20.h),
               DropdownButtonFormField<TransactionType>(
                 value: _selectedType,
-                decoration: InputDecoration(labelText: 'Transaction Type'),
+                decoration: InputDecoration(
+                  labelText: 'Transaction Type',
+                  prefixIcon: Icon(Icons.swap_horiz),
+                ),
                 items:
                     TransactionType.values.map((type) {
                       return DropdownMenuItem(
                         value: type,
-                        child: Text(
-                          type == TransactionType.iOwe
-                              ? 'I Owe (Debit)'
-                              : 'Owes Me (Credit)',
+                        child: Row(
+                          children: [
+                            Icon(
+                              type == TransactionType.iOwe
+                                  ? Icons.arrow_upward
+                                  : Icons.arrow_downward,
+                              color:
+                                  type == TransactionType.iOwe
+                                      ? Colors.red
+                                      : Colors.green,
+                              size: 16,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              type == TransactionType.iOwe
+                                  ? 'I Owe (Debit)'
+                                  : 'Owes Me (Credit)',
+                            ),
+                          ],
                         ),
                       );
                     }).toList(),
@@ -108,17 +171,16 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 },
               ),
               SizedBox(height: 20.h),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      _selectedDate == null
-                          ? 'No Date Chosen!'
-                          : 'Picked Date: ${DateFormat.yMd().format(_selectedDate!)}',
-                      style: TextStyle(fontSize: 16.sp),
-                    ),
+              Card(
+                child: ListTile(
+                  leading: Icon(Icons.calendar_today),
+                  title: Text('Transaction Date'),
+                  subtitle: Text(
+                    _selectedDate == null
+                        ? 'No Date Chosen!'
+                        : DateFormat.yMMMd().add_jm().format(_selectedDate!),
                   ),
-                  TextButton(
+                  trailing: TextButton(
                     onPressed: _presentDatePicker,
                     child: Text(
                       'Choose Date',
@@ -128,13 +190,30 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
               SizedBox(height: 30.h),
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: _submitData,
-                child: Text('Add Transaction'),
+                icon: Icon(_isEditing ? Icons.save : Icons.add),
+                label: Text(
+                  _isEditing ? 'Update Transaction' : 'Add Transaction',
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 15.h),
+                ),
               ),
+              if (_isEditing) ...[
+                SizedBox(height: 16.h),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: Icon(Icons.cancel),
+                  label: Text('Cancel'),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 15.h),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -145,7 +224,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   void _presentDatePicker() {
     showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
       builder: (context, child) {
@@ -193,7 +272,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     }
 
     final transaction = TransactionEntity(
-      id: _uuid.v4(),
+      id: _isEditing ? widget.transactionToEdit!.id : _uuid.v4(),
       name: name,
       description: description,
       amount: enteredAmount,
@@ -201,10 +280,54 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       date: _selectedDate!,
     );
 
-    context.read<TransactionBloc>().add(
-      AddTransactionEvent(transaction: transaction),
-    );
+    if (_isEditing) {
+      context.read<TransactionBloc>().add(
+        UpdateTransactionEvent(transaction: transaction),
+      );
+    } else {
+      context.read<TransactionBloc>().add(
+        AddTransactionEvent(transaction: transaction),
+      );
+    }
 
     Navigator.of(context).pop();
+  }
+
+  void _showDeleteConfirmation() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.warning, color: Colors.orange),
+                SizedBox(width: 8),
+                Text('Delete Transaction'),
+              ],
+            ),
+            content: Text(
+              'Are you sure you want to delete this transaction? This action cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close dialog
+                  context.read<TransactionBloc>().add(
+                    DeleteTransactionEvent(
+                      transactionId: widget.transactionToEdit!.id,
+                    ),
+                  );
+                  Navigator.of(context).pop(); // Go back to previous screen
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: Text('Delete', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+    );
   }
 }

@@ -11,39 +11,41 @@ class AdService {
   InterstitialAd? _interstitialAd;
   RewardedAd? _rewardedAd;
 
-  // Production Ad Unit IDs
+  // Use Test Ad Unit IDs for debugging - replace with real ones for production
   static final String _bannerAdUnitId =
       Platform.isAndroid
-          ? 'ca-app-pub-5835078496383561/9814827520' // Your Banner Ad ID
-          : 'ca-app-pub-5835078496383561/9814827520'; // Your Banner Ad ID
+          ? 'ca-app-pub-3940256099942544/6300978111' // Test Banner Ad ID
+          : 'ca-app-pub-3940256099942544/2934735716'; // Test Banner Ad ID (iOS)
 
   static final String _interstitialAdUnitId =
       Platform.isAndroid
-          ? 'ca-app-pub-5835078496383561/3282058826' // Your Interstitial Ad ID
-          : 'ca-app-pub-5835078496383561/3282058826'; // Your Interstitial Ad ID
+          ? 'ca-app-pub-3940256099942544/1033173712' // Test Interstitial Ad ID
+          : 'ca-app-pub-3940256099942544/4411468910'; // Test Interstitial Ad ID (iOS)
 
   static final String _rewardedAdUnitId =
       Platform.isAndroid
-          ? 'ca-app-pub-5835078496383561/644727821' // Your Rewarded Interstitial Ad ID
-          : 'ca-app-pub-5835078496383561/644727821'; // Your Rewarded Interstitial Ad ID
+          ? 'ca-app-pub-3940256099942544/5224354917' // Test Rewarded Ad ID
+          : 'ca-app-pub-3940256099942544/1712485313'; // Test Rewarded Ad ID (iOS)
 
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    await MobileAds.instance.initialize();
-    await MobileAds.instance.updateRequestConfiguration(
-      RequestConfiguration(
-        testDeviceIds: [
-          'ABCDEF012345678901234567890ABCDEF', // Standard Android emulator test device ID
-          '33BE2250B43518CCDA7DE426D04EE231', // Alternative emulator test device ID
-        ],
-        tagForChildDirectedTreatment: TagForChildDirectedTreatment.no,
-        tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.no,
-      ),
-    );
+    try {
+      await MobileAds.instance.initialize();
+      await MobileAds.instance.updateRequestConfiguration(
+        RequestConfiguration(
+          testDeviceIds:
+              [], // Empty to use test ads on all devices during development
+          tagForChildDirectedTreatment: TagForChildDirectedTreatment.no,
+          tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.no,
+        ),
+      );
 
-    _isInitialized = true;
-    print('AdMob initialized successfully');
+      _isInitialized = true;
+      print('AdMob initialized successfully');
+    } catch (e) {
+      print('AdMob initialization failed: $e');
+    }
   }
 
   // Banner Ad Methods
