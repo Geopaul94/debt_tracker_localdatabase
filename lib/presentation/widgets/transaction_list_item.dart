@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/services/currency_service.dart';
 import '../../domain/entities/transaction_entity.dart';
 
 class TransactionListItem extends StatelessWidget {
@@ -13,7 +14,7 @@ class TransactionListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'en_US', symbol: '\$');
+    final currencyService = CurrencyService.instance;
     final dateFormat = DateFormat.yMMMd(); // e.g., Sep 10, 2023
 
     return Card(
@@ -27,8 +28,8 @@ class TransactionListItem extends StatelessWidget {
           radius: 25.r,
           child: Icon(
             transaction.type == TransactionType.iOwe
-                ? Icons.arrow_downward_rounded
-                : Icons.arrow_upward_rounded,
+                ? Icons.arrow_upward_rounded
+                : Icons.   arrow_downward_rounded  ,
             color:
                 transaction.type == TransactionType.iOwe
                     ? Colors.red[700]
@@ -55,7 +56,7 @@ class TransactionListItem extends StatelessWidget {
           ],
         ),
         trailing: Text(
-          '${transaction.type == TransactionType.iOwe ? '-' : '+'}${currencyFormat.format(transaction.amount)}',
+          '${transaction.type == TransactionType.iOwe ? '-' : '+'}${currencyService.formatAmount(transaction.amount)}',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 17.sp,

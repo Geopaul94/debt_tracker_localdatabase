@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:intl/intl.dart';
 
 import '../../core/services/ad_service.dart';
-import '../../core/services/currency_service.dart';
 import '../../core/services/preference_service.dart';
-import '../../domain/entities/transaction_entity.dart';
+import '../../domain/entities/grouped_transaction_entity.dart';
+import '../../injection/injection_container.dart';
 import '../bloc/transacton_bloc/transaction_bloc.dart';
 import '../bloc/transacton_bloc/transaction_event.dart';
 import '../bloc/transacton_bloc/transaction_state.dart';
+import '../bloc/currency_bloc/currency_bloc.dart';
+import '../bloc/currency_bloc/currency_event.dart';
+import '../bloc/currency_bloc/currency_state.dart';
 import '../widgets/summary_card.dart';
-import '../widgets/transaction_list_item.dart';
+import '../widgets/grouped_transaction_list_item.dart';
 import '../widgets/ad_banner_widget.dart';
 import 'add_transaction_page.dart';
-import 'transaction_history.dart';
 import 'settings_page.dart';
+import 'grouped_debt_detail_page.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -23,136 +25,162 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _transactionAddCount = 0; // Track for interstitial ads
+  int _transactionAddCount = 0;
   bool _isPremiumUnlocked = false;
   DateTime? _adFreeUntil;
+  late CurrencyBloc _currencyBloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _currencyBloc =
+        serviceLocator<CurrencyBloc>()..add(LoadCurrentCurrencyEvent());
+  }
+
+  @override
+  void dispose() {
+    _currencyBloc.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Debt Tracker'),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              switch (value) {
-                case 'settings':
-                  _navigateToSettings();
-                  break;
-                case 'premium':
-                  _showRewardedAdForPremium();
-                  break;
-                case 'ad_free':
-                  _showRewardedAdForAdFree();
-                  break;
-                case 'analytics':
-                  if (_isPremiumUnlocked) {
-                    _showAdvancedAnalytics();
-                  } else {
-                    _showPremiumRequired();
+    return MultiBlocProvider(
+      providers: [BlocProvider.value(value: _currencyBloc)],
+      child: BlocListener<CurrencyBloc, CurrencyState>(
+        listener: (context, currencyState) {
+          if (currencyState is CurrencyChangedSuccess) {
+            // Currency changed, reload transactions to update formatting
+            context.read<TransactionBloc>().add(LoadTransactionsEvent());
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text('Debt Tracker'),
+            actions: [
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'settings':
+                      _navigateToSettings();
+                      break;
+                    case 'premium':
+                      _showRewardedAdForPremium();
+                      break;
+                    case 'ad_free':
+                      _showRewardedAdForAdFree();
+                      break;
+                    case 'analytics':
+                      if (_isPremiumUnlocked) {
+                        _showAdvancedAnalytics();
+                      } else {
+                        _showPremiumRequired();
+                      }
+                      break;
                   }
-                  break;
+                },
+                itemBuilder:
+                    (context) => [
+                      PopupMenuItem(
+                        value: 'settings',
+                        child: Row(
+                          children: [
+                            Icon(Icons.settings, color: Colors.grey[600]),
+                            SizedBox(width: 8),
+                            Text('Settings'),
+                          ],
+                        ),
+                      ),
+                      if (!_isPremiumUnlocked)
+                        PopupMenuItem(
+                          value: 'premium',
+                          child: Row(
+                            children: [
+                              Icon(Icons.star, color: Colors.amber),
+                              SizedBox(width: 8),
+                              Text('Unlock Premium'),
+                            ],
+                          ),
+                        ),
+                      if (!_isAdFree)
+                        PopupMenuItem(
+                          value: 'ad_free',
+                          child: Row(
+                            children: [
+                              Icon(Icons.block, color: Colors.blue),
+                              SizedBox(width: 8),
+                              Text('Remove Ads (2h)'),
+                            ],
+                          ),
+                        ),
+                      PopupMenuItem(
+                        value: 'analytics',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.analytics,
+                              color:
+                                  _isPremiumUnlocked
+                                      ? Colors.green
+                                      : Colors.grey,
+                            ),
+                            SizedBox(width: 8),
+                            Text('Advanced Analytics'),
+                          ],
+                        ),
+                      ),
+                    ],
+              ),
+            ],
+          ),
+          body: BlocConsumer<TransactionBloc, TransactionState>(
+            listener: (context, state) {
+              if (state is TransactionError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              } else if (state is TransactionOperationSuccess) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+
+                // Show interstitial ad after every 3 transactions
+                _transactionAddCount++;
+                if (_transactionAddCount % 3 == 0) {
+                  _showInterstitialAd();
+                }
+
+                // Reload transactions after successful operation
+                context.read<TransactionBloc>().add(LoadTransactionsEvent());
               }
             },
-            itemBuilder:
-                (context) => [
-                  PopupMenuItem(
-                    value: 'settings',
-                    child: Row(
-                      children: [
-                        Icon(Icons.settings, color: Colors.grey[600]),
-                        SizedBox(width: 8),
-                        Text('Settings'),
-                      ],
-                    ),
-                  ),
-                  if (!_isPremiumUnlocked)
-                    PopupMenuItem(
-                      value: 'premium',
-                      child: Row(
-                        children: [
-                          Icon(Icons.star, color: Colors.amber),
-                          SizedBox(width: 8),
-                          Text('Unlock Premium'),
-                        ],
-                      ),
-                    ),
-                  if (!_isAdFree)
-                    PopupMenuItem(
-                      value: 'ad_free',
-                      child: Row(
-                        children: [
-                          Icon(Icons.block, color: Colors.blue),
-                          SizedBox(width: 8),
-                          Text('Remove Ads (2h)'),
-                        ],
-                      ),
-                    ),
-                  PopupMenuItem(
-                    value: 'analytics',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.analytics,
-                          color:
-                              _isPremiumUnlocked ? Colors.green : Colors.grey,
-                        ),
-                        SizedBox(width: 8),
-                        Text('Advanced Analytics'),
-                      ],
-                    ),
-                  ),
-                ],
+            builder: (context, state) {
+              if (state is TransactionInitial) {
+                context.read<TransactionBloc>().add(LoadTransactionsEvent());
+                return Center(child: CircularProgressIndicator());
+              } else if (state is TransactionLoading) {
+                return Center(child: CircularProgressIndicator());
+              } else if (state is TransactionLoaded) {
+                return _buildLoadedState(context, state);
+              } else if (state is TransactionError) {
+                return _buildErrorState(context, state);
+              }
+
+              return Center(child: CircularProgressIndicator());
+            },
           ),
-        ],
-      ),
-      body: BlocConsumer<TransactionBloc, TransactionState>(
-        listener: (context, state) {
-          if (state is TransactionError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-          } else if (state is TransactionOperationSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.green,
-              ),
-            );
-
-            // Show interstitial ad after every 3 transactions
-            _transactionAddCount++;
-            if (_transactionAddCount % 3 == 0) {
-              _showInterstitialAd();
-            }
-
-            // Reload transactions after successful operation
-            context.read<TransactionBloc>().add(LoadTransactionsEvent());
-          }
-        },
-        builder: (context, state) {
-          if (state is TransactionInitial) {
-            // Start loading transactions on initial load
-            context.read<TransactionBloc>().add(LoadTransactionsEvent());
-            return Center(child: CircularProgressIndicator());
-          } else if (state is TransactionLoading) {
-            return Center(child: CircularProgressIndicator());
-          } else if (state is TransactionLoaded) {
-            return _buildLoadedState(context, state);
-          } else if (state is TransactionError) {
-            return _buildErrorState(context, state);
-          }
-
-          return Center(child: CircularProgressIndicator());
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateToAddTransaction(context),
-        child: Icon(Icons.add),
-        tooltip: 'Add Transaction',
+          floatingActionButton: FloatingActionButton(
+            onPressed: () => _navigateToAddTransaction(context),
+            child: Icon(Icons.add),
+            tooltip: 'Add Transaction',
+          ),
+        ),
       ),
     );
   }
@@ -176,20 +204,20 @@ class _HomePageState extends State<HomePage> {
                   : SizedBox.shrink();
             },
           ),
-          state.transactions.isEmpty
+          state.groupedTransactions.isEmpty
               ? _buildEmptyState()
               : ListView.builder(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
                 padding: EdgeInsets.symmetric(horizontal: 16.w),
                 itemCount:
-                    state.transactions.length +
-                    (state.transactions.length > 5 ? 1 : 0),
+                    state.groupedTransactions.length +
+                    (state.groupedTransactions.length > 5 ? 1 : 0),
                 itemBuilder: (context, index) {
                   // Insert another banner ad after every 5 transactions
                   if (index > 0 &&
                       index % 6 == 5 &&
-                      state.transactions.length > 5 &&
+                      state.groupedTransactions.length > 5 &&
                       !_isAdFree) {
                     return FutureBuilder<bool>(
                       future: PreferenceService.instance.shouldShowAds(),
@@ -205,16 +233,17 @@ class _HomePageState extends State<HomePage> {
                   }
 
                   final transactionIndex = index > 5 ? index - 1 : index;
-                  if (transactionIndex >= state.transactions.length) {
+                  if (transactionIndex >= state.groupedTransactions.length) {
                     return SizedBox.shrink();
                   }
 
-                  final transaction = state.transactions[transactionIndex];
-                  return TransactionListItem(
-                    transaction: transaction,
+                  final groupedTransaction =
+                      state.groupedTransactions[transactionIndex];
+                  return GroupedTransactionListItem(
+                    groupedTransaction: groupedTransaction,
                     onTap:
                         () =>
-                            _navigateToTransactionHistory(context, transaction),
+                            _navigateToDebtDetail(context, groupedTransaction),
                   );
                 },
               ),
@@ -304,26 +333,30 @@ class _HomePageState extends State<HomePage> {
     try {
       await AdService.instance.showRewardedAd(
         onUserEarnedReward: (ad, reward) {
-          setState(() {
-            _isPremiumUnlocked = true;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('🎉 Premium features unlocked!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
-            ),
-          );
+          if (mounted) {
+            setState(() {
+              _isPremiumUnlocked = true;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('🎉 Premium features unlocked!'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
         },
       );
     } catch (e) {
       print('Error showing rewarded ad: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Ad not ready. Please try again later.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ad not ready. Please try again later.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     }
   }
 
@@ -331,16 +364,18 @@ class _HomePageState extends State<HomePage> {
     try {
       await AdService.instance.showRewardedAd(
         onUserEarnedReward: (ad, reward) {
-          setState(() {
-            _adFreeUntil = DateTime.now().add(Duration(hours: 2));
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('🚀 Ads removed for 2 hours!'),
-              backgroundColor: Colors.blue,
-              duration: Duration(seconds: 3),
-            ),
-          );
+          if (mounted) {
+            setState(() {
+              _adFreeUntil = DateTime.now().add(Duration(hours: 2));
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('🚀 Ads removed for 2 hours!'),
+                backgroundColor: Colors.blue,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
         },
       );
     } catch (e) {
@@ -417,23 +452,28 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _navigateToTransactionHistory(
-    BuildContext context,
-    TransactionEntity transaction,
-  ) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => TransactionHistoryPage(transaction: transaction),
-      ),
-    );
-  }
-
+ 
   void _navigateToSettings() {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => SettingsPage())).then((_) {
+      // Refresh currency bloc when returning from settings
+      _currencyBloc.add(LoadCurrentCurrencyEvent());
       // Reload transactions in case settings changed
       context.read<TransactionBloc>().add(LoadTransactionsEvent());
     });
+  }
+
+  void _navigateToDebtDetail(
+    BuildContext context,
+    GroupedTransactionEntity groupedTransaction,
+  ) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (context) =>
+                GroupedDebtDetailPage(groupedTransaction: groupedTransaction),
+      ),
+    );
   }
 }

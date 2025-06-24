@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/error/failures.dart';
 import '../../../core/usecases/usecase.dart';
 import '../../../domain/entities/transaction_entity.dart';
+import '../../../domain/entities/grouped_transaction_entity.dart';
 import '../../../domain/usecases/add_transaction.dart';
 import '../../../domain/usecases/get_all_transactions.dart';
 import '../../../domain/usecases/update_transaction.dart';
@@ -46,10 +47,12 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       (failure) =>
           emit(TransactionError(message: _mapFailureToMessage(failure))),
       (transactions) {
+        final groupedTransactions = _groupTransactionsByUser(transactions);
         final totals = _calculateTotals(transactions);
         emit(
           TransactionLoaded(
             transactions: transactions,
+            groupedTransactions: groupedTransactions,
             totalIOwe: totals['iOwe']!,
             totalOwesMe: totals['owesMe']!,
           ),
@@ -71,10 +74,14 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
             (failure) =>
                 emit(TransactionError(message: _mapFailureToMessage(failure))),
             (transactions) {
+              final groupedTransactions = _groupTransactionsByUser(
+                transactions,
+              );
               final totals = _calculateTotals(transactions);
               emit(
                 TransactionLoaded(
                   transactions: transactions,
+                  groupedTransactions: groupedTransactions,
                   totalIOwe: totals['iOwe']!,
                   totalOwesMe: totals['owesMe']!,
                 ),
@@ -163,6 +170,37 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     }
 
     return {'iOwe': totalIOwe, 'owesMe': totalOwesMe};
+  }
+
+  List<GroupedTransactionEntity> _groupTransactionsByUser(
+    List<TransactionEntity> transactions,
+  ) {
+    final Map<String, List<TransactionEntity>> groupedMap = {};
+
+    // Group transactions by user name
+    for (final transaction in transactions) {
+      if (groupedMap.containsKey(transaction.name)) {
+        groupedMap[transaction.name]!.add(transaction);
+      } else {
+        groupedMap[transaction.name] = [transaction];
+      }
+    }
+
+    // Convert to GroupedTransactionEntity and sort by last transaction date
+    final groupedList =
+        groupedMap.entries.map((entry) {
+          return GroupedTransactionEntity.fromTransactions(
+            entry.key,
+            entry.value,
+          );
+        }).toList();
+
+    // Sort by last transaction date (newest first)
+    groupedList.sort(
+      (a, b) => b.lastTransactionDate.compareTo(a.lastTransactionDate),
+    );
+
+    return groupedList;
   }
 
   String _mapFailureToMessage(failure) {

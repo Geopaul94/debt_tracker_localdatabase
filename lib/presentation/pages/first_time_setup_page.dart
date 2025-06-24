@@ -51,191 +51,262 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
               // Currency was changed successfully, UI will auto-update
             }
           },
-          child: SafeArea(
-            child: Padding(
-              padding: EdgeInsets.all(24.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(height: 60.h),
+          child: SingleChildScrollView(
+            child: SafeArea(
+              child: Padding(
+                padding: EdgeInsets.all(24.w),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(height: 60.h),
 
-                  // Welcome Header
-                  Icon(
-                    Icons.account_balance_wallet,
-                    size: 80.sp,
-                    color: Colors.teal[600],
-                  ),
-                  SizedBox(height: 24.h),
-
-                  Text(
-                    'Welcome to\nDebt Tracker',
-                    style: TextStyle(
-                      fontSize: 28.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.teal[800],
-                      height: 1.2,
+                    // Welcome Header
+                    Icon(
+                      Icons.account_balance_wallet,
+                      size: 80.sp,
+                      color: Colors.teal[600],
                     ),
-                    textAlign: TextAlign.center,
-                  ),
+                    SizedBox(height: 24.h),
 
-                  SizedBox(height: 12.h),
-
-                  Text(
-                    'Keep track of money you owe and money owed to you',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      color: Colors.grey[600],
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  SizedBox(height: 20.h),
-
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(20.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          spreadRadius: 2,
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.monetization_on,
-                              color: Colors.teal[600],
-                            ),
-                            SizedBox(width: 8.w),
-                            Text(
-                              'Choose Your Currency',
-                              style: TextStyle(
-                                fontSize: 18.sp,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.teal[800],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(height: 10.h),
-
-                        Text(
-                          'Select the currency you\'ll be using in the app:',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-
-                        SizedBox(height: 10.h),
-
-                        _buildCurrencyDropdown(),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 15.h),
-
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(20.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          spreadRadius: 2,
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.tips_and_updates,
-                              color: Colors.orange[600],
-                            ),
-                            SizedBox(width: 8.w),
-                            Text(
-                              'Quick Tip',
-                              style: TextStyle(
-                                fontSize: 18.sp,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange[800],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(height: 10.h),
-
-                        Text(
-                          '• Add transactions when you lend or borrow money\n'
-                          '• Track who owes you and who you owe\n'
-                          '• Get clear overview of your debt situation',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            color: Colors.grey[600],
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  Spacer(),
-
-                  // Get Started Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50.h,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _completeSetup,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal[600],
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
+                    Text(
+                      'Welcome to\nDebt Tracker',
+                      style: TextStyle(
+                        fontSize: 28.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.teal[800],
+                        height: 1.2,
                       ),
-                      child:
-                          _isLoading
-                              ? SizedBox(
-                                width: 20.w,
-                                height: 20.w,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
+                      textAlign: TextAlign.center,
+                    ),
+
+                    SizedBox(height: 12.h),
+
+                    Text(
+                      'Keep track of money you owe and money owed to you',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        color: Colors.grey[600],
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    SizedBox(height: 20.h),
+
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(20.w),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 2,
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.monetization_on,
+                                color: Colors.teal[600],
+                              ),
+                              SizedBox(width: 8.w),
+                              Text(
+                                'Choose Your Currency',
+                                style: TextStyle(
+                                  fontSize: 18.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal[800],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: 10.h),
+
+                          Text(
+                            'Select the currency you\'ll be using in the app:',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+
+                          SizedBox(height: 10.h),
+
+                          _buildCurrencyDropdown(),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 15.h),
+
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(20.w),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 2,
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.tips_and_updates,
+                                color: Colors.orange[600],
+                              ),
+                              SizedBox(width: 8.w),
+                              Text(
+                                'Quick Tip',
+                                style: TextStyle(
+                                  fontSize: 18.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange[800],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: 10.h),
+
+                          Text(
+                            '• Add transactions when you lend or borrow money\n'
+                            '• Track who owes you and who you owe\n'
+                            '• Get clear overview of your debt situation',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              color: Colors.grey[600],
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(height: 15.h),
+
+                    // Data Storage Warning
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(20.w),
+                      decoration: BoxDecoration(
+                        color: Colors.red[50],
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(color: Colors.red[200]!, width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.1),
+                            spreadRadius: 2,
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                color: Colors.red[600],
+                              ),
+                              SizedBox(width: 8.w),
+                              Text(
+                                'Important Warning',
+                                style: TextStyle(
+                                  fontSize: 18.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red[800],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: 10.h),
+
+                          Text(
+                            'This app uses local database storage. Your data is saved directly on your phone.',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              color: Colors.red[700],
+                              fontWeight: FontWeight.w600,
+                              height: 1.4,
+                            ),
+                          ),
+
+                          SizedBox(height: 8.h),
+
+                          Text(
+                            '⚠️ Do NOT uninstall the app or clear app data\n'
+                            '⚠️ This will lead to permanent data loss\n'
+                            '⚠️ All your transactions will be deleted forever',
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              color: Colors.red[600],
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(height: 40.h),
+
+                    // Get Started Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50.h,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _completeSetup,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal[600],
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        child:
+                            _isLoading
+                                ? SizedBox(
+                                  width: 20.w,
+                                  height: 20.w,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                                : Text(
+                                  'Get Started',
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              )
-                              : Text(
-                                'Get Started',
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 60.h),
-                ],
+                    SizedBox(height: 60.h),
+                  ],
+                ),
               ),
             ),
           ),
@@ -362,7 +433,6 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
       await PreferenceService.instance.setFirstLaunchCompleted();
 
       // Add sample transactions to demonstrate the app
-      await _addSampleTransactions();
 
       if (mounted) {
         // Navigate to home page
@@ -385,34 +455,5 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
         });
       }
     }
-  }
-
-  Future<void> _addSampleTransactions() async {
-    final transactionBloc = context.read<TransactionBloc>();
-    final uuid = Uuid();
-
-    // Sample transaction 1: Money I owe
-    final transaction1 = TransactionEntity(
-      id: uuid.v4(),
-      name: 'John Smith',
-      description: 'Lunch money',
-      amount: 25.00,
-      type: TransactionType.iOwe,
-      date: DateTime.now().subtract(Duration(days: 2)),
-    );
-
-    // Sample transaction 2: Money owed to me
-    final transaction2 = TransactionEntity(
-      id: uuid.v4(),
-      name: 'Sarah Johnson',
-      description: 'Movie tickets',
-      amount: 30.00,
-      type: TransactionType.owesMe,
-      date: DateTime.now().subtract(Duration(days: 1)),
-    );
-
-    transactionBloc.add(AddTransactionEvent(transaction: transaction1));
-    await Future.delayed(Duration(milliseconds: 100));
-    transactionBloc.add(AddTransactionEvent(transaction: transaction2));
   }
 }

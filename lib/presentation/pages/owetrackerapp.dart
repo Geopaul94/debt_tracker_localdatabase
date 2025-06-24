@@ -104,7 +104,7 @@ class OweTrackerApp extends StatelessWidget {
             ),
             initialRoute: '/',
             routes: {
-              '/': (context) =>  FirstTimeSetupPage(),
+              '/': (context) =>  SplashScreen(),
               '/first-time-setup': (context) => FirstTimeSetupPage(),
               '/home': (context) => HomePage(),
               '/add-transaction': (context) => AddTransactionPage(),

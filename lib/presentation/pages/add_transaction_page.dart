@@ -268,8 +268,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       return;
     }
 
-    final name = _nameController.text;
-    final description = _descriptionController.text;
+    final name = _capitalizeWords(_nameController.text.trim());
+    final description = _descriptionController.text.trim();
     final enteredAmount = double.tryParse(_amountController.text);
 
     if (enteredAmount == null || enteredAmount <= 0 || _selectedDate == null) {
@@ -302,6 +302,19 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     }
 
     Navigator.of(context).pop();
+  }
+
+  /// Capitalizes the first letter of each word in the string
+  String _capitalizeWords(String text) {
+    if (text.isEmpty) return text;
+
+    return text
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        })
+        .join(' ');
   }
 
   void _showDeleteConfirmation() {
