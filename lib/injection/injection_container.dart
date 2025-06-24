@@ -18,7 +18,8 @@ import '../domain/usecases/delete_transaction.dart';
 import '../domain/usecases/watch_transactions.dart';
 
 // Presentation
-import '../presentation/bloc/transaction_bloc.dart';
+import '../presentation/bloc/transacton_bloc/transaction_bloc.dart';
+import '../presentation/bloc/currency_bloc/currency_bloc.dart';
 
 final serviceLocator = GetIt.instance;
 
@@ -85,6 +86,11 @@ Future<void> initializeDependencies() async {
         deleteTransaction: serviceLocator(),
         watchTransactions: serviceLocator(),
       ),
+    );
+
+    // Currency BLoC
+    serviceLocator.registerFactory(
+      () => CurrencyBloc(currencyService: serviceLocator()),
     );
 
     print('Dependencies initialized successfully');

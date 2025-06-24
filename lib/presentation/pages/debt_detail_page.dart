@@ -5,9 +5,9 @@ import 'package:intl/intl.dart';
 
 import '../../core/services/currency_service.dart';
 import '../../domain/entities/transaction_entity.dart';
-import '../bloc/transaction_bloc.dart';
-import '../bloc/transaction_event.dart';
-import '../bloc/transaction_state.dart';
+import '../bloc/transacton_bloc/transaction_bloc.dart';
+import '../bloc/transacton_bloc/transaction_event.dart';
+import '../bloc/transacton_bloc/transaction_state.dart';
 import '../widgets/ad_banner_widget.dart';
 import 'add_transaction_page.dart';
 import 'transaction_history.dart';

@@ -5,16 +5,17 @@ import 'package:intl/intl.dart';
 
 import '../../core/services/ad_service.dart';
 import '../../core/services/currency_service.dart';
+import '../../core/services/preference_service.dart';
 import '../../domain/entities/transaction_entity.dart';
-import '../bloc/transaction_bloc.dart';
-import '../bloc/transaction_event.dart';
-import '../bloc/transaction_state.dart';
+import '../bloc/transacton_bloc/transaction_bloc.dart';
+import '../bloc/transacton_bloc/transaction_event.dart';
+import '../bloc/transacton_bloc/transaction_state.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/transaction_list_item.dart';
 import '../widgets/ad_banner_widget.dart';
 import 'add_transaction_page.dart';
 import 'transaction_history.dart';
-import 'currency_selection_page.dart';
+import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -35,8 +36,8 @@ class _HomePageState extends State<HomePage> {
           PopupMenuButton<String>(
             onSelected: (value) {
               switch (value) {
-                case 'currency':
-                  _navigateToCurrencySelection();
+                case 'settings':
+                  _navigateToSettings();
                   break;
                 case 'premium':
                   _showRewardedAdForPremium();
@@ -56,12 +57,12 @@ class _HomePageState extends State<HomePage> {
             itemBuilder:
                 (context) => [
                   PopupMenuItem(
-                    value: 'currency',
+                    value: 'settings',
                     child: Row(
                       children: [
-                        Text(CurrencyService.instance.currentCurrency.flag),
+                        Icon(Icons.settings, color: Colors.grey[600]),
                         SizedBox(width: 8),
-                        Text('Currency'),
+                        Text('Settings'),
                       ],
                     ),
                   ),
@@ -157,53 +158,68 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildLoadedState(BuildContext context, TransactionLoaded state) {
-    return Column(
-      children: [
-        SummaryCard(
-          totalIOwe: state.totalIOwe,
-          totalOwesMe: state.totalOwesMe,
-          netAmount: state.netAmount,
-        ),
-        // Add banner ad after summary card (only if not ad-free)
-        if (!_isAdFree) AdBannerWidget(),
-        Expanded(
-          child:
-              state.transactions.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 16.w),
-                    itemCount:
-                        state.transactions.length +
-                        (state.transactions.length > 5 ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      // Insert another banner ad after every 5 transactions
-                      if (index > 0 &&
-                          index % 6 == 5 &&
-                          state.transactions.length > 5 &&
-                          !_isAdFree) {
-                        return AdBannerWidget(
-                          margin: EdgeInsets.symmetric(vertical: 16.h),
-                        );
-                      }
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          SummaryCard(
+            totalIOwe: state.totalIOwe,
+            totalOwesMe: state.totalOwesMe,
+            netAmount: state.netAmount,
+          ),
+          // Add banner ad after summary card (only if not ad-free and after 7 days)
+          FutureBuilder<bool>(
+            future: PreferenceService.instance.shouldShowAds(),
+            builder: (context, snapshot) {
+              final shouldShowAds = snapshot.data ?? false;
+              return shouldShowAds && !_isAdFree
+                  ? AdBannerWidget()
+                  : SizedBox.shrink();
+            },
+          ),
+          state.transactions.isEmpty
+              ? _buildEmptyState()
+              : ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                itemCount:
+                    state.transactions.length +
+                    (state.transactions.length > 5 ? 1 : 0),
+                itemBuilder: (context, index) {
+                  // Insert another banner ad after every 5 transactions
+                  if (index > 0 &&
+                      index % 6 == 5 &&
+                      state.transactions.length > 5 &&
+                      !_isAdFree) {
+                    return FutureBuilder<bool>(
+                      future: PreferenceService.instance.shouldShowAds(),
+                      builder: (context, snapshot) {
+                        final shouldShowAds = snapshot.data ?? false;
+                        return shouldShowAds
+                            ? AdBannerWidget(
+                              margin: EdgeInsets.symmetric(vertical: 16.h),
+                            )
+                            : SizedBox.shrink();
+                      },
+                    );
+                  }
 
-                      final transactionIndex = index > 5 ? index - 1 : index;
-                      if (transactionIndex >= state.transactions.length) {
-                        return SizedBox.shrink();
-                      }
+                  final transactionIndex = index > 5 ? index - 1 : index;
+                  if (transactionIndex >= state.transactions.length) {
+                    return SizedBox.shrink();
+                  }
 
-                      final transaction = state.transactions[transactionIndex];
-                      return TransactionListItem(
-                        transaction: transaction,
-                        onTap:
-                            () => _navigateToTransactionHistory(
-                              context,
-                              transaction,
-                            ),
-                      );
-                    },
-                  ),
-        ),
-      ],
+                  final transaction = state.transactions[transactionIndex];
+                  return TransactionListItem(
+                    transaction: transaction,
+                    onTap:
+                        () =>
+                            _navigateToTransactionHistory(context, transaction),
+                  );
+                },
+              ),
+        ],
+      ),
     );
   }
 
@@ -412,14 +428,12 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _navigateToCurrencySelection() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (context) => CurrencySelectionPage()))
-        .then((currencyChanged) {
-          if (currencyChanged == true) {
-            // Reload transactions to update currency formatting
-            context.read<TransactionBloc>().add(LoadTransactionsEvent());
-          }
-        });
+  void _navigateToSettings() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => SettingsPage())).then((_) {
+      // Reload transactions in case settings changed
+      context.read<TransactionBloc>().add(LoadTransactionsEvent());
+    });
   }
 }

@@ -23,11 +23,11 @@ class SummaryCard extends StatelessWidget {
     final currencyService = CurrencyService.instance;
 
     return Card(
-      margin: EdgeInsets.all(16.w),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      margin: EdgeInsets.all(10.w),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
       child: Padding(
-        padding: EdgeInsets.all(20.w),
+        padding: EdgeInsets.all(10.w),
         child: Column(
           children: [
             // Currency selector header
@@ -42,47 +42,47 @@ class SummaryCard extends StatelessWidget {
                     color: Colors.grey[800],
                   ),
                 ),
-                InkWell(
-                  onTap: () => _navigateToCurrencySelection(context),
-                  borderRadius: BorderRadius.circular(8.r),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 12.w,
-                      vertical: 6.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(8.r),
-                      border: Border.all(color: Colors.blue[200]!),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          currencyService.currentCurrency.flag,
-                          style: TextStyle(fontSize: 16.sp),
-                        ),
-                        SizedBox(width: 4.w),
-                        Text(
-                          currencyService.currentCurrency.code,
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[700],
-                          ),
-                        ),
-                        Icon(
-                          Icons.keyboard_arrow_down,
-                          size: 16.sp,
-                          color: Colors.blue[700],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                // InkWell(
+                //   onTap: () => _navigateToCurrencySelection(context),
+                //   borderRadius: BorderRadius.circular(8.r),
+                //   child: Container(
+                //     padding: EdgeInsets.symmetric(
+                //       horizontal: 12.w,
+                //       vertical: 6.h,
+                //     ),
+                //     decoration: BoxDecoration(
+                //       color: Colors.blue[50],
+                //       borderRadius: BorderRadius.circular(8.r),
+                //       border: Border.all(color: Colors.blue[200]!),
+                //     ),
+                //     child: Row(
+                //       mainAxisSize: MainAxisSize.min,
+                //       children: [
+                //         Text(
+                //           currencyService.currentCurrency.flag,
+                //           style: TextStyle(fontSize: 14.sp),
+                //         ),
+                //         SizedBox(width: 4.w),
+                //         Text(
+                //           currencyService.currentCurrency.code,
+                //           style: TextStyle(
+                //             fontSize: 12.sp,
+                //             fontWeight: FontWeight.bold,
+                //             color: Colors.blue[700],
+                //           ),
+                //         ),
+                //         Icon(
+                //           Icons.keyboard_arrow_down,
+                //           size: 16.sp,
+                //           color: Colors.blue[700],
+                //         ),
+                //       ],
+                //     ),
+                //   ),
+                // ),
               ],
             ),
-            SizedBox(height: 20.h),
+            SizedBox(height: 15.h),
 
             // Main summary row
             Row(
@@ -102,7 +102,7 @@ class SummaryCard extends StatelessWidget {
                   height: 60.h,
                   width: 1,
                   color: Colors.grey[300],
-                  margin: EdgeInsets.symmetric(horizontal: 16.w),
+                  margin: EdgeInsets.symmetric(horizontal: 10.w),
                 ),
                 Expanded(
                   child: _buildClickableSummaryColumn(
@@ -118,9 +118,9 @@ class SummaryCard extends StatelessWidget {
             ),
 
             if (netAmount != 0) ...[
-              SizedBox(height: 20.h),
+              SizedBox(height: 5.h),
               Divider(color: Colors.grey[300]),
-              SizedBox(height: 16.h),
+              SizedBox(height: 5.h),
               _buildNetAmountSection(currencyService),
             ],
           ],

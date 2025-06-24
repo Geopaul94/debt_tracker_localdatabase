@@ -1,4 +1,3 @@
-import 'package:dartz/dartz.dart';
 
 abstract class Failure {
   const Failure([List properties = const <dynamic>[]]);

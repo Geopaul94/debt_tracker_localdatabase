@@ -6,8 +6,8 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/services/currency_service.dart';
 import '../../domain/entities/transaction_entity.dart';
-import '../bloc/transaction_bloc.dart';
-import '../bloc/transaction_event.dart';
+import '../bloc/transacton_bloc/transaction_bloc.dart';
+import '../bloc/transacton_bloc/transaction_event.dart';
 import '../widgets/ad_banner_widget.dart';
 
 class AddTransactionPage extends StatefulWidget {

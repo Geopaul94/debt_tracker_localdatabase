@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'preference_service.dart';
 
 class AdService {
   static final AdService _instance = AdService._internal();
@@ -48,8 +49,15 @@ class AdService {
   }
 
   // Banner Ad Methods - Create unique instances for each widget
-  Future<BannerAd> createBannerAd() async {
+  Future<BannerAd?> createBannerAd() async {
     if (!_isInitialized) await initialize();
+
+    // Check if ads should be shown (after 7 days)
+    final shouldShowAds = await PreferenceService.instance.shouldShowAds();
+    if (!shouldShowAds) {
+      print('Ads not shown - within 7 day grace period');
+      return null;
+    }
 
     // Create a new BannerAd instance each time - don't reuse _bannerAd
     final bannerAd = BannerAd(
@@ -98,6 +106,13 @@ class AdService {
   }
 
   Future<bool> showInterstitialAd() async {
+    // Check if ads should be shown (after 7 days)
+    final shouldShowAds = await PreferenceService.instance.shouldShowAds();
+    if (!shouldShowAds) {
+      print('Interstitial ad not shown - within 7 day grace period');
+      return false;
+    }
+
     if (_interstitialAd == null) {
       await loadInterstitialAd();
       // Wait a bit for the ad to load

@@ -34,10 +34,10 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
       if (mounted) {
         setState(() {
           _bannerAd = bannerAd;
-          _isAdLoaded = true;
+          _isAdLoaded = bannerAd != null;
           _isLoading = false;
         });
-      } else {
+      } else if (bannerAd != null) {
         // Widget was disposed while loading, dispose the ad
         bannerAd.dispose();
       }
