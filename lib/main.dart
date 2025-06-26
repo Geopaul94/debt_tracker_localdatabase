@@ -1,14 +1,9 @@
 
 import 'package:debit_tracker/presentation/pages/owetrackerapp.dart';
-
 import 'package:flutter/material.dart';
-
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-
 import 'injection/injection_container.dart';
-
 import 'core/services/preference_service.dart';
-
 
 // 2. Main function to run the app
 void main() async {

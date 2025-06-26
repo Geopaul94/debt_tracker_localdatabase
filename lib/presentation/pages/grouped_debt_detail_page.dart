@@ -1,22 +1,82 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:intl/intl.dart';
 
 import '../../core/services/currency_service.dart';
 import '../../domain/entities/grouped_transaction_entity.dart';
 import '../../domain/entities/transaction_entity.dart';
+import '../bloc/transacton_bloc/transaction_bloc.dart';
+import '../bloc/transacton_bloc/transaction_event.dart';
+import '../bloc/transacton_bloc/transaction_state.dart';
 import '../widgets/ad_banner_widget.dart';
 import '../widgets/transaction_list_item.dart';
 import 'add_transaction_page.dart';
 
-class GroupedDebtDetailPage extends StatelessWidget {
+class GroupedDebtDetailPage extends StatefulWidget {
   final GroupedTransactionEntity groupedTransaction;
 
   const GroupedDebtDetailPage({Key? key, required this.groupedTransaction})
     : super(key: key);
 
   @override
+  _GroupedDebtDetailPageState createState() => _GroupedDebtDetailPageState();
+}
+
+class _GroupedDebtDetailPageState extends State<GroupedDebtDetailPage> {
+  late GroupedTransactionEntity currentGroupedTransaction;
+
+  @override
+  void initState() {
+    super.initState();
+    currentGroupedTransaction = widget.groupedTransaction;
+  }
+
+  GroupedTransactionEntity? _findUpdatedGroupedTransaction(
+    List<GroupedTransactionEntity> groupedTransactions,
+  ) {
+    try {
+      return groupedTransactions.firstWhere(
+        (group) => group.userName == widget.groupedTransaction.userName,
+      );
+    } catch (e) {
+      return null; // User might have no transactions left
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    return BlocListener<TransactionBloc, TransactionState>(
+      listener: (context, state) {
+        if (state is TransactionOperationSuccess) {
+          // Reload transactions to get updated data
+          context.read<TransactionBloc>().add(LoadTransactionsEvent());
+        }
+      },
+      child: BlocBuilder<TransactionBloc, TransactionState>(
+        builder: (context, state) {
+          // Update the grouped transaction data when new data is available
+          if (state is TransactionLoaded) {
+            final updatedGroupedTransaction = _findUpdatedGroupedTransaction(
+              state.groupedTransactions,
+            );
+            if (updatedGroupedTransaction != null) {
+              currentGroupedTransaction = updatedGroupedTransaction;
+            } else {
+              // No transactions left for this user, go back
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Navigator.of(context).pop();
+              });
+            }
+          }
+
+          return _buildContent(context);
+        },
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    print("+++++++++++++++++++++++++");
     final currencyService = CurrencyService.instance;
 
     // Determine colors based on net amount
@@ -25,26 +85,26 @@ class GroupedDebtDetailPage extends StatelessWidget {
     String title;
     IconData icon;
 
-    if (groupedTransaction.isSettled) {
+    if (currentGroupedTransaction.isSettled) {
       primaryColor = Colors.grey[700]!;
       backgroundColor = Colors.grey[100]!;
-      title = '${groupedTransaction.userName} (Settled)';
+      title = '${currentGroupedTransaction.userName} (Settled)';
       icon = Icons.check_circle_outline;
-    } else if (groupedTransaction.isInMyFavor) {
+    } else if (currentGroupedTransaction.isInMyFavor) {
       primaryColor = Colors.green[700]!;
       backgroundColor = Colors.green[100]!;
-      title = '${groupedTransaction.userName} Owes You';
-      icon = Icons.   arrow_downward_rounded;
+      title = '${currentGroupedTransaction.userName} Owes You';
+      icon = Icons.arrow_downward_rounded;
     } else {
       primaryColor = Colors.red[700]!;
       backgroundColor = Colors.red[100]!;
-      title = 'You Owe ${groupedTransaction.userName}';
+      title = 'You Owe ${currentGroupedTransaction.userName}';
       icon = Icons.arrow_upward_rounded;
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(groupedTransaction.userName),
+        title: Text(currentGroupedTransaction.userName),
         centerTitle: true,
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
@@ -80,10 +140,10 @@ class GroupedDebtDetailPage extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 8.h),
-                if (!groupedTransaction.isSettled)
+                if (!currentGroupedTransaction.isSettled)
                   Text(
                     currencyService.formatAmount(
-                      groupedTransaction.absoluteNetAmount,
+                      currentGroupedTransaction.absoluteNetAmount,
                     ),
                     style: TextStyle(
                       fontSize: 32.sp,
@@ -102,7 +162,7 @@ class GroupedDebtDetailPage extends StatelessWidget {
                   ),
                 SizedBox(height: 8.h),
                 Text(
-                  '${groupedTransaction.transactions.length} transaction${groupedTransaction.transactions.length == 1 ? '' : 's'}',
+                  '${currentGroupedTransaction.transactions.length} transaction${currentGroupedTransaction.transactions.length == 1 ? '' : 's'}',
                   style: TextStyle(fontSize: 14.sp, color: primaryColor),
                 ),
                 SizedBox(height: 16.h),
@@ -111,7 +171,7 @@ class GroupedDebtDetailPage extends StatelessWidget {
                   children: [
                     _buildSummaryItem(
                       'You Owe',
-                      groupedTransaction.totalIOwe,
+                      currentGroupedTransaction.totalIOwe,
                       Colors.red[700]!,
                     ),
                     Container(
@@ -121,7 +181,7 @@ class GroupedDebtDetailPage extends StatelessWidget {
                     ),
                     _buildSummaryItem(
                       'Owes You',
-                      groupedTransaction.totalOwesMe,
+                      currentGroupedTransaction.totalOwesMe,
                       Colors.green[700]!,
                     ),
                   ],
@@ -160,10 +220,10 @@ class GroupedDebtDetailPage extends StatelessWidget {
                 Expanded(
                   child: ListView.builder(
                     padding: EdgeInsets.symmetric(horizontal: 16.w),
-                    itemCount: groupedTransaction.transactions.length,
+                    itemCount: currentGroupedTransaction.transactions.length,
                     itemBuilder: (context, index) {
                       final transaction =
-                          groupedTransaction.transactions[index];
+                          currentGroupedTransaction.transactions[index];
                       return TransactionListItem(
                         transaction: transaction,
                         onTap:
@@ -184,7 +244,7 @@ class GroupedDebtDetailPage extends StatelessWidget {
         onPressed: () => _addNewTransactionForUser(context),
         backgroundColor: primaryColor,
         child: Icon(Icons.add, color: Colors.white),
-        tooltip: 'Add Transaction for ${groupedTransaction.userName}',
+        tooltip: 'Add Transaction for ${currentGroupedTransaction.userName}',
       ),
     );
   }
@@ -231,8 +291,9 @@ class GroupedDebtDetailPage extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder:
-            (context) =>
-                AddTransactionPage(prefilledName: groupedTransaction.userName),
+            (context) => AddTransactionPage(
+              prefilledName: currentGroupedTransaction.userName,
+            ),
       ),
     );
   }

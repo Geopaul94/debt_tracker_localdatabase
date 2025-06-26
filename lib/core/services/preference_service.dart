@@ -53,7 +53,7 @@ class PreferenceService {
     if (installDate == null) return false;
 
     final daysSinceInstall = DateTime.now().difference(installDate).inDays;
-    return daysSinceInstall >= 7;
+    return daysSinceInstall >= 0;
   }
 
   Future<bool> areAdsEnabled() async {
@@ -64,14 +64,7 @@ class PreferenceService {
     await _prefs?.setBool(_adsEnabledKey, enabled);
   }
 
-  // Sample data methods
-  Future<bool> isSampleDataAdded() async {
-    return _prefs?.getBool(_sampleDataAddedKey) ?? false;
-  }
-
-  Future<void> setSampleDataAdded() async {
-    await _prefs?.setBool(_sampleDataAddedKey, true);
-  }
+  
 
   Future<void> removeSampleDataFlag() async {
     await _prefs?.setBool(_sampleDataAddedKey, false);

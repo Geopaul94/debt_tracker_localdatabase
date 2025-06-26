@@ -36,7 +36,7 @@ class GroupedTransactionListItem extends StatelessWidget {
     } else if (groupedTransaction.isInMyFavor) {
       backgroundColor = Colors.green[100]!;
       iconColor = Colors.green[700]!;
-      icon = Icons.  arrow_downward_rounded;
+      icon = Icons.arrow_downward_rounded;
       amountPrefix = '+';
       statusText = 'Owes you';
     } else {
@@ -69,17 +69,23 @@ class GroupedTransactionListItem extends StatelessWidget {
             SizedBox(height: 4.h),
             Row(
               children: [
-                Text(
-                  statusText,
-                  style: TextStyle(
-                    color: iconColor,
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
+                Flexible(
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      color: iconColor,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Text(
-                  ' • ${dateFormat.format(groupedTransaction.lastTransactionDate)}',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12.sp),
+                Flexible(
+                  child: Text(
+                    ' • ${dateFormat.format(groupedTransaction.lastTransactionDate)}',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12.sp),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -107,7 +113,6 @@ class GroupedTransactionListItem extends StatelessWidget {
                   color: iconColor,
                 ),
               ),
- 
           ],
         ),
       ),

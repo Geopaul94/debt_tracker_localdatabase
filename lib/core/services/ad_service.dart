@@ -14,17 +14,20 @@ class AdService {
   // Use Test Ad Unit IDs for debugging - replace with real ones for production
   static final String _bannerAdUnitId =
       Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/6300978111' // Test Banner Ad ID
+          //   ? 'ca-app-pub-3940256099942544/6300978111' // Test Banner Ad ID
+          ? 'ca-app-pub-5835078496383561/9814827520'
           : 'ca-app-pub-3940256099942544/2934735716'; // Test Banner Ad ID (iOS)
 
   static final String _interstitialAdUnitId =
       Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/1033173712' // Test Interstitial Ad ID
+          //   ? 'ca-app-pub-3940256099942544/1033173712' // Test Interstitial Ad ID
+          ? 'ca-app-pub-5835078496383561/3282058826'
           : 'ca-app-pub-3940256099942544/4411468910'; // Test Interstitial Ad ID (iOS)
 
   static final String _rewardedAdUnitId =
       Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/5224354917' // Test Rewarded Ad ID
+          //  ? 'ca-app-pub-3940256099942544/5224354917' // Test Rewarded Ad ID
+          ? 'ca-app-pub-5835078496383561/6447278212'
           : 'ca-app-pub-3940256099942544/1712485313'; // Test Rewarded Ad ID (iOS)
 
   Future<void> initialize() async {

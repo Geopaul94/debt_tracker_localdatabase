@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
 import '../../core/services/currency_service.dart';
-import '../../core/services/preference_service.dart';
 import '../../injection/injection_container.dart';
 import '../bloc/transacton_bloc/transaction_bloc.dart';
 import '../bloc/transacton_bloc/transaction_event.dart';
@@ -11,7 +9,7 @@ import '../bloc/currency_bloc/currency_bloc.dart';
 import '../bloc/currency_bloc/currency_event.dart';
 import '../bloc/currency_bloc/currency_state.dart';
 import 'currency_selection_page.dart';
-import 'first_time_setup_page.dart';
+
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -33,7 +31,7 @@ class SettingsPage extends StatelessWidget {
             SizedBox(height: 24.h),
 
             _buildSectionHeader('Data Management'),
-            _buildSampleDataTile(context),
+        
             _buildClearDataTile(context),
 
             SizedBox(height: 24.h),
@@ -149,24 +147,7 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSampleDataTile(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: Container(
-          width: 40.w,
-          height: 40.w,
-          decoration: BoxDecoration(
-            color: Colors.blue[100],
-            borderRadius: BorderRadius.circular(8.r),
-          ),
-          child: Icon(Icons.data_usage, color: Colors.blue[600]),
-        ),
-        title: Text('Add Sample Data'),
-        subtitle: Text('Add some sample transactions to try the app'),
-        trailing: Icon(Icons.chevron_right),
-        onTap: () => _showSampleDataDialog(context),
-      ),
-    );
+
   }
 
   Widget _buildClearDataTile(BuildContext context) {
@@ -277,4 +258,3 @@ class SettingsPage extends StatelessWidget {
   void _showAppInfoDialog() {
     // You can implement this to show app information
   }
-}

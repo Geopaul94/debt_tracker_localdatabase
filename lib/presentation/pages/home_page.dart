@@ -156,7 +156,7 @@ class _HomePageState extends State<HomePage> {
                   _showInterstitialAd();
                 }
 
-                // Reload transactions after successful operation
+                // Force reload to ensure immediate UI update
                 context.read<TransactionBloc>().add(LoadTransactionsEvent());
               }
             },
@@ -452,7 +452,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
- 
   void _navigateToSettings() {
     Navigator.of(
       context,

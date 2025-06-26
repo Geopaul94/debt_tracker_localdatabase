@@ -8,6 +8,7 @@ import '../../core/services/currency_service.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../bloc/transacton_bloc/transaction_bloc.dart';
 import '../bloc/transacton_bloc/transaction_event.dart';
+import '../bloc/transacton_bloc/transaction_state.dart';
 import '../widgets/ad_banner_widget.dart';
 
 class AddTransactionPage extends StatefulWidget {
@@ -65,167 +66,184 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Transaction' : 'Add New Transaction'),
-        actions:
-            _isEditing
-                ? [
-                  IconButton(
-                    icon: Icon(Icons.delete),
-                    onPressed: _showDeleteConfirmation,
-                    tooltip: 'Delete Transaction',
+    return BlocListener<TransactionBloc, TransactionState>(
+      listener: (context, state) {
+        if (state is TransactionOperationSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.of(context).pop();
+        } else if (state is TransactionError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_isEditing ? 'Edit Transaction' : 'Add New Transaction'),
+          actions:
+              _isEditing
+                  ? [
+                    IconButton(
+                      icon: Icon(Icons.delete),
+                      onPressed: _showDeleteConfirmation,
+                      tooltip: 'Delete Transaction',
+                    ),
+                  ]
+                  : null,
+        ),
+        body: Padding(
+          padding: EdgeInsets.all(20.w),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: <Widget>[
+                TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Name',
+                    prefixIcon: Icon(Icons.person),
                   ),
-                ]
-                : null,
-      ),
-      body: Padding(
-        padding: EdgeInsets.all(20.w),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: <Widget>[
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: 'Name',
-                  prefixIcon: Icon(Icons.person),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a name.';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a name.';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 20.h),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: InputDecoration(
-                  labelText: 'Description',
-                  prefixIcon: Icon(Icons.description),
+                SizedBox(height: 20.h),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: InputDecoration(
+                    labelText: 'Description',
+                    prefixIcon: Icon(Icons.description),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a description.';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a description.';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 20.h),
-              TextFormField(
-                controller: _amountController,
-                decoration: InputDecoration(
-                  labelText: CurrencyService.instance.getAmountPlaceholder(),
-                  prefixIcon: Icon(Icons.attach_money),
+                SizedBox(height: 20.h),
+                TextFormField(
+                  controller: _amountController,
+                  decoration: InputDecoration(
+                    labelText: CurrencyService.instance.getAmountPlaceholder(),
+                    prefixIcon: Icon(Icons.attach_money),
+                  ),
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter an amount.';
+                    }
+                    if (double.tryParse(value) == null) {
+                      return 'Please enter a valid number.';
+                    }
+                    if (double.parse(value) <= 0) {
+                      return 'Please enter an amount greater than zero.';
+                    }
+                    return null;
+                  },
                 ),
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter an amount.';
-                  }
-                  if (double.tryParse(value) == null) {
-                    return 'Please enter a valid number.';
-                  }
-                  if (double.parse(value) <= 0) {
-                    return 'Please enter an amount greater than zero.';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 20.h),
-              DropdownButtonFormField<TransactionType>(
-                value: _selectedType,
-                decoration: InputDecoration(
-                  labelText: 'Transaction Type',
-                  prefixIcon: Icon(Icons.swap_horiz),
+                SizedBox(height: 20.h),
+                DropdownButtonFormField<TransactionType>(
+                  value: _selectedType,
+                  decoration: InputDecoration(
+                    labelText: 'Transaction Type',
+                    prefixIcon: Icon(Icons.swap_horiz),
+                  ),
+                  items:
+                      TransactionType.values.map((type) {
+                        return DropdownMenuItem(
+                          value: type,
+                          child: Row(
+                            children: [
+                              Icon(
+                                type == TransactionType.iOwe
+                                    ? Icons.arrow_upward
+                                    : Icons.arrow_downward,
+                                color:
+                                    type == TransactionType.iOwe
+                                        ? Colors.red
+                                        : Colors.green,
+                                size: 16,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                type == TransactionType.iOwe
+                                    ? 'I Owe (Debit)'
+                                    : 'Owes Me (Credit)',
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedType = newValue!;
+                    });
+                  },
                 ),
-                items:
-                    TransactionType.values.map((type) {
-                      return DropdownMenuItem(
-                        value: type,
-                        child: Row(
-                          children: [
-                            Icon(
-                              type == TransactionType.iOwe
-                                  ? Icons.arrow_upward
-                                  : Icons.arrow_downward,
-                              color:
-                                  type == TransactionType.iOwe
-                                      ? Colors.red
-                                      : Colors.green,
-                              size: 16,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              type == TransactionType.iOwe
-                                  ? 'I Owe (Debit)'
-                                  : 'Owes Me (Credit)',
-                            ),
-                          ],
+                SizedBox(height: 20.h),
+                Card(
+                  child: ListTile(
+                    leading: Icon(Icons.calendar_today),
+                    title: Text('Transaction Date'),
+                    subtitle: Text(
+                      _selectedDate == null
+                          ? 'No Date Chosen!'
+                          : DateFormat.yMMMd().add_jm().format(_selectedDate!),
+                    ),
+                    trailing: TextButton(
+                      onPressed: _presentDatePicker,
+                      child: Text(
+                        'Choose Date',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).primaryColor,
                         ),
-                      );
-                    }).toList(),
-                onChanged: (newValue) {
-                  setState(() {
-                    _selectedType = newValue!;
-                  });
-                },
-              ),
-              SizedBox(height: 20.h),
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.calendar_today),
-                  title: Text('Transaction Date'),
-                  subtitle: Text(
-                    _selectedDate == null
-                        ? 'No Date Chosen!'
-                        : DateFormat.yMMMd().add_jm().format(_selectedDate!),
-                  ),
-                  trailing: TextButton(
-                    onPressed: _presentDatePicker,
-                    child: Text(
-                      'Choose Date',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).primaryColor,
                       ),
                     ),
                   ),
                 ),
-              ),
-              SizedBox(height: 20.h),
+                SizedBox(height: 20.h),
 
-              // Ad Banner in unused space
-              AdBannerWidget(margin: EdgeInsets.symmetric(vertical: 16.h)),
+                // Ad Banner in unused space
+                AdBannerWidget(margin: EdgeInsets.symmetric(vertical: 16.h)),
 
-              SizedBox(height: 20.h),
-              ElevatedButton.icon(
-                onPressed: _submitData,
-                icon: Icon(_isEditing ? Icons.save : Icons.add),
-                label: Text(
-                  _isEditing ? 'Update Transaction' : 'Add Transaction',
-                ),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 15.h),
-                ),
-              ),
-              if (_isEditing) ...[
-                SizedBox(height: 16.h),
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: Icon(Icons.cancel),
-                  label: Text('Cancel'),
-                  style: OutlinedButton.styleFrom(
+                SizedBox(height: 20.h),
+                ElevatedButton.icon(
+                  onPressed: _submitData,
+                  icon: Icon(_isEditing ? Icons.save : Icons.add),
+                  label: Text(
+                    _isEditing ? 'Update Transaction' : 'Add Transaction',
+                  ),
+                  style: ElevatedButton.styleFrom(
                     padding: EdgeInsets.symmetric(vertical: 15.h),
                   ),
                 ),
-              ],
+                if (_isEditing) ...[
+                  SizedBox(height: 16.h),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(Icons.cancel),
+                    label: Text('Cancel'),
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 15.h),
+                    ),
+                  ),
+                ],
 
-              // Additional ad space at bottom
-              SizedBox(height: 20.h),
-              AdBannerWidget(margin: EdgeInsets.only(bottom: 20.h)),
-            ],
+                // Additional ad space at bottom
+                SizedBox(height: 20.h),
+                AdBannerWidget(margin: EdgeInsets.only(bottom: 20.h)),
+              ],
+            ),
           ),
         ),
       ),
@@ -300,8 +318,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         AddTransactionEvent(transaction: transaction),
       );
     }
-
-    Navigator.of(context).pop();
   }
 
   /// Capitalizes the first letter of each word in the string
@@ -345,7 +361,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                       transactionId: widget.transactionToEdit!.id,
                     ),
                   );
-                  Navigator.of(context).pop(); // Go back to previous screen
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 child: Text('Delete', style: TextStyle(color: Colors.white)),
