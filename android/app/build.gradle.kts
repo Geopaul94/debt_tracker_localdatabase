@@ -30,12 +30,31 @@ android {
         versionName = flutter.versionName
     }
 
+    // Enable ABI splits for smaller APKs
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a")
+            isUniversalApk = false
+        }
+    }
+
     buildTypes {
         release {
-            // Enable R8 full mode
+            // Enable R8 full mode with advanced optimizations
             isMinifyEnabled = true
             isShrinkResources = true
+            
+            // Use optimized ProGuard configuration
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+
+            // Additional optimizations
+            isDebuggable = false
+            isJniDebuggable = false
+            isRenderscriptDebuggable = false
+            renderscriptOptimLevel = 3
+            isPseudoLocalesEnabled = false
 
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
@@ -43,9 +62,35 @@ android {
         }
     }
 
-    // Enable resource shrinking
+    // Enhanced resource optimization
     buildFeatures {
         buildConfig = true
+        // Disable unused features
+        aidl = false
+        renderScript = false
+        shaders = false
+    }
+
+    // Resource configuration for specific locales (reduces size)
+    android.defaultConfig.resConfigs("en", "xxhdpi")
+
+    // Packaging options to exclude unnecessary files
+    packagingOptions {
+        resources {
+            excludes += listOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/license.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt",
+                "META-INF/notice.txt",
+                "META-INF/ASL2.0",
+                "META-INF/*.kotlin_module",
+                "**/*.version",
+                "**/*.properties"
+            )
+        }
     }
 }
 

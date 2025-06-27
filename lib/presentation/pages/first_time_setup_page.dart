@@ -1,25 +1,21 @@
-import 'package:debit_tracker/presentation/pages/currency_selection_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:uuid/uuid.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/constants/currencies.dart';
-import '../../core/services/currency_service.dart';
 import '../../core/services/preference_service.dart';
-import '../../domain/entities/transaction_entity.dart';
 import '../../injection/injection_container.dart';
-import '../bloc/transacton_bloc/transaction_bloc.dart';
-import '../bloc/transacton_bloc/transaction_event.dart';
 import '../bloc/currency_bloc/currency_bloc.dart';
 import '../bloc/currency_bloc/currency_event.dart';
 import '../bloc/currency_bloc/currency_state.dart';
+import 'currency_selection_page.dart';
 
 class FirstTimeSetupPage extends StatefulWidget {
-  FirstTimeSetupPage({Key? key}) : super(key: key);
+  const FirstTimeSetupPage({Key? key}) : super(key: key);
 
   @override
-  State<FirstTimeSetupPage> createState() => _FirstTimeSetupPageState();
+  _FirstTimeSetupPageState createState() => _FirstTimeSetupPageState();
 }
 
 class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {

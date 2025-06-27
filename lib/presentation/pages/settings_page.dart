@@ -32,7 +32,7 @@ class SettingsPage extends StatelessWidget {
 
             _buildSectionHeader('Data Management'),
         
-            _buildClearDataTile(context),
+       
 
             SizedBox(height: 24.h),
 
@@ -146,29 +146,8 @@ class SettingsPage extends StatelessWidget {
       },
     );
   }
-
-
   }
 
-  Widget _buildClearDataTile(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: Container(
-          width: 40.w,
-          height: 40.w,
-          decoration: BoxDecoration(
-            color: Colors.red[100],
-            borderRadius: BorderRadius.circular(8.r),
-          ),
-          child: Icon(Icons.delete_forever, color: Colors.red[600]),
-        ),
-        title: Text('Clear All Data'),
-        subtitle: Text('Remove all transactions and reset the app'),
-        trailing: Icon(Icons.chevron_right),
-        onTap: () => _showClearDataDialog(context),
-      ),
-    );
-  }
 
   Widget _buildAppInfoTile() {
     return Card(

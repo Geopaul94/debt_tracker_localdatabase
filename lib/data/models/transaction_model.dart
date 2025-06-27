@@ -5,36 +5,50 @@ class TransactionModel extends TransactionEntity {
   final DateTime updatedAt;
 
   const TransactionModel({
-    required String id,
-    required String name,
-    required String description,
-    required double amount,
-    required TransactionType type,
-    required DateTime date,
+    required super.id,
+    required super.name,
+    required super.description,
+    required super.amount,
+    required super.type,
+    required super.date,
     required this.createdAt,
     required this.updatedAt,
-  }) : super(
-         id: id,
-         name: name,
-         description: description,
-         amount: amount,
-         type: type,
-         date: date,
-       );
+  });
 
   // Create from database Map
   factory TransactionModel.fromMap(Map<String, dynamic> map) {
     return TransactionModel(
-      id: map['id'],
-      name: map['name'],
-      description: map['description'],
-      amount: map['amount'].toDouble(),
+      id: map['id'] as String,
+      name: map['name'] as String,
+      description: map['description'] as String,
+      amount: (map['amount'] as num).toDouble(),
       type: TransactionType.values.firstWhere(
-        (e) => e.toString().split('.').last == map['type'],
+        (e) => e.toString() == 'TransactionType.${map['type']}',
+        orElse: () => TransactionType.iOwe,
       ),
-      date: DateTime.parse(map['date']),
-      createdAt: DateTime.parse(map['created_at']),
-      updatedAt: DateTime.parse(map['updated_at']),
+      date: DateTime.parse(map['date'] as String),
+      createdAt:
+          map['created_at'] != null
+              ? DateTime.parse(map['created_at'] as String)
+              : DateTime.now(),
+      updatedAt:
+          map['updated_at'] != null
+              ? DateTime.parse(map['updated_at'] as String)
+              : DateTime.now(),
+    );
+  }
+
+  // Create from TransactionEntity
+  factory TransactionModel.fromEntity(TransactionEntity entity) {
+    return TransactionModel(
+      id: entity.id,
+      name: entity.name,
+      description: entity.description,
+      amount: entity.amount,
+      type: entity.type,
+      date: entity.date,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
   }
 
@@ -52,54 +66,7 @@ class TransactionModel extends TransactionEntity {
     };
   }
 
-  // Legacy JSON methods for migration support
-  factory TransactionModel.fromJson(Map<String, dynamic> json) {
-    final now = DateTime.now();
-    return TransactionModel(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      amount: json['amount'].toDouble(),
-      type: TransactionType.values.firstWhere(
-        (e) =>
-            e.toString() == 'TransactionType.${json['type']}' ||
-            e.toString().split('.').last == json['type'],
-      ),
-      date: DateTime.parse(json['date']),
-      createdAt:
-          json['created_at'] != null ? DateTime.parse(json['created_at']) : now,
-      updatedAt:
-          json['updated_at'] != null ? DateTime.parse(json['updated_at']) : now,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-      'amount': amount,
-      'type': type.toString().split('.').last,
-      'date': date.toIso8601String(),
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-    };
-  }
-
-  factory TransactionModel.fromEntity(TransactionEntity entity) {
-    final now = DateTime.now();
-    return TransactionModel(
-      id: entity.id,
-      name: entity.name,
-      description: entity.description,
-      amount: entity.amount,
-      type: entity.type,
-      date: entity.date,
-      createdAt: now,
-      updatedAt: now,
-    );
-  }
-
+  // Convert to TransactionEntity
   TransactionEntity toEntity() {
     return TransactionEntity(
       id: id,
@@ -111,7 +78,7 @@ class TransactionModel extends TransactionEntity {
     );
   }
 
-  // Create a copy with updated fields
+  @override
   TransactionModel copyWith({
     String? id,
     String? name,
@@ -132,5 +99,37 @@ class TransactionModel extends TransactionEntity {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
     );
+  }
+
+  @override
+  String toString() {
+    return 'TransactionModel(id: $id, name: $name, description: $description, amount: $amount, type: $type, date: $date, createdAt: $createdAt, updatedAt: $updatedAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is TransactionModel &&
+        other.id == id &&
+        other.name == name &&
+        other.description == description &&
+        other.amount == amount &&
+        other.type == type &&
+        other.date == date &&
+        other.createdAt == createdAt &&
+        other.updatedAt == updatedAt;
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^
+        name.hashCode ^
+        description.hashCode ^
+        amount.hashCode ^
+        type.hashCode ^
+        date.hashCode ^
+        createdAt.hashCode ^
+        updatedAt.hashCode;
   }
 }

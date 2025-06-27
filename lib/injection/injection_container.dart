@@ -33,8 +33,6 @@ Future<void> initializeDependencies() async {
     // Initialize AdMob
     try {
       await AdService.instance.initialize();
-      await AdService.instance.loadInterstitialAd();
-      await AdService.instance.loadRewardedAd(); // Preload rewarded ads
       print('AdMob initialized successfully');
     } catch (e) {
       print('AdMob initialization error: $e');
@@ -96,6 +94,6 @@ Future<void> initializeDependencies() async {
     print('Dependencies initialized successfully');
   } catch (e) {
     print('Error initializing dependencies: $e');
-    throw e; // Re-throw to let main.dart handle it
+    rethrow; // Re-throw to let main.dart handle it
   }
 }

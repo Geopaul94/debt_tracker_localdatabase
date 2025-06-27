@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -24,21 +25,81 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int _transactionAddCount = 0;
   bool _isPremiumUnlocked = false;
   DateTime? _adFreeUntil;
   late CurrencyBloc _currencyBloc;
+  bool _hasShownAppOpenAd = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currencyBloc =
         serviceLocator<CurrencyBloc>()..add(LoadCurrentCurrencyEvent());
+
+    // Track app session for dummy data management
+    _trackAppSession();
+
+    // Initialize ads in background after data loading
+    _initializeAdsInBackground();
+  }
+
+  // Track app session for dummy data management
+  Future<void> _trackAppSession() async {
+    try {
+      await PreferenceService.instance.incrementAppSession();
+      print('App session tracked');
+    } catch (e) {
+      print('Error tracking app session: $e');
+    }
+  }
+
+  // Initialize ads in background to avoid blocking UI
+  Future<void> _initializeAdsInBackground() async {
+    // Wait for a short delay to let the UI render first
+    await Future.delayed(Duration(milliseconds: 500));
+
+    try {
+      // Initialize ad service asynchronously
+      await AdService.instance.initialize();
+      print('Ads initialized in background');
+    } catch (e) {
+      print('Error initializing ads: $e');
+    }
+  }
+
+  // Handle app lifecycle changes for app open ads
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.resumed && !_hasShownAppOpenAd) {
+      _showAppOpenAdIfNeeded();
+    }
+  }
+
+  Future<void> _showAppOpenAdIfNeeded() async {
+    if (_hasShownAppOpenAd) return;
+
+    try {
+      final success = await AdService.instance.showAppOpenAd();
+      if (success) {
+        _hasShownAppOpenAd = true;
+        // Reset flag after some time to allow showing again later
+        Timer(Duration(minutes: 30), () {
+          _hasShownAppOpenAd = false;
+        });
+      }
+    } catch (e) {
+      print('Error showing app open ad: $e');
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _currencyBloc.close();
     super.dispose();
   }

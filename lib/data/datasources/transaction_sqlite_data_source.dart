@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 import '../../core/database/database_helper.dart';
+import '../../core/services/preference_service.dart';
 import '../models/transaction_model.dart';
 import '../../domain/entities/transaction_entity.dart';
-
 
 abstract class TransactionSQLiteDataSource {
   Future<List<TransactionModel>> getAllTransactions();
@@ -21,6 +21,10 @@ abstract class TransactionSQLiteDataSource {
   );
   Future<List<TransactionModel>> searchTransactions(String query);
   Future<Map<String, double>> getTransactionSummary();
+
+  // Dummy data management
+  Future<void> cleanupDummyDataIfNeeded();
+  Future<void> addDummyDataIfNeeded();
 }
 
 class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
@@ -28,6 +32,13 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
   StreamController<List<TransactionModel>> _transactionController =
       StreamController<List<TransactionModel>>.broadcast();
   bool _isInitialized = false;
+
+  // Dummy transaction IDs for identification
+  static const List<String> _dummyTransactionIds = [
+    'dummy_1',
+    'dummy_2',
+    'dummy_3',
+  ];
 
   TransactionSQLiteDataSourceImpl({required DatabaseHelper databaseHelper})
     : _databaseHelper = databaseHelper;
@@ -38,81 +49,124 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
     if (_isInitialized) return;
 
     try {
-      // Initialize database schema only, don't add sample data yet
+      // Initialize database schema only
       await _databaseHelper.database;
       _isInitialized = true;
 
-      // Now safely initialize sample data
-      await _initializeSampleDataSafely();
+      // Add dummy data if needed and clean up if necessary
+      await addDummyDataIfNeeded();
+      await cleanupDummyDataIfNeeded();
     } catch (e) {
       print('Database initialization error: $e');
-      // Continue without sample data
       _isInitialized = true;
     }
   }
 
-  Future<void> _initializeSampleDataSafely() async {
+  @override
+  Future<void> addDummyDataIfNeeded() async {
     try {
-      // Check if we already have data without going through getAllTransactions
       final db = await _databaseHelper.database;
       final result = await db.rawQuery(
         'SELECT COUNT(*) as count FROM $_tableName',
       );
       final count = result.first['count'] as int? ?? 0;
+      final hasDummyData = await PreferenceService.instance.hasDummyData();
 
-      if (count == 0) {
-        // Add sample data on first run
-        final sampleTransactions = [
-          TransactionModel(
-            id: 't1',
-            name: "John Doe",
-            description: 'Lunch with Sarah',
-            amount: 15.50,
-            type: TransactionType.iOwe,
-            date: DateTime.now().subtract(Duration(days: 2)),
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-          TransactionModel(
-            id: 't2',
-            name: "Alice Smith",
-            description: 'Project payment from Client X',
-            amount: 250.00,
-            type: TransactionType.owesMe,
-            date: DateTime.now().subtract(Duration(days: 1)),
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-          TransactionModel(
-            id: 't3',
-            name: "Bob Wilson",
-            description: 'Movie tickets',
-            amount: 22.00,
-            type: TransactionType.iOwe,
-            date: DateTime.now(),
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-        ];
+      // Add dummy data only if no transactions exist and no dummy data flag is set
+      if (count == 0 && !hasDummyData) {
+        final dummyTransactions = _createDummyTransactions();
 
-        // Insert directly without using saveTransaction to avoid _ensureInitialized loop
-        for (final transaction in sampleTransactions) {
+        for (final transaction in dummyTransactions) {
           await db.insert(
             _tableName,
             transaction.toMap(),
             conflictAlgorithm: ConflictAlgorithm.replace,
           );
         }
+
+        // Mark that we have dummy data
+        await PreferenceService.instance.setHasDummyData(true);
+        print('Dummy data added for new user experience');
       }
     } catch (e) {
-      print('Error initializing sample data: $e');
-      // Don't throw - let the app continue without sample data
+      print('Error adding dummy data: $e');
     }
+  }
+
+  @override
+  Future<void> cleanupDummyDataIfNeeded() async {
+    try {
+      final shouldCleanup =
+          await PreferenceService.instance.shouldCleanupDummyData();
+
+      if (shouldCleanup) {
+        await _removeDummyTransactions();
+        await PreferenceService.instance.resetDummyDataFlags();
+        print('Dummy data cleaned up');
+      }
+    } catch (e) {
+      print('Error cleaning up dummy data: $e');
+    }
+  }
+
+  List<TransactionModel> _createDummyTransactions() {
+    final now = DateTime.now();
+    return [
+      TransactionModel(
+        id: 'dummy_1',
+        name: "Sample Transaction 1",
+        description: 'Lunch at cafe (Sample)',
+        amount: 25.50,
+        type: TransactionType.iOwe,
+        date: now.subtract(Duration(days: 3)),
+        createdAt: now,
+        updatedAt: now,
+      ),
+      TransactionModel(
+        id: 'dummy_2',
+        name: "Sample Transaction 2",
+        description: 'Freelance project payment (Sample)',
+        amount: 150.00,
+        type: TransactionType.owesMe,
+        date: now.subtract(Duration(days: 1)),
+        createdAt: now,
+        updatedAt: now,
+      ),
+      TransactionModel(
+        id: 'dummy_3',
+        name: "Sample Transaction 3",
+        description: 'Movie tickets (Sample)',
+        amount: 18.00,
+        type: TransactionType.iOwe,
+        date: now,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    ];
+  }
+
+  Future<void> _removeDummyTransactions() async {
+    try {
+      final db = await _databaseHelper.database;
+
+      for (final dummyId in _dummyTransactionIds) {
+        await db.delete(_tableName, where: 'id = ?', whereArgs: [dummyId]);
+      }
+
+      _notifyListeners();
+    } catch (e) {
+      print('Error removing dummy transactions: $e');
+    }
+  }
+
+  Future<void> _initializeSampleDataSafely() async {
+    // This method is now replaced by addDummyDataIfNeeded
+    // Keeping for backward compatibility
   }
 
   Future<void> _initializeSampleData() async {
     // This method is now deprecated, keeping for backward compatibility
-    // The actual initialization is done in _initializeSampleDataSafely
+    // The actual initialization is done in addDummyDataIfNeeded
   }
 
   @override
@@ -129,7 +183,7 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
       return maps.map((map) => TransactionModel.fromMap(map)).toList();
     } catch (e) {
       print('Error getting all transactions: $e');
-      return [];
+      rethrow;
     }
   }
 
@@ -162,6 +216,17 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
 
     try {
       final db = await _databaseHelper.database;
+
+      // Check if this is the user's first real transaction
+      final hasRealTransaction =
+          await PreferenceService.instance.hasRealTransaction();
+      if (!hasRealTransaction &&
+          !_dummyTransactionIds.contains(transaction.id)) {
+        await PreferenceService.instance.setHasRealTransaction(true);
+        // Clean up dummy data when user adds first real transaction
+        await cleanupDummyDataIfNeeded();
+      }
+
       await db.insert(
         _tableName,
         transaction.toMap(),
@@ -171,7 +236,7 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
       _notifyListeners();
     } catch (e) {
       print('Error saving transaction: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -195,7 +260,7 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
       _notifyListeners();
     } catch (e) {
       print('Error updating transaction: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -210,7 +275,7 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
       _notifyListeners();
     } catch (e) {
       print('Error deleting transaction: $e');
-      throw e;
+      rethrow;
     }
   }
 
