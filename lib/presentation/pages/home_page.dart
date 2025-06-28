@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../core/services/ad_service.dart';
 import '../../core/services/preference_service.dart';
+import '../../core/services/premium_service.dart';
 import '../../domain/entities/grouped_transaction_entity.dart';
 import '../../injection/injection_container.dart';
 import '../bloc/transacton_bloc/transaction_bloc.dart';
@@ -27,8 +29,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int _transactionAddCount = 0;
-  bool _isPremiumUnlocked = false;
-  DateTime? _adFreeUntil;
   late CurrencyBloc _currencyBloc;
   bool _hasShownAppOpenAd = false;
 
@@ -38,6 +38,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _currencyBloc =
         serviceLocator<CurrencyBloc>()..add(LoadCurrentCurrencyEvent());
+
+    // Load transactions when home page opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TransactionBloc>().add(LoadTransactionsEvent());
+    });
 
     // Track app session for dummy data management
     _trackAppSession();
@@ -125,19 +130,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     case 'settings':
                       _navigateToSettings();
                       break;
-                    case 'premium':
-                      _showRewardedAdForPremium();
-                      break;
+                    // case 'premium':
+                    //   _showRewardedAdForPremium();
+                    //   break;
                     case 'ad_free':
                       _showRewardedAdForAdFree();
                       break;
-                    case 'analytics':
-                      if (_isPremiumUnlocked) {
-                        _showAdvancedAnalytics();
-                      } else {
-                        _showPremiumRequired();
-                      }
-                      break;
+                    // case 'analytics':
+                    //   _checkPremiumAndShowAnalytics();
+                    //   break;
                   }
                 },
                 itemBuilder:
@@ -152,44 +153,36 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           ],
                         ),
                       ),
-                      if (!_isPremiumUnlocked)
-                        PopupMenuItem(
-                          value: 'premium',
-                          child: Row(
-                            children: [
-                              Icon(Icons.star, color: Colors.amber),
-                              SizedBox(width: 8),
-                              Text('Unlock Premium'),
-                            ],
-                          ),
-                        ),
-                      if (!_isAdFree)
-                        PopupMenuItem(
-                          value: 'ad_free',
-                          child: Row(
-                            children: [
-                              Icon(Icons.block, color: Colors.blue),
-                              SizedBox(width: 8),
-                              Text('Remove Ads (2h)'),
-                            ],
-                          ),
-                        ),
+                      // PopupMenuItem(
+                      //   value: 'premium',
+                      //   child: Row(
+                      //     children: [
+                      //       Icon(Icons.star, color: Colors.amber),
+                      //       SizedBox(width: 8),
+                      //       Text('Unlock Premium'),
+                      //     ],
+                      //   ),
+                      // ),
                       PopupMenuItem(
-                        value: 'analytics',
+                        value: 'ad_free',
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.analytics,
-                              color:
-                                  _isPremiumUnlocked
-                                      ? Colors.green
-                                      : Colors.grey,
-                            ),
+                            Icon(Icons.block, color: Colors.blue),
                             SizedBox(width: 8),
-                            Text('Advanced Analytics'),
+                            Text('Remove Ads (2h)'),
                           ],
                         ),
                       ),
+                      // PopupMenuItem(
+                      //   value: 'analytics',
+                      //   child: Row(
+                      //     children: [
+                      //       Icon(Icons.analytics, color: Colors.grey[600]),
+                      //       SizedBox(width: 8),
+                      //       Text('Advanced Analytics'),
+                      //     ],
+                      //   ),
+                      // ),
                     ],
               ),
             ],
@@ -222,6 +215,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               }
             },
             builder: (context, state) {
+              // Handle initial state by triggering load
               if (state is TransactionInitial) {
                 context.read<TransactionBloc>().add(LoadTransactionsEvent());
                 return Center(child: CircularProgressIndicator());
@@ -230,16 +224,41 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               } else if (state is TransactionLoaded) {
                 return _buildLoadedState(context, state);
               } else if (state is TransactionError) {
-                return _buildErrorState(context, state);
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, size: 64, color: Colors.red),
+                      SizedBox(height: 16),
+                      Text(
+                        'Failed to load transactions',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(state.message),
+                      SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          context.read<TransactionBloc>().add(
+                            LoadTransactionsEvent(),
+                          );
+                        },
+                        child: Text('Retry'),
+                      ),
+                    ],
+                  ),
+                );
               }
-
               return Center(child: CircularProgressIndicator());
             },
           ),
           floatingActionButton: FloatingActionButton(
-            onPressed: () => _navigateToAddTransaction(context),
-            child: Icon(Icons.add),
-            tooltip: 'Add Transaction',
+            onPressed: () => _navigateToAddTransaction(),
+            backgroundColor: Colors.teal,
+            child: Icon(Icons.add, color: Colors.white),
           ),
         ),
       ),
@@ -257,12 +276,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
           // Add banner ad after summary card (only if not ad-free and after 7 days)
           FutureBuilder<bool>(
-            future: PreferenceService.instance.shouldShowAds(),
+            future: _shouldShowBannerAd(),
             builder: (context, snapshot) {
-              final shouldShowAds = snapshot.data ?? false;
-              return shouldShowAds && !_isAdFree
-                  ? AdBannerWidget()
-                  : SizedBox.shrink();
+              final shouldShowAd = snapshot.data ?? false;
+              return shouldShowAd ? AdBannerWidget() : SizedBox.shrink();
             },
           ),
           state.groupedTransactions.isEmpty
@@ -278,13 +295,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   // Insert another banner ad after every 5 transactions
                   if (index > 0 &&
                       index % 6 == 5 &&
-                      state.groupedTransactions.length > 5 &&
-                      !_isAdFree) {
+                      state.groupedTransactions.length > 5) {
                     return FutureBuilder<bool>(
-                      future: PreferenceService.instance.shouldShowAds(),
+                      future: _shouldShowBannerAd(),
                       builder: (context, snapshot) {
-                        final shouldShowAds = snapshot.data ?? false;
-                        return shouldShowAds
+                        final shouldShowAd = snapshot.data ?? false;
+                        return shouldShowAd
                             ? AdBannerWidget(
                               margin: EdgeInsets.symmetric(vertical: 16.h),
                             )
@@ -318,6 +334,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          SizedBox(height: 100.h),
           Icon(
             Icons.account_balance_wallet_outlined,
             size: 64.sp,
@@ -343,68 +360,85 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, TransactionError state) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64.sp, color: Colors.red[400]),
-          SizedBox(height: 16.h),
-          Text(
-            'Something went wrong',
-            style: TextStyle(
-              fontSize: 18.sp,
-              color: Colors.red[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            state.message,
-            style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 24.h),
-          ElevatedButton(
-            onPressed: () {
-              context.read<TransactionBloc>().add(LoadTransactionsEvent());
-            },
-            child: Text('Try Again'),
-          ),
-        ],
-      ),
-    );
+  // Helper method to safely check if PremiumService is available
+  bool _isPremiumServiceAvailable() {
+    try {
+      serviceLocator<PremiumService>();
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
-  void _navigateToAddTransaction(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (newContext) => AddTransactionPage()));
+  // Helper method to determine if banner ads should be shown
+  Future<bool> _shouldShowBannerAd() async {
+    try {
+      final shouldShowAds = await PreferenceService.instance.shouldShowAds();
+
+      if (_isPremiumServiceAvailable()) {
+        final isAdFree = await serviceLocator<PremiumService>().isAdFree();
+        return shouldShowAds && !isAdFree;
+      } else {
+        // If PremiumService not available, just check preference service
+        return shouldShowAds;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error checking ad-free status: $e');
+      }
+      // Fallback to only checking preference service
+      return await PreferenceService.instance.shouldShowAds();
+    }
   }
 
   Future<void> _showInterstitialAd() async {
     try {
       await AdService.instance.showInterstitialAd();
     } catch (e) {
-      print('Error showing interstitial ad: $e');
+      if (kDebugMode) {
+        print('Error showing interstitial ad: $e');
+      }
     }
   }
 
   Future<void> _showRewardedAdForPremium() async {
     try {
       await AdService.instance.showRewardedAd(
-        onUserEarnedReward: (ad, reward) {
+        onUserEarnedReward: (ad, reward) async {
           if (mounted) {
-            setState(() {
-              _isPremiumUnlocked = true;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('🎉 Premium features unlocked!'),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 3),
-              ),
-            );
+            if (_isPremiumServiceAvailable()) {
+              try {
+                await serviceLocator<PremiumService>().setPremiumUnlocked(true);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('🎉 Premium features unlocked!'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              } catch (e) {
+                if (kDebugMode) {
+                  print('Error setting premium status: $e');
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('🎉 Ad reward received!'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('🎉 Ad reward received!'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+            // Refresh the page to update UI
+            setState(() {});
           }
         },
       );
@@ -424,18 +458,39 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _showRewardedAdForAdFree() async {
     try {
       await AdService.instance.showRewardedAd(
-        onUserEarnedReward: (ad, reward) {
+        onUserEarnedReward: (ad, reward) async {
           if (mounted) {
-            setState(() {
-              _adFreeUntil = DateTime.now().add(Duration(hours: 2));
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('🚀 Ads removed for 2 hours!'),
-                backgroundColor: Colors.blue,
-                duration: Duration(seconds: 3),
-              ),
-            );
+            if (_isPremiumServiceAvailable()) {
+              try {
+                await serviceLocator<PremiumService>().setAdFreeFor2Hours();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('🚀 Ads removed for 2 hours!'),
+                    backgroundColor: Colors.blue,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              } catch (e) {
+                print('Error setting ad-free status: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('🚀 Ad reward received!'),
+                    backgroundColor: Colors.blue,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('🚀 Ad reward received!'),
+                  backgroundColor: Colors.blue,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+            // Refresh the page to update UI
+            setState(() {});
           }
         },
       );
@@ -444,73 +499,95 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  bool get _isAdFree {
-    return _adFreeUntil != null && DateTime.now().isBefore(_adFreeUntil!);
-  }
+  // Future<void> _checkPremiumAndShowAnalytics() async {
+  //   if (_isPremiumServiceAvailable()) {
+  //     try {
+  //       final isPremium =
+  //           await serviceLocator<PremiumService>().isPremiumUnlocked();
+  //       if (isPremium) {
+  //         _showAdvancedAnalytics();
+  //       } else {
+  //         _showPremiumRequired();
+  //       }
+  //     } catch (e) {
+  //       print('Error checking premium status: $e');
+  //       _showPremiumRequired();
+  //     }
+  //   } else {
+  //     // Premium service not available, show premium required
+  //     _showPremiumRequired();
+  //   }
+  // }
 
-  void _showAdvancedAnalytics() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Row(
-              children: [
-                Icon(Icons.analytics, color: Colors.green),
-                SizedBox(width: 8),
-                Text('Advanced Analytics'),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('📊 Monthly Trends'),
-                Text('📈 Spending Patterns'),
-                Text('🎯 Debt Reduction Goals'),
-                Text('📱 Export to PDF'),
-                Text('☁️ Cloud Backup'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text('Close'),
-              ),
-            ],
-          ),
-    );
-  }
+  // void _showAdvancedAnalytics() {
+  //   showDialog(
+  //     context: context,
+  //     builder:
+  //         (context) => AlertDialog(
+  //           title: Row(
+  //             children: [
+  //               Icon(Icons.analytics, color: Colors.green),
+  //               SizedBox(width: 8),
+  //               Text('Advanced Analytics'),
+  //             ],
+  //           ),
+  //           content: Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               Text('📊 Monthly Trends'),
+  //               Text('📈 Spending Patterns'),
+  //               Text('🎯 Debt Reduction Goals'),
+  //               Text('📱 Export to PDF'),
+  //               Text('☁️ Cloud Backup'),
+  //             ],
+  //           ),
+  //           actions: [
+  //             TextButton(
+  //               onPressed: () => Navigator.of(context).pop(),
+  //               child: Text('Close'),
+  //             ),
+  //           ],
+  //         ),
+  //   );
+  // }
 
-  void _showPremiumRequired() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Row(
-              children: [
-                Icon(Icons.star, color: Colors.amber),
-                SizedBox(width: 8),
-                Text('Premium Required'),
-              ],
-            ),
-            content: Text(
-              'Watch a short ad to unlock premium features including advanced analytics, export options, and more!',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  _showRewardedAdForPremium();
-                },
-                child: Text('Watch Ad'),
-              ),
-            ],
-          ),
-    );
+  // void _showPremiumRequired() {
+  //   showDialog(
+  //     context: context,
+  //     builder:
+  //         (context) => AlertDialog(
+  //           title: Row(
+  //             children: [
+  //               Icon(Icons.star, color: Colors.amber),
+  //               SizedBox(width: 8),
+  //               Text('Premium Required'),
+  //             ],
+  //           ),
+  //           content: Text(
+  //             'Watch a short ad to unlock premium features including advanced analytics, export options, and more!',
+  //           ),
+  //           actions: [
+  //             TextButton(
+  //               onPressed: () => Navigator.of(context).pop(),
+  //               child: Text('Cancel'),
+  //             ),
+  //             ElevatedButton(
+  //               onPressed: () {
+  //                 Navigator.of(context).pop();
+  //                 _showRewardedAdForPremium();
+  //               },
+  //               child: Text('Watch Ad'),
+  //             ),
+  //           ],
+  //         ),
+  //   );
+  // }
+
+  void _navigateToAddTransaction() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => AddTransactionPage()));
   }
 
   void _navigateToSettings() {

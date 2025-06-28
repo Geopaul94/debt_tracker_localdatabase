@@ -12,6 +12,8 @@ import '../bloc/authentication/auth_bloc.dart';
 import '../bloc/authentication/auth_event.dart';
 import '../bloc/authentication/auth_state.dart';
 import 'currency_selection_page.dart';
+import 'privacy_policy_page.dart';
+import 'terms_conditions_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -44,6 +46,12 @@ class SettingsPage extends StatelessWidget {
 
             _buildSectionHeader('Biometric Authentication'),
             _buildBiometricAuthentication(),
+
+            SizedBox(height: 24.h),
+
+            _buildSectionHeader('Privacy & Legal'),
+            _buildPrivacyPolicyTile(context),
+            _buildTermsConditionsTile(context),
 
             SizedBox(height: 24.h),
 
@@ -325,6 +333,54 @@ class SettingsPage extends StatelessWidget {
           );
         }
       },
+    );
+  }
+
+  Widget _buildPrivacyPolicyTile(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: Container(
+          width: 40.w,
+          height: 40.w,
+          decoration: BoxDecoration(
+            color: Colors.blue[100],
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: Icon(Icons.privacy_tip, color: Colors.blue[600]),
+        ),
+        title: Text('Privacy Policy'),
+        subtitle: Text('View our privacy policy and data usage'),
+        trailing: Icon(Icons.chevron_right),
+        onTap: () {
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (context) => PrivacyPolicyPage()));
+        },
+      ),
+    );
+  }
+
+  Widget _buildTermsConditionsTile(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: Container(
+          width: 40.w,
+          height: 40.w,
+          decoration: BoxDecoration(
+            color: Colors.green[100],
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: Icon(Icons.description, color: Colors.green[600]),
+        ),
+        title: Text('Terms & Conditions'),
+        subtitle: Text('View our terms of service and usage agreement'),
+        trailing: Icon(Icons.chevron_right),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => TermsConditionsPage()),
+          );
+        },
+      ),
     );
   }
 }

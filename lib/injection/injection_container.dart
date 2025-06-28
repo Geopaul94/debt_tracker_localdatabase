@@ -6,6 +6,7 @@ import '../core/database/database_helper.dart';
 import '../core/services/ad_service.dart';
 import '../core/services/currency_service.dart';
 import '../core/services/authentication_service.dart';
+import '../core/services/premium_service.dart';
 
 // Data
 import '../data/datasources/transaction_sqlite_data_source.dart';
@@ -32,6 +33,25 @@ Future<void> initializeDependencies() async {
     serviceLocator.registerLazySingleton(() => DatabaseHelper());
     serviceLocator.registerLazySingleton(() => AdService.instance);
     serviceLocator.registerLazySingleton(() => CurrencyService.instance);
+
+    // Initialize Premium Service
+    try {
+      final premiumService = await PremiumService.create();
+      serviceLocator.registerLazySingleton<PremiumService>(
+        () => premiumService,
+      );
+      if (kDebugMode) {
+        print('Premium service initialized successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Premium service initialization error: $e');
+        print(
+          'Continuing without Premium service - premium features will be disabled',
+        );
+      }
+      // Continue without premium service - the app will handle missing service gracefully
+    }
 
     // Initialize Authentication Service
     try {

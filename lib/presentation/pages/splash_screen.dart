@@ -1,175 +1,241 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../core/services/authentication_service.dart';
+import '../../core/services/currency_service.dart';
+import '../../core/services/premium_service.dart';
 import '../../core/services/preference_service.dart';
 import '../../injection/injection_container.dart';
 import '../bloc/authentication/auth_bloc.dart';
 import '../bloc/authentication/auth_event.dart';
 import '../bloc/authentication/auth_state.dart';
+import '../bloc/currency_bloc/currency_bloc.dart';
+import '../bloc/currency_bloc/currency_event.dart';
+import '../bloc/currency_bloc/currency_state.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  const SplashScreen({Key? key}) : super(key: key);
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  _SplashScreenState createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+  late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  late AuthBloc _authBloc;
+
+  // Helper method to safely check if PremiumService is available
+  bool _isPremiumServiceAvailable() {
+    try {
+      serviceLocator<PremiumService>();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _setupAnimations();
+    _checkAppState();
+  }
 
-    // Initialize the auth bloc
-    _authBloc = serviceLocator<AuthBloc>();
-
-    // Initialize the animation controller
-    _controller = AnimationController(
-      duration: const Duration(seconds: 2),
+  void _setupAnimations() {
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
 
-    // Set up animations
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
+      ),
+    );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.2, 0.8, curve: Curves.elasticOut),
+      ),
+    );
 
-    // Start animations and navigate after delay
-    _startSplashSequence();
+    _animationController.forward();
   }
 
-  void _startSplashSequence() async {
-    // Start the animation
-    _controller.forward();
+  Future<void> _checkAppState() async {
+    try {
+      // Wait for animations to start
+      await Future.delayed(const Duration(milliseconds: 1500));
 
-    // Wait for animation to complete and some extra time
-    await Future.delayed(const Duration(seconds: 3));
+      print('🔍 Checking app state...');
 
-    // Check if this is the first launch
-    if (mounted) {
+      // Check if app needs first-time setup
       final isFirstLaunch = await PreferenceService.instance.isFirstLaunch();
+      print('📱 First launch: $isFirstLaunch');
 
       if (isFirstLaunch) {
-        Navigator.of(context).pushReplacementNamed('/first-time-setup');
-      } else {
-        // Check if authentication is required
-        _authBloc.add(CheckAuthRequiredEvent());
+        print('🎯 Navigating to first-time setup');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/first-time-setup');
+        }
+        return;
       }
-    }
-  }
 
-  void _handleAuthState(AuthState state) {
-    if (!mounted) return;
+      // Check authentication requirements
+      final isAuthEnabled =
+          await serviceLocator<AuthenticationService>()
+              .isAuthenticationEnabled();
+      print('🔐 Authentication enabled: $isAuthEnabled');
 
-    if (state is AuthRequired) {
-      Navigator.of(context).pushReplacementNamed('/auth');
-    } else if (state is AuthNotRequired) {
-      Navigator.of(context).pushReplacementNamed('/home');
-    } else if (state is AuthError) {
-      // On error, assume no auth is required and go to home
-      Navigator.of(context).pushReplacementNamed('/home');
+      if (isAuthEnabled) {
+        // Check if user has premium or ad-free access to skip authentication
+        bool canSkipAuth = false;
+
+        if (_isPremiumServiceAvailable()) {
+          try {
+            canSkipAuth =
+                await serviceLocator<PremiumService>().canSkipAuthentication();
+            print('🎟️ Can skip authentication: $canSkipAuth');
+
+            if (canSkipAuth) {
+              final remainingMinutes =
+                  await serviceLocator<PremiumService>()
+                      .getRemainingAdFreeMinutes();
+              print('⏰ Ad-free minutes remaining: $remainingMinutes');
+            }
+          } catch (e) {
+            print('⚠️ Premium service error: $e');
+            canSkipAuth = false;
+          }
+        } else {
+          print('⚠️ Premium service not available');
+          canSkipAuth = false;
+        }
+
+        if (canSkipAuth) {
+          print('🎯 Skipping authentication, navigating to home');
+          if (mounted) {
+            Navigator.of(context).pushReplacementNamed('/home');
+          }
+        } else {
+          print('🔒 Authentication required, navigating to auth screen');
+          if (mounted) {
+            Navigator.of(context).pushReplacementNamed('/auth');
+          }
+        }
+      } else {
+        print('🏠 No authentication needed, navigating to home');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
+      }
+    } catch (e) {
+      print('❌ Error during app state check: $e');
+
+      // Fallback navigation
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
-    _authBloc.close();
+    _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _authBloc,
-      child: Scaffold(
-        backgroundColor: Colors.teal[50],
-        body: BlocListener<AuthBloc, AuthState>(
-          listener: (context, state) => _handleAuthState(state),
-          child: Center(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                return FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // App Icon
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            color: Colors.teal[600],
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.teal.withOpacity(0.3),
-                                spreadRadius: 3,
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.account_balance_wallet,
-                            size: 60,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // App Title
-                        const Text(
-                          'Debt Tracker',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.teal,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-
-                        // App Subtitle
-                        Text(
-                          'Track your debts and loans',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.teal[700],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 40),
-
-                        // Loading indicator
-                        SizedBox(
-                          width: 30,
-                          height: 30,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 3,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.teal[600]!,
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.teal[400]!, Colors.teal[600]!],
+          ),
+        ),
+        child: Center(
+          child: AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, child) {
+              return FadeTransition(
+                opacity: _fadeAnimation,
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // App Icon
+                      Container(
+                        width: 120.w,
+                        height: 120.w,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              spreadRadius: 4,
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
                             ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.account_balance_wallet,
+                          size: 60.sp,
+                          color: Colors.teal[600],
+                        ),
+                      ),
+
+                      SizedBox(height: 32.h),
+
+                      // App Name
+                      Text(
+                        'Debt Tracker',
+                        style: TextStyle(
+                          fontSize: 32.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+
+                      SizedBox(height: 8.h),
+
+                      // Tagline
+                      Text(
+                        'Manage Your Finances',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          color: Colors.white.withOpacity(0.8),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+
+                      SizedBox(height: 48.h),
+
+                      // Loading indicator
+                      SizedBox(
+                        width: 32.w,
+                        height: 32.w,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white.withOpacity(0.8),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),
