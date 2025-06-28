@@ -2,16 +2,17 @@
 
 import 'dart:async';
 
-import 'package:debit_tracker/domain/entities/transaction_entity.dart';
-import 'package:debit_tracker/injection/injection_container.dart';
-import 'package:debit_tracker/presentation/bloc/transacton_bloc/transaction_bloc.dart';
-import 'package:debit_tracker/presentation/pages/add_transaction_page.dart';
-import 'package:debit_tracker/presentation/pages/currency_selection_page.dart';
-import 'package:debit_tracker/presentation/pages/debt_detail_page.dart';
-import 'package:debit_tracker/presentation/pages/first_time_setup_page.dart';
-import 'package:debit_tracker/presentation/pages/home_page.dart';
-import 'package:debit_tracker/presentation/pages/splash_screen.dart';
-import 'package:debit_tracker/presentation/pages/transaction_history.dart';
+
+import 'package:debt_tracker/domain/entities/transaction_entity.dart';
+import 'package:debt_tracker/injection/injection_container.dart';
+import 'package:debt_tracker/presentation/bloc/transacton_bloc/transaction_bloc.dart';
+import 'package:debt_tracker/presentation/pages/add_transaction_page.dart';
+import 'package:debt_tracker/presentation/pages/currency_selection_page.dart';
+import 'package:debt_tracker/presentation/pages/debt_detail_page.dart';
+import 'package:debt_tracker/presentation/pages/first_time_setup_page.dart';
+import 'package:debt_tracker/presentation/pages/home_page.dart';
+import 'package:debt_tracker/presentation/pages/splash_screen.dart';
+import 'package:debt_tracker/presentation/pages/transaction_history.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';

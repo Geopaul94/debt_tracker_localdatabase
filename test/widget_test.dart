@@ -5,14 +5,14 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'package:debt_tracker/core/services/preference_service.dart';
+import 'package:debt_tracker/injection/injection_container.dart';
+import 'package:debt_tracker/presentation/pages/owetrackerapp.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get_it/get_it.dart';
-import 'package:debit_tracker/presentation/pages/owetrackerapp.dart';
-import 'package:debit_tracker/core/services/preference_service.dart';
-import 'package:debit_tracker/injection/injection_container.dart';
 
 void main() {
   group('OweTracker App Tests', () {

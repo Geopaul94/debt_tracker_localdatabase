@@ -1,5 +1,5 @@
+import 'package:debt_tracker/core/services/ad_service.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:debit_tracker/core/services/ad_service.dart';
 
 void main() {
   group('AdService Tests', () {

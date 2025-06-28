@@ -1,11 +1,10 @@
+import 'package:debt_tracker/core/services/currency_service.dart';
+import 'package:debt_tracker/domain/entities/transaction_entity.dart';
+import 'package:debt_tracker/presentation/widgets/transaction_list_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:debit_tracker/presentation/widgets/transaction_list_item.dart';
-import 'package:debit_tracker/domain/entities/transaction_entity.dart';
-import 'package:debit_tracker/core/services/currency_service.dart';
-
 void main() {
   group('TransactionListItem Widget Tests', () {
     late TransactionEntity testTransaction;

@@ -1,6 +1,6 @@
+import 'package:debt_tracker/core/services/preference_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:debit_tracker/core/services/preference_service.dart';
 
 void main() {
   group('PreferenceService Tests', () {

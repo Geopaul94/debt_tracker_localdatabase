@@ -1,4 +1,4 @@
-name: debit_tracker
+name: debt_tracker
 description: "A lightweight debt tracking application"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
