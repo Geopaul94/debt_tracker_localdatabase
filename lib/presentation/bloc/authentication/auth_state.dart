@@ -1,20 +1,31 @@
-// auth_state.dart
 abstract class AuthState {}
 
-/// Initial state when the app starts
 class AuthInitial extends AuthState {}
 
-/// State when authentication is successful
+class AuthLoading extends AuthState {}
+
+class AuthRequired extends AuthState {}
+
+class AuthNotRequired extends AuthState {}
+
 class AuthSuccess extends AuthState {}
 
-/// State when authentication fails or errors out
-class AuthFailed extends AuthState {
+class AuthEnabled extends AuthState {}
+
+class AuthDisabled extends AuthState {}
+
+class AuthError extends AuthState {
   final String message;
-  AuthFailed(this.message);
+  
+  AuthError(this.message);
 }
 
-/// State when user toggles biometric auth ON/OFF
-class AuthEnabledState extends AuthState {
+class AuthSettingsLoaded extends AuthState {
   final bool isEnabled;
-  AuthEnabledState(this.isEnabled);
+  final bool isBiometricAvailable;
+  
+  AuthSettingsLoaded({
+    required this.isEnabled,
+    required this.isBiometricAvailable,
+  });
 }

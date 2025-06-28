@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 
 // Core
 import '../core/database/database_helper.dart';
 import '../core/services/ad_service.dart';
 import '../core/services/currency_service.dart';
+import '../core/services/authentication_service.dart';
 
 // Data
 import '../data/datasources/transaction_sqlite_data_source.dart';
@@ -20,6 +22,7 @@ import '../domain/usecases/watch_transactions.dart';
 // Presentation
 import '../presentation/bloc/transacton_bloc/transaction_bloc.dart';
 import '../presentation/bloc/currency_bloc/currency_bloc.dart';
+import '../presentation/bloc/authentication/auth_bloc.dart';
 
 final serviceLocator = GetIt.instance;
 
@@ -30,21 +33,45 @@ Future<void> initializeDependencies() async {
     serviceLocator.registerLazySingleton(() => AdService.instance);
     serviceLocator.registerLazySingleton(() => CurrencyService.instance);
 
+    // Initialize Authentication Service
+    try {
+      final authService = await AuthenticationService.create();
+      serviceLocator.registerLazySingleton<AuthenticationService>(
+        () => authService,
+      );
+      if (kDebugMode) {
+        print('Authentication service initialized successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Authentication service initialization error: $e');
+      }
+      // Continue without authentication
+    }
+
     // Initialize AdMob
     try {
       await AdService.instance.initialize();
-      print('AdMob initialized successfully');
+      if (kDebugMode) {
+        print('AdMob initialized successfully');
+      }
     } catch (e) {
-      print('AdMob initialization error: $e');
+      if (kDebugMode) {
+        print('AdMob initialization error: $e');
+      }
       // Continue without ads
     }
 
     // Initialize Currency Service
     try {
       await CurrencyService.instance.initialize();
-      print('Currency service initialized successfully');
+      if (kDebugMode) {
+        print('Currency service initialized successfully');
+      }
     } catch (e) {
-      print('Currency service initialization error: $e');
+      if (kDebugMode) {
+        print('Currency service initialization error: $e');
+      }
       // Continue with default currency
     }
 
@@ -91,9 +118,18 @@ Future<void> initializeDependencies() async {
       () => CurrencyBloc(currencyService: serviceLocator()),
     );
 
-    print('Dependencies initialized successfully');
+    // Authentication BLoC
+    serviceLocator.registerFactory(
+      () => AuthBloc(authenticationService: serviceLocator()),
+    );
+
+    if (kDebugMode) {
+      print('Dependencies initialized successfully');
+    }
   } catch (e) {
-    print('Error initializing dependencies: $e');
+    if (kDebugMode) {
+      print('Error initializing dependencies: $e');
+    }
     rethrow; // Re-throw to let main.dart handle it
   }
 }

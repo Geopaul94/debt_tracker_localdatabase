@@ -1,5 +1,6 @@
 
 import 'package:debt_tracker/presentation/pages/owetrackerapp.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'injection/injection_container.dart';
@@ -12,22 +13,34 @@ void main() async {
   // Initialize AdMob early
   try {
     await MobileAds.instance.initialize();
-    print('AdMob initialized successfully in main');
+    if (kDebugMode) {
+      print('AdMob initialized successfully in main');
+    }
   } catch (e) {
-    print('AdMob initialization failed in main: $e');
+    if (kDebugMode) {
+      print('AdMob initialization failed in main: $e');
+    }
   }
   try {
-    print('Starting app initialization...');
+    if (kDebugMode) {
+      print('Starting app initialization...');
+    }
     await initializeDependencies();
 
     // Initialize preference service
     await PreferenceService.instance.initialize();
-    print('Preference service initialized');
+    if (kDebugMode) {
+      print('Preference service initialized');
+    }
 
-    print('App initialization completed successfully');
+    if (kDebugMode) {
+      print('App initialization completed successfully');
+    }
     runApp(OweTrackerApp());
   } catch (e) {
-    print('Failed to initialize app: $e');
+    if (kDebugMode) {
+      print('Failed to initialize app: $e');
+    }
     runApp(ErrorApp(error: e.toString()));
   }
 }

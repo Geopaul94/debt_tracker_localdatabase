@@ -1,7 +1,4 @@
-
-
 import 'dart:async';
-
 
 import 'package:debt_tracker/domain/entities/transaction_entity.dart';
 import 'package:debt_tracker/injection/injection_container.dart';
@@ -13,16 +10,11 @@ import 'package:debt_tracker/presentation/pages/first_time_setup_page.dart';
 import 'package:debt_tracker/presentation/pages/home_page.dart';
 import 'package:debt_tracker/presentation/pages/splash_screen.dart';
 import 'package:debt_tracker/presentation/pages/transaction_history.dart';
+import 'package:debt_tracker/presentation/pages/auth_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-
-
-
-
-
-
 
 class OweTrackerApp extends StatelessWidget {
   const OweTrackerApp({super.key});
@@ -105,8 +97,9 @@ class OweTrackerApp extends StatelessWidget {
             ),
             initialRoute: '/',
             routes: {
-              '/': (context) =>  SplashScreen(),
+              '/': (context) => SplashScreen(),
               '/first-time-setup': (context) => FirstTimeSetupPage(),
+              '/auth': (context) => AuthScreen(),
               '/home': (context) => HomePage(),
               '/add-transaction': (context) => AddTransactionPage(),
               '/currency-selection': (context) => CurrencySelectionPage(),

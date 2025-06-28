@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:intl/intl.dart';
-
 import '../../core/constants/currencies.dart';
 import '../../core/services/preference_service.dart';
 import '../../injection/injection_container.dart';
 import '../bloc/currency_bloc/currency_bloc.dart';
 import '../bloc/currency_bloc/currency_event.dart';
 import '../bloc/currency_bloc/currency_state.dart';
+import '../bloc/authentication/auth_bloc.dart';
+import '../bloc/authentication/auth_event.dart';
+import '../bloc/authentication/auth_state.dart';
 import 'currency_selection_page.dart';
 
 class FirstTimeSetupPage extends StatefulWidget {
-  const FirstTimeSetupPage({Key? key}) : super(key: key);
+  const FirstTimeSetupPage({super.key});
 
   @override
   _FirstTimeSetupPageState createState() => _FirstTimeSetupPageState();
@@ -20,18 +21,22 @@ class FirstTimeSetupPage extends StatefulWidget {
 
 class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
   bool _isLoading = false;
+  bool _isAuthEnabled = true; // Default enabled
   late CurrencyBloc _currencyBloc;
+  late AuthBloc _authBloc;
 
   @override
   void initState() {
     super.initState();
     _currencyBloc =
         serviceLocator<CurrencyBloc>()..add(LoadCurrentCurrencyEvent());
+    _authBloc = serviceLocator<AuthBloc>()..add(LoadAuthSettingsEvent());
   }
 
   @override
   void dispose() {
     _currencyBloc.close();
+    _authBloc.close();
     super.dispose();
   }
 
@@ -39,14 +44,30 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      body: BlocProvider.value(
-        value: _currencyBloc,
-        child: BlocListener<CurrencyBloc, CurrencyState>(
-          listener: (context, state) {
-            if (state is CurrencyChangedSuccess) {
-              // Currency was changed successfully, UI will auto-update
-            }
-          },
+      body: MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: _currencyBloc),
+          BlocProvider.value(value: _authBloc),
+        ],
+        child: MultiBlocListener(
+          listeners: [
+            BlocListener<CurrencyBloc, CurrencyState>(
+              listener: (context, state) {
+                if (state is CurrencyChangedSuccess) {
+                  // Currency was changed successfully, UI will auto-update
+                }
+              },
+            ),
+            BlocListener<AuthBloc, AuthState>(
+              listener: (context, state) {
+                if (state is AuthSettingsLoaded) {
+                  setState(() {
+                    _isAuthEnabled = state.isEnabled;
+                  });
+                }
+              },
+            ),
+          ],
           child: SingleChildScrollView(
             child: SafeArea(
               child: Padding(
@@ -139,11 +160,69 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
                           SizedBox(height: 10.h),
 
                           _buildCurrencyDropdown(),
+                          SizedBox(height: 10.h),
+                          Text(
+                            '** you can change the currecy in the settings later if you need ',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              color: Colors.grey[600],
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     SizedBox(height: 15.h),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(20.w),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 2,
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.lock_clock_outlined,
+                                color: Colors.teal[600],
+                              ),
+                              SizedBox(width: 8.w),
+                              Text(
+                                'Enable Biometric Authentication',
+                                style: TextStyle(
+                                  fontSize: 15.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal[800],
+                                ),
+                              ),
+                            ],
+                          ),
 
+                          SizedBox(height: 10.h),
+
+                          _buildBiometricAuthentication(),
+                          SizedBox(height: 10.h),
+                          Text(
+                            '** you can turn off biometric authentication in the settings later if you need ',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 10.h),
                     Container(
                       width: double.infinity,
                       padding: EdgeInsets.all(20.w),
@@ -451,5 +530,61 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
         });
       }
     }
+  }
+
+  Widget _buildBiometricAuthentication() {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Secure your data with biometric authentication (Face ID, Touch ID, or PIN)',
+              style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+            ),
+            SizedBox(height: 12.h),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Enable Authentication',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.teal[800],
+                  ),
+                ),
+                Switch(
+                  value: _isAuthEnabled,
+                  onChanged: (value) {
+                    setState(() {
+                      _isAuthEnabled = value;
+                    });
+                    if (value) {
+                      _authBloc.add(EnableAuthEvent());
+                    } else {
+                      _authBloc.add(DisableAuthEvent());
+                    }
+                  },
+                  activeColor: Colors.teal[600],
+                ),
+              ],
+            ),
+            if (state is AuthSettingsLoaded && !state.isBiometricAvailable)
+              Padding(
+                padding: EdgeInsets.only(top: 8.h),
+                child: Text(
+                  'Biometric authentication is not available on this device',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.orange[600],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 }

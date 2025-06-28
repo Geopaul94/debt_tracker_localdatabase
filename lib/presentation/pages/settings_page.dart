@@ -8,18 +8,30 @@ import '../bloc/transacton_bloc/transaction_event.dart';
 import '../bloc/currency_bloc/currency_bloc.dart';
 import '../bloc/currency_bloc/currency_event.dart';
 import '../bloc/currency_bloc/currency_state.dart';
+import '../bloc/authentication/auth_bloc.dart';
+import '../bloc/authentication/auth_event.dart';
+import '../bloc/authentication/auth_state.dart';
 import 'currency_selection_page.dart';
-
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create:
-          (context) =>
-              serviceLocator<CurrencyBloc>()..add(LoadCurrentCurrencyEvent()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create:
+              (context) =>
+                  serviceLocator<CurrencyBloc>()
+                    ..add(LoadCurrentCurrencyEvent()),
+        ),
+        BlocProvider(
+          create:
+              (context) =>
+                  serviceLocator<AuthBloc>()..add(LoadAuthSettingsEvent()),
+        ),
+      ],
       child: Scaffold(
         appBar: AppBar(title: Text('Settings'), centerTitle: true),
         body: ListView(
@@ -30,9 +42,8 @@ class SettingsPage extends StatelessWidget {
 
             SizedBox(height: 24.h),
 
-            _buildSectionHeader('Data Management'),
-        
-       
+            _buildSectionHeader('Biometric Authentication'),
+            _buildBiometricAuthentication(),
 
             SizedBox(height: 24.h),
 
@@ -146,8 +157,6 @@ class SettingsPage extends StatelessWidget {
       },
     );
   }
-  }
-
 
   Widget _buildAppInfoTile() {
     return Card(
@@ -169,71 +178,153 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  void _showSampleDataDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Text('Add Sample Data'),
-            content: Text(
-              'This will add some sample transactions to help you explore the app. Continue?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  // You can add logic here to create sample data
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Sample data added successfully!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                },
-                child: Text('Add'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  void _showClearDataDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Text('Clear All Data'),
-            content: Text(
-              'This will permanently delete all your transactions. This action cannot be undone. Continue?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text('Cancel'),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  // You can add logic here to clear data
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('All data cleared successfully!'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                },
-                child: Text('Clear'),
-              ),
-            ],
-          ),
-    );
-  }
-
   void _showAppInfoDialog() {
     // You can implement this to show app information
   }
+
+  Widget _buildBiometricAuthentication() {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        if (state is AuthSettingsLoaded) {
+          return Card(
+            child: Padding(
+              padding: EdgeInsets.all(16.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40.w,
+                        height: 40.w,
+                        decoration: BoxDecoration(
+                          color: Colors.teal[100],
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Icon(Icons.fingerprint, color: Colors.teal[600]),
+                      ),
+                      SizedBox(width: 16.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Biometric Lock',
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              'Secure your data with Face ID, Touch ID, or PIN',
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: state.isEnabled,
+                        onChanged:
+                            state.isBiometricAvailable
+                                ? (value) {
+                                  if (value) {
+                                    context.read<AuthBloc>().add(
+                                      EnableAuthEvent(),
+                                    );
+                                  } else {
+                                    context.read<AuthBloc>().add(
+                                      DisableAuthEvent(),
+                                    );
+                                  }
+                                }
+                                : null,
+                        activeColor: Colors.teal[600],
+                      ),
+                    ],
+                  ),
+                  if (!state.isBiometricAvailable)
+                    Padding(
+                      padding: EdgeInsets.only(top: 12.h),
+                      child: Container(
+                        padding: EdgeInsets.all(12.w),
+                        decoration: BoxDecoration(
+                          color: Colors.orange[50],
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(color: Colors.orange[200]!),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.orange[600],
+                              size: 20.sp,
+                            ),
+                            SizedBox(width: 8.w),
+                            Expanded(
+                              child: Text(
+                                'Biometric authentication is not available on this device',
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: Colors.orange[700],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        } else if (state is AuthLoading) {
+          return Card(
+            child: Padding(
+              padding: EdgeInsets.all(16.w),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40.w,
+                    height: 40.w,
+                    decoration: BoxDecoration(
+                      color: Colors.teal[100],
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Icon(Icons.fingerprint, color: Colors.teal[600]),
+                  ),
+                  SizedBox(width: 16.w),
+                  Text('Loading...'),
+                  Spacer(),
+                  CircularProgressIndicator(),
+                ],
+              ),
+            ),
+          );
+        } else {
+          return Card(
+            child: ListTile(
+              leading: Container(
+                width: 40.w,
+                height: 40.w,
+                decoration: BoxDecoration(
+                  color: Colors.teal[100],
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Icon(Icons.fingerprint, color: Colors.teal[600]),
+              ),
+              title: Text('Biometric Authentication'),
+              subtitle: Text('Tap to configure'),
+              trailing: Icon(Icons.chevron_right),
+              onTap: () {
+                context.read<AuthBloc>().add(LoadAuthSettingsEvent());
+              },
+            ),
+          );
+        }
+      },
+    );
+  }
+}

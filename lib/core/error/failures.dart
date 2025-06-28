@@ -1,4 +1,3 @@
-
 abstract class Failure {
   const Failure([List properties = const <dynamic>[]]);
 }
@@ -23,4 +22,14 @@ class DuplicateTransactionFailure extends Failure {}
 class InvalidTransactionDataFailure extends Failure {
   final String message;
   const InvalidTransactionDataFailure(this.message);
+}
+
+// Authentication specific failures
+class BiometricNotAvailableFailure extends Failure {}
+
+class AuthenticationFailedFailure extends Failure {}
+
+class AuthenticationErrorFailure extends Failure {
+  final String message;
+  AuthenticationErrorFailure(this.message);
 }

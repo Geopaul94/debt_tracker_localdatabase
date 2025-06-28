@@ -1,10 +1,15 @@
-part of 'auth_bloc.dart';
-
 abstract class AuthEvent {}
 
-class CheckAuthEvent extends AuthEvent {}
+class CheckAuthRequiredEvent extends AuthEvent {}
 
-class SetAuthEnabledEvent extends AuthEvent {
-  final bool enabled;
-  SetAuthEnabledEvent(this.enabled);
+class EnableAuthEvent extends AuthEvent {}
+
+class DisableAuthEvent extends AuthEvent {}
+
+class AuthenticateEvent extends AuthEvent {
+  final String reason;
+
+  AuthenticateEvent({required this.reason});
 }
+
+class LoadAuthSettingsEvent extends AuthEvent {}
