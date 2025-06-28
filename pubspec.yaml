@@ -54,6 +54,7 @@ dependencies:
   # Utilities (lightweight)
   uuid: ^4.4.0 
   dartz: ^0.10.1
+  local_auth: ^2.3.0
 
 dev_dependencies:
   flutter_test:
