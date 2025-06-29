@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 import '../../core/database/database_helper.dart';
 import '../../core/services/preference_service.dart';
+import '../../core/utils/logger.dart';
 import '../models/transaction_model.dart';
 import '../../domain/entities/transaction_entity.dart';
 
@@ -25,13 +26,16 @@ abstract class TransactionSQLiteDataSource {
   // Dummy data management
   Future<void> cleanupDummyDataIfNeeded();
   Future<void> addDummyDataIfNeeded();
+
+  // Add dispose method for cleanup
+  void dispose();
 }
 
 class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
   final DatabaseHelper _databaseHelper;
-  StreamController<List<TransactionModel>> _transactionController =
-      StreamController<List<TransactionModel>>.broadcast();
+  StreamController<List<TransactionModel>>? _transactionController;
   bool _isInitialized = false;
+  bool _isDisposed = false;
 
   // Dummy transaction IDs for identification
   static const List<String> _dummyTransactionIds = [
@@ -45,8 +49,17 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
 
   static const String _tableName = 'transactions';
 
+  // Lazy initialization of stream controller
+  StreamController<List<TransactionModel>> get _controller {
+    if (_isDisposed) {
+      throw StateError('DataSource has been disposed');
+    }
+    return _transactionController ??=
+        StreamController<List<TransactionModel>>.broadcast();
+  }
+
   Future<void> _ensureInitialized() async {
-    if (_isInitialized) return;
+    if (_isInitialized || _isDisposed) return;
 
     try {
       // Initialize database schema only
@@ -57,13 +70,15 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
       await addDummyDataIfNeeded();
       await cleanupDummyDataIfNeeded();
     } catch (e) {
-      print('Database initialization error: $e');
+      AppLogger.error('Database initialization error', e);
       _isInitialized = true;
     }
   }
 
   @override
   Future<void> addDummyDataIfNeeded() async {
+    if (_isDisposed) return;
+
     try {
       final db = await _databaseHelper.database;
       final result = await db.rawQuery(
@@ -86,15 +101,17 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
 
         // Mark that we have dummy data
         await PreferenceService.instance.setHasDummyData(true);
-        print('Dummy data added for new user experience');
+        AppLogger.info('Dummy data added for new user experience');
       }
     } catch (e) {
-      print('Error adding dummy data: $e');
+      AppLogger.error('Error adding dummy data', e);
     }
   }
 
   @override
   Future<void> cleanupDummyDataIfNeeded() async {
+    if (_isDisposed) return;
+
     try {
       final shouldCleanup =
           await PreferenceService.instance.shouldCleanupDummyData();
@@ -102,10 +119,10 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
       if (shouldCleanup) {
         await _removeDummyTransactions();
         await PreferenceService.instance.resetDummyDataFlags();
-        print('Dummy data cleaned up');
+        AppLogger.info('Dummy data cleaned up');
       }
     } catch (e) {
-      print('Error cleaning up dummy data: $e');
+      AppLogger.error('Error cleaning up dummy data', e);
     }
   }
 
@@ -118,7 +135,7 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
         description: 'Lunch at cafe (Sample)',
         amount: 25.50,
         type: TransactionType.iOwe,
-        date: now.subtract(Duration(days: 3)),
+        date: now.subtract(const Duration(days: 3)),
         createdAt: now,
         updatedAt: now,
       ),
@@ -128,7 +145,7 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
         description: 'Freelance project payment (Sample)',
         amount: 150.00,
         type: TransactionType.owesMe,
-        date: now.subtract(Duration(days: 1)),
+        date: now.subtract(const Duration(days: 1)),
         createdAt: now,
         updatedAt: now,
       ),
@@ -146,6 +163,8 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
   }
 
   Future<void> _removeDummyTransactions() async {
+    if (_isDisposed) return;
+
     try {
       final db = await _databaseHelper.database;
 
@@ -155,35 +174,28 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
 
       _notifyListeners();
     } catch (e) {
-      print('Error removing dummy transactions: $e');
+      AppLogger.error('Error removing dummy transactions', e);
     }
-  }
-
-  Future<void> _initializeSampleDataSafely() async {
-    // This method is now replaced by addDummyDataIfNeeded
-    // Keeping for backward compatibility
-  }
-
-  Future<void> _initializeSampleData() async {
-    // This method is now deprecated, keeping for backward compatibility
-    // The actual initialization is done in addDummyDataIfNeeded
   }
 
   @override
   Future<List<TransactionModel>> getAllTransactions() async {
-    await _ensureInitialized();
+    if (_isDisposed) return [];
 
+    await _ensureInitialized();
     try {
       final db = await _databaseHelper.database;
-      final maps = await db.query(
+      final List<Map<String, dynamic>> maps = await db.query(
         _tableName,
-        orderBy: 'date DESC', // Most recent first
+        orderBy: 'created_at DESC',
       );
 
-      return maps.map((map) => TransactionModel.fromMap(map)).toList();
+      final transactions =
+          maps.map((map) => TransactionModel.fromMap(map)).toList();
+      return transactions;
     } catch (e) {
-      print('Error getting all transactions: $e');
-      rethrow;
+      AppLogger.error('Error getting all transactions', e);
+      return [];
     }
   }
 
@@ -281,29 +293,42 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
 
   @override
   Stream<List<TransactionModel>> watchTransactions() {
-    if (_transactionController.isClosed) {
-      _transactionController =
-          StreamController<List<TransactionModel>>.broadcast();
+    if (_isDisposed) {
+      return Stream.empty();
     }
 
-    // Initialize with current data immediately
-    _loadInitialData();
+    // Initialize and get initial data
+    _ensureInitialized().then((_) => _notifyListeners());
 
-    return _transactionController.stream;
+    return _controller.stream;
   }
 
-  Future<void> _loadInitialData() async {
+  Future<void> _notifyListeners() async {
+    if (_isDisposed ||
+        _transactionController == null ||
+        _transactionController!.isClosed) {
+      return;
+    }
+
     try {
       final transactions = await getAllTransactions();
-      if (!_transactionController.isClosed) {
-        _transactionController.add(transactions);
-      }
+      _controller.add(transactions);
     } catch (e) {
-      print('Error loading initial data: $e');
-      if (!_transactionController.isClosed) {
-        _transactionController.add([]);
+      AppLogger.error('Error notifying listeners', e);
+      if (!_controller.isClosed) {
+        _controller.addError(e);
       }
     }
+  }
+
+  @override
+  void dispose() {
+    if (_isDisposed) return;
+
+    _isDisposed = true;
+    _transactionController?.close();
+    _transactionController = null;
+    AppLogger.info('TransactionSQLiteDataSource disposed');
   }
 
   @override
@@ -400,20 +425,5 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
       print('Error getting transaction summary: $e');
       return {'iOwe': 0.0, 'owesMe': 0.0, 'net': 0.0};
     }
-  }
-
-  Future<void> _notifyListeners() async {
-    try {
-      final transactions = await getAllTransactions();
-      if (!_transactionController.isClosed) {
-        _transactionController.add(transactions);
-      }
-    } catch (e) {
-      print('Error notifying listeners: $e');
-    }
-  }
-
-  void dispose() {
-    _transactionController.close();
   }
 }

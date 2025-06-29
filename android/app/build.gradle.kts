@@ -5,8 +5,11 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+
 android {
-    namespace = "com.example.debit_tracker"
+    namespace = "com.geo.debit_tracker"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -20,29 +23,52 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.geo.debit_tracker"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 21
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Resource optimization - use resourceConfigurations instead of resConfigs
+        resourceConfigurations.addAll(listOf("en", "xxhdpi"))
     }
 
-    // Disable ABI splits for development to avoid APK detection issues
-    // splits {
-    //     abi {
-    //         isEnable = true
-    //         reset()
-    //         include("arm64-v8a", "armeabi-v7a")
-    //         isUniversalApk = false
-    //     }
-    // }
+    // Signing configurations
+    signingConfigs {
+        create("release") {
+            val keystorePropertiesFile = rootProject.file("key.properties")
+            if (keystorePropertiesFile.exists()) {
+                val keystoreProperties = Properties()
+                keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+                
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            } else {
+                // Fallback to debug signing for development
+                println("Warning: key.properties not found, using debug signing")
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+                storeFile = file(System.getProperty("user.home") + "/.android/debug.keystore")
+                storePassword = "android"
+            }
+        }
+    }
+
+    // Enable ABI splits for smaller APKs
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a")
+            isUniversalApk = false
+        }
+    }
 
     buildTypes {
         release {
-            // Enable R8 full mode with advanced optimizations
+            // Maximum optimization settings
             isMinifyEnabled = true
             isShrinkResources = true
             
@@ -52,30 +78,44 @@ android {
             // Additional optimizations
             isDebuggable = false
             isJniDebuggable = false
-            isRenderscriptDebuggable = false
-            renderscriptOptimLevel = 3
             isPseudoLocalesEnabled = false
+            
+            // PNG optimization
+            isCrunchPngs = true
 
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Release signing configuration
+            signingConfig = signingConfigs.getByName("release")
+        }
+        
+        debug {
+            isMinifyEnabled = false
+            isShrinkResources = false
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
         }
     }
 
     // Enhanced resource optimization
     buildFeatures {
         buildConfig = true
-        // Disable unused features
+        // Disable unused features to reduce APK size
         aidl = false
         renderScript = false
         shaders = false
+        compose = false
+        mlModelBinding = false
+        prefab = false
     }
 
-    // Resource configuration for specific locales (reduces size)
-    android.defaultConfig.resConfigs("en", "xxhdpi")
+    // Lint optimizations
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
 
-    // Packaging options to exclude unnecessary files
-    packagingOptions {
+    // Use packaging instead of packagingOptions
+    packaging {
         resources {
             excludes += listOf(
                 "META-INF/DEPENDENCIES",
@@ -87,9 +127,40 @@ android {
                 "META-INF/notice.txt",
                 "META-INF/ASL2.0",
                 "META-INF/*.kotlin_module",
+                "META-INF/*.version",
+                "META-INF/*.properties",
                 "**/*.version",
-                "**/*.properties"
+                "**/*.properties",
+                "**/kotlin/**",
+                "kotlin-tooling-metadata.json",
+                "DebugProbesKt.bin",
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "META-INF/com.android.tools/**",
+                "**/DEPENDENCIES",
+                "**/LICENSE",
+                "**/LICENSE.txt",
+                "**/NOTICE",
+                "**/NOTICE.txt"
             )
+        }
+        jniLibs {
+            useLegacyPackaging = false
+        }
+        dex {
+            useLegacyPackaging = false
+        }
+    }
+
+    // Bundle configuration for Play Store
+    bundle {
+        language {
+            enableSplit = true
+        }
+        density {
+            enableSplit = true
+        }
+        abi {
+            enableSplit = true
         }
     }
 }

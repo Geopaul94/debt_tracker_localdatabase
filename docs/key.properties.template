@@ -1,0 +1,14 @@
+# Key Properties Template
+# Copy this file to key.properties (without .template) and fill in your actual values
+# DO NOT commit key.properties to version control!
+
+storePassword=
+keyPassword=your_key_password  
+keyAlias=key
+storeFile=../key.jks
+
+# Instructions:
+# 1. Generate keystore: keytool -genkey -v -keystore ~/key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias key
+# 2. Copy this file to key.properties
+# 3. Fill in your actual passwords and keystore path
+# 4. Add key.properties to .gitignore 

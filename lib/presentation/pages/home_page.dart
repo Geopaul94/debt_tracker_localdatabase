@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/services/ad_service.dart';
 import '../../core/services/preference_service.dart';
 import '../../core/services/premium_service.dart';
+import '../../core/utils/logger.dart';
 import '../../domain/entities/grouped_transaction_entity.dart';
 import '../../injection/injection_container.dart';
 import '../bloc/transacton_bloc/transaction_bloc.dart';
@@ -383,9 +384,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         return shouldShowAds;
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Error checking ad-free status: $e');
-      }
+      AppLogger.error('Error checking ad-free status', e);
       // Fallback to only checking preference service
       return await PreferenceService.instance.shouldShowAds();
     }
@@ -395,9 +394,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     try {
       await AdService.instance.showInterstitialAd();
     } catch (e) {
-      if (kDebugMode) {
-        print('Error showing interstitial ad: $e');
-      }
+      AppLogger.error('Error showing interstitial ad', e);
     }
   }
 
@@ -417,11 +414,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ),
                 );
               } catch (e) {
-                if (kDebugMode) {
-                  print('Error setting premium status: $e');
-                }
+                AppLogger.error('Error setting premium status', e);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
+                  const SnackBar(
                     content: Text('🎉 Ad reward received!'),
                     backgroundColor: Colors.green,
                     duration: Duration(seconds: 3),

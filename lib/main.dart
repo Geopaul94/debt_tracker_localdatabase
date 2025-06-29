@@ -1,10 +1,10 @@
-
 import 'package:debt_tracker/presentation/pages/owetrackerapp.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'injection/injection_container.dart';
 import 'core/services/preference_service.dart';
+import 'core/utils/logger.dart';
 
 // 2. Main function to run the app
 void main() async {
@@ -13,34 +13,22 @@ void main() async {
   // Initialize AdMob early
   try {
     await MobileAds.instance.initialize();
-    if (kDebugMode) {
-      print('AdMob initialized successfully in main');
-    }
+    AppLogger.info('AdMob initialized successfully in main');
   } catch (e) {
-    if (kDebugMode) {
-      print('AdMob initialization failed in main: $e');
-    }
+    AppLogger.error('AdMob initialization failed in main', e);
   }
   try {
-    if (kDebugMode) {
-      print('Starting app initialization...');
-    }
+    AppLogger.info('Starting app initialization...');
     await initializeDependencies();
 
     // Initialize preference service
     await PreferenceService.instance.initialize();
-    if (kDebugMode) {
-      print('Preference service initialized');
-    }
+    AppLogger.info('Preference service initialized');
 
-    if (kDebugMode) {
-      print('App initialization completed successfully');
-    }
-    runApp(OweTrackerApp());
+    AppLogger.info('App initialization completed successfully');
+    runApp(const OweTrackerApp());
   } catch (e) {
-    if (kDebugMode) {
-      print('Failed to initialize app: $e');
-    }
+    AppLogger.error('Failed to initialize app', e);
     runApp(ErrorApp(error: e.toString()));
   }
 }
