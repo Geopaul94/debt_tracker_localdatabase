@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../core/services/ad_service.dart';
@@ -5,7 +6,7 @@ import '../../core/services/ad_service.dart';
 class AdBannerWidget extends StatefulWidget {
   final EdgeInsets? margin;
 
-  const AdBannerWidget({Key? key, this.margin}) : super(key: key);
+  const AdBannerWidget({super.key, this.margin});
 
   @override
   _AdBannerWidgetState createState() => _AdBannerWidgetState();
@@ -35,14 +36,19 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
       // Load ad in background with timeout
       final ad = await Future.any([
         AdService.instance.createBannerAd(),
-        Future.delayed(Duration(seconds: 5), () => null), // 5 second timeout
+        Future.delayed(
+          const Duration(seconds: 5),
+          () => null,
+        ), // 5 second timeout
       ]);
 
       if (!_disposed && ad != null) {
         _bannerAdNotifier.value = ad;
       }
     } catch (e) {
-      print('Error loading banner ad: $e');
+      if (kDebugMode) {
+        print('Error loading banner ad: $e');
+      }
     } finally {
       if (!_disposed) {
         _isLoadingNotifier.value = false;
@@ -55,28 +61,10 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
     return ValueListenableBuilder<BannerAd?>(
       valueListenable: _bannerAdNotifier,
       builder: (context, bannerAd, child) {
+        // If no ad is available (loading, failed to load, or no internet),
+        // don't show anything - let the user use the app normally
         if (bannerAd == null) {
-          return ValueListenableBuilder<bool>(
-            valueListenable: _isLoadingNotifier,
-            builder: (context, isLoading, child) {
-              if (isLoading) {
-                // Show minimal loading indicator or empty space
-                return Container(
-                  margin: widget.margin,
-                  height: 50,
-                  child: Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                );
-              }
-              // Return empty space if no ad and not loading
-              return SizedBox.shrink();
-            },
-          );
+          return const SizedBox.shrink();
         }
 
         // Ad is loaded, display it
