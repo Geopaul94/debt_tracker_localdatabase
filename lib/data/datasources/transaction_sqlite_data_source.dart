@@ -131,8 +131,8 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
     return [
       TransactionModel(
         id: 'dummy_1',
-        name: "Sample Transaction 1",
-        description: 'Lunch at cafe (Sample)',
+        name: "Alex Johnson",
+        description: 'Lunch at downtown cafe',
         amount: 25.50,
         type: TransactionType.iOwe,
         date: now.subtract(const Duration(days: 3)),
@@ -141,8 +141,8 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
       ),
       TransactionModel(
         id: 'dummy_2',
-        name: "Sample Transaction 2",
-        description: 'Freelance project payment (Sample)',
+        name: "Sarah Williams",
+        description: 'Freelance web design project',
         amount: 150.00,
         type: TransactionType.owesMe,
         date: now.subtract(const Duration(days: 1)),
@@ -151,8 +151,8 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
       ),
       TransactionModel(
         id: 'dummy_3',
-        name: "Sample Transaction 3",
-        description: 'Movie tickets (Sample)',
+        name: "Mike Chen",
+        description: 'Movie tickets for weekend show',
         amount: 18.00,
         type: TransactionType.iOwe,
         date: now,

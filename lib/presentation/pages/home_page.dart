@@ -280,7 +280,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             future: _shouldShowBannerAd(),
             builder: (context, snapshot) {
               final shouldShowAd = snapshot.data ?? false;
-              return shouldShowAd ? AdBannerWidget() : SizedBox.shrink();
+              return  shouldShowAd ? const AdBannerWidget() : const SizedBox.shrink();
             },
           ),
           state.groupedTransactions.isEmpty

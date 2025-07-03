@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 void main() {
   group('TransactionListItem Widget Tests', () {
     late TransactionEntity testTransaction;
@@ -63,8 +64,8 @@ void main() {
     ) async {
       final sampleTransaction = TransactionEntity(
         id: 'dummy_1',
-        name: 'Sample Transaction',
-        description: 'Lunch at cafe (Sample)',
+        name: 'Alex Johnson',
+        description: 'Lunch at downtown cafe',
         amount: 25.50,
         type: TransactionType.iOwe,
         date: DateTime.now(),
@@ -73,8 +74,8 @@ void main() {
       await tester.pumpWidget(createTestWidget(sampleTransaction));
       await tester.pumpAndSettle();
 
-      expect(find.text('Sample Transaction'), findsOneWidget);
-      expect(find.text('Lunch at cafe (Sample)'), findsOneWidget);
+      expect(find.text('Alex Johnson'), findsOneWidget);
+      expect(find.text('Lunch at downtown cafe'), findsOneWidget);
       expect(find.text('-\$25.50'), findsOneWidget);
     });
 
