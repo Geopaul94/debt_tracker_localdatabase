@@ -27,6 +27,8 @@ class InvalidTransactionDataFailure extends Failure {
 // Authentication specific failures
 class BiometricNotAvailableFailure extends Failure {}
 
+class AuthenticationNotAvailableFailure extends Failure {}
+
 class AuthenticationFailedFailure extends Failure {}
 
 class AuthenticationErrorFailure extends Failure {

@@ -94,7 +94,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     try {
       final isEnabled = await _authenticationService.isAuthenticationEnabled();
-      final isAvailable = await _authenticationService.isBiometricAvailable();
+      final isAvailable =
+          await _authenticationService.isAuthenticationAvailable();
 
       print(
         'Auth settings loaded - Enabled: $isEnabled, Available: $isAvailable',
@@ -115,8 +116,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   String _mapFailureToMessage(Failure failure) {
-    if (failure is BiometricNotAvailableFailure) {
-      return 'Biometric authentication is not available. Please set up Face ID, Touch ID, or fingerprint on your device.';
+    if (failure is BiometricNotAvailableFailure ||
+        failure is AuthenticationNotAvailableFailure) {
+      return 'Device authentication is not available. Please set up Face ID, Touch ID, fingerprint, or a device PIN/password.';
     } else if (failure is AuthenticationFailedFailure) {
       return 'Authentication was cancelled or failed. Please try again.';
     } else if (failure is AuthenticationErrorFailure) {

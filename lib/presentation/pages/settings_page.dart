@@ -57,6 +57,7 @@ class SettingsPage extends StatelessWidget {
 
             _buildSectionHeader('About'),
             _buildAppInfoTile(),
+            _buildwithlove(),
           ],
         ),
       ),
@@ -381,6 +382,33 @@ class SettingsPage extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildwithlove() {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.h),
+      child:  Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        
+        children: [
+
+        Text(
+        'Build with love by @Geo Paulson',
+        style: TextStyle(
+          fontSize: 18.sp,
+          fontWeight: FontWeight.bold,
+          color: Colors.teal[800],
+        ),
+      ),
+      Text("Version 1.2.0", style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),),
+      Text("Copyright 2025", style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),),
+      Text("All rights reserved", style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),),
+      Text("Geo Paulson", style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),),
+      Text("geo@geopaulson.com", style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),),
+     
+      ],)  
     );
   }
 }

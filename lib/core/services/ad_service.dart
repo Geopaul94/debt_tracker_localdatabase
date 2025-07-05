@@ -78,9 +78,9 @@ class AdService {
     final weeksSinceInstall = (daysSinceInstall / 7).floor();
 
     if (weeksSinceInstall == 0) return AdWeek.week1;
-    if (weeksSinceInstall == 1) return AdWeek.week2;
-    if (weeksSinceInstall == 2) return AdWeek.week3;
-    return AdWeek.week4Plus;
+    if (weeksSinceInstall == 1) return AdWeek.week1;
+    if (weeksSinceInstall == 2) return AdWeek.week1;
+    return AdWeek.week1;
   }
 
   // Check if specific ad type should be shown

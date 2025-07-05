@@ -57,26 +57,56 @@ class AuthenticationService {
 
   Future<bool> isAuthenticationRequired() async {
     final isEnabled = await isAuthenticationEnabled();
-    final isAvailable = await isBiometricAvailable();
+    final isAvailable = await isAuthenticationAvailable();
     print('Auth enabled: $isEnabled, Available: $isAvailable');
     return isEnabled && isAvailable;
   }
 
-  Future<bool> isBiometricAvailable() async {
+  /// Checks if ANY form of authentication is available on the device
+  /// This includes biometric authentication (Face ID, Touch ID, fingerprint)
+  /// AND device credentials (PIN, pattern, password)
+  Future<bool> isAuthenticationAvailable() async {
     try {
-      final isAvailable = await _localAuth.canCheckBiometrics;
       final isDeviceSupported = await _localAuth.isDeviceSupported();
+      print('Device supported: $isDeviceSupported');
+
+      if (!isDeviceSupported) {
+        return false;
+      }
+
+      // Check if biometrics are available
+      final canCheckBiometrics = await _localAuth.canCheckBiometrics;
       final availableBiometrics = await _localAuth.getAvailableBiometrics();
 
-      print('Can check biometrics: $isAvailable');
-      print('Device supported: $isDeviceSupported');
+      print('Can check biometrics: $canCheckBiometrics');
       print('Available biometrics: $availableBiometrics');
 
-      return isAvailable && isDeviceSupported && availableBiometrics.isNotEmpty;
+      // If biometrics are available, device can authenticate
+      if (canCheckBiometrics && availableBiometrics.isNotEmpty) {
+        print('Biometric authentication available');
+        return true;
+      }
+
+      // If device is supported but no biometrics, check if device credentials are available
+      // For Android/iOS, if device is supported and biometrics can't be checked,
+      // it usually means device credentials (PIN, pattern, password) are available
+      if (isDeviceSupported) {
+        // On supported devices, authentication is generally available even without biometrics
+        // The local_auth plugin will fall back to device credentials (PIN, pattern, password)
+        print('Device credentials authentication available');
+        return true;
+      }
+
+      return false;
     } catch (e) {
-      print('Error checking biometric availability: $e');
+      print('Error checking authentication availability: $e');
       return false;
     }
+  }
+
+  /// Legacy method name for backward compatibility
+  Future<bool> isBiometricAvailable() async {
+    return await isAuthenticationAvailable();
   }
 
   Future<List<BiometricType>> getAvailableBiometrics() async {
@@ -92,13 +122,13 @@ class AuthenticationService {
     try {
       print('Starting authentication process...');
 
-      final isAvailable = await isBiometricAvailable();
+      final isAvailable = await isAuthenticationAvailable();
       if (!isAvailable) {
-        print('Biometric authentication not available');
-        return Left(BiometricNotAvailableFailure());
+        print('Authentication not available');
+        return Left(AuthenticationNotAvailableFailure());
       }
 
-      print('Attempting biometric authentication...');
+      print('Attempting authentication...');
       final didAuthenticate = await _localAuth.authenticate(
         localizedReason: reason,
         options: const AuthenticationOptions(

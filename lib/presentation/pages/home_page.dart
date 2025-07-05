@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/services/ad_service.dart';
 import '../../core/services/preference_service.dart';
 import '../../core/services/premium_service.dart';
+import '../../core/services/update_notification_service.dart';
 import '../../core/utils/logger.dart';
 import '../../domain/entities/grouped_transaction_entity.dart';
 import '../../injection/injection_container.dart';
@@ -50,6 +51,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     // Initialize ads in background after data loading
     _initializeAdsInBackground();
+
+    // Show update notification if needed
+    _showUpdateNotificationIfNeeded();
   }
 
   // Track app session for dummy data management
@@ -73,6 +77,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       print('Ads initialized in background');
     } catch (e) {
       print('Error initializing ads: $e');
+    }
+  }
+
+  // Show update notification if needed
+  Future<void> _showUpdateNotificationIfNeeded() async {
+    // Wait for the UI to render first
+    await Future.delayed(Duration(milliseconds: 1000));
+
+    try {
+      await UpdateNotificationService.instance.initialize();
+      if (mounted) {
+        await UpdateNotificationService.instance.showUpdateNotification(
+          context,
+        );
+      }
+    } catch (e) {
+      print('Error showing update notification: $e');
     }
   }
 
@@ -164,16 +185,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       //     ],
                       //   ),
                       // ),
-                      PopupMenuItem(
-                        value: 'ad_free',
-                        child: Row(
-                          children: [
-                            Icon(Icons.block, color: Colors.blue),
-                            SizedBox(width: 8),
-                            Text('Remove Ads (2h)'),
-                          ],
-                        ),
-                      ),
+
+
+                      
+                      // PopupMenuItem(
+                      //   value: 'ad_free',
+                      //   child: Row(
+                      //     children: [
+                      //       Icon(Icons.block, color: Colors.blue),
+                      //       SizedBox(width: 8),
+                      //       Text('Remove Ads (2h)'),
+                      //     ],
+                      //   ),
+                      // ),
+
+
+
                       // PopupMenuItem(
                       //   value: 'analytics',
                       //   child: Row(
@@ -280,7 +307,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             future: _shouldShowBannerAd(),
             builder: (context, snapshot) {
               final shouldShowAd = snapshot.data ?? false;
-              return  shouldShowAd ? const AdBannerWidget() : const SizedBox.shrink();
+              return shouldShowAd
+                  ? const AdBannerWidget()
+                  : const SizedBox.shrink();
             },
           ),
           state.groupedTransactions.isEmpty
