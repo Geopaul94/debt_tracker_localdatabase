@@ -72,14 +72,14 @@ class AdService {
   // Determine current ad week based on install date
   Future<AdWeek> _getCurrentAdWeek() async {
     final installDate = await PreferenceService.instance.getInstallDate();
-    if (installDate == null) return AdWeek.week1;
+    if (installDate == null) return AdWeek.week4Plus;
 
     final daysSinceInstall = DateTime.now().difference(installDate).inDays;
     final weeksSinceInstall = (daysSinceInstall / 7).floor();
 
-    if (weeksSinceInstall == 0) return AdWeek.week1;
-    if (weeksSinceInstall == 1) return AdWeek.week2;
-    if (weeksSinceInstall == 2) return AdWeek.week3;
+    if (weeksSinceInstall == 0) return AdWeek.week4Plus;
+    if (weeksSinceInstall == 1) return AdWeek.week4Plus;
+    if (weeksSinceInstall == 2) return AdWeek.week4Plus;
     return AdWeek.week4Plus;
   }
 

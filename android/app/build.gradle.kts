@@ -1,52 +1,51 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 import java.util.Properties
 import java.io.FileInputStream
 
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
-    namespace = "com.geo.debit_tracker"
+    namespace = "com.geo.debit_tracker"// Align with working config or update AndroidManifest.xml
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
+    ndkVersion = "27.0.12077973" // Matches plugin requirements
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true // Required for flutter_local_notifications
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = "11"
     }
 
     defaultConfig {
-        applicationId = "com.geo.debit_tracker"
-        minSdk = 21
+        applicationId = "com.geo.debit_tracker" // Align with working config
+        minSdk = 21 // Compatible with most plugins
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        
-        // Resource optimization - use resourceConfigurations instead of resConfigs
-        resourceConfigurations.addAll(listOf("en", "xxhdpi"))
+        // Remove aggressive resource configurations for now
+        // resourceConfigurations.addAll(listOf("en", "xxhdpi"))
     }
 
-    // Signing configurations
     signingConfigs {
         create("release") {
-            val keystorePropertiesFile = rootProject.file("key.properties")
             if (keystorePropertiesFile.exists()) {
-                val keystoreProperties = Properties()
-                keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-                
                 keyAlias = keystoreProperties["keyAlias"] as String
                 keyPassword = keystoreProperties["keyPassword"] as String
                 storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
                 storePassword = keystoreProperties["storePassword"] as String
             } else {
-                // Fallback to debug signing for development
                 println("Warning: key.properties not found, using debug signing")
                 keyAlias = "androiddebugkey"
                 keyPassword = "android"
@@ -56,37 +55,26 @@ android {
         }
     }
 
-    // Enable ABI splits for smaller APKs
     splits {
         abi {
             isEnable = true
             reset()
             include("arm64-v8a", "armeabi-v7a")
-            isUniversalApk = false
+            isUniversalApk = true
         }
     }
 
     buildTypes {
         release {
-            // Maximum optimization settings
             isMinifyEnabled = true
             isShrinkResources = true
-            
-            // Use optimized ProGuard configuration
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-
-            // Additional optimizations
             isDebuggable = false
             isJniDebuggable = false
             isPseudoLocalesEnabled = false
-            
-            // PNG optimization
             isCrunchPngs = true
-
-            // Release signing configuration
             signingConfig = signingConfigs.getByName("release")
         }
-        
         debug {
             isMinifyEnabled = false
             isShrinkResources = false
@@ -96,10 +84,8 @@ android {
         }
     }
 
-    // Enhanced resource optimization
     buildFeatures {
         buildConfig = true
-        // Disable unused features to reduce APK size
         aidl = false
         renderScript = false
         shaders = false
@@ -108,39 +94,17 @@ android {
         prefab = false
     }
 
-    // Lint optimizations
     lint {
         checkReleaseBuilds = false
         abortOnError = false
     }
 
-    // Use packaging instead of packagingOptions
     packaging {
         resources {
             excludes += listOf(
                 "META-INF/DEPENDENCIES",
                 "META-INF/LICENSE",
-                "META-INF/LICENSE.txt",
-                "META-INF/license.txt",
-                "META-INF/NOTICE",
-                "META-INF/NOTICE.txt",
-                "META-INF/notice.txt",
-                "META-INF/ASL2.0",
-                "META-INF/*.kotlin_module",
-                "META-INF/*.version",
-                "META-INF/*.properties",
-                "**/*.version",
-                "**/*.properties",
-                "**/kotlin/**",
-                "kotlin-tooling-metadata.json",
-                "DebugProbesKt.bin",
-                "/META-INF/{AL2.0,LGPL2.1}",
-                "META-INF/com.android.tools/**",
-                "**/DEPENDENCIES",
-                "**/LICENSE",
-                "**/LICENSE.txt",
-                "**/NOTICE",
-                "**/NOTICE.txt"
+                "META-INF/NOTICE"
             )
         }
         jniLibs {
@@ -151,26 +115,20 @@ android {
         }
     }
 
-    // Bundle configuration for Play Store
     bundle {
-        language {
-            enableSplit = true
-        }
-        density {
-            enableSplit = true
-        }
-        abi {
-            enableSplit = true
-        }
+        language { enableSplit = true }
+        density { enableSplit = true }
+        abi { enableSplit = true }
     }
 }
 
 dependencies {
-    // Updated Play Core libraries compatible with SDK 34
-    implementation("com.google.android.play:app-update:2.1.0")
-    implementation("com.google.android.play:app-update-ktx:2.1.0")
-    implementation("com.google.android.play:review:2.0.1")
-    implementation("com.google.android.play:review-ktx:2.0.1")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2") // Latest version
+    // Only include Play Core if needed for in-app updates/reviews
+    // implementation("com.google.android.play:app-update:2.1.0")
+    // implementation("com.google.android.play:app-update-ktx:2.1.0")
+    // implementation("com.google.android.play:review:2.0.1")
+    // implementation("com.google.android.play:review-ktx:2.0.1")
 }
 
 flutter {

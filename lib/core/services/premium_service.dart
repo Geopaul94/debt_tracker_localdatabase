@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class PremiumService {
   static const String _premiumUnlockedKey = 'premium_unlocked';
   static const String _adFreeUntilKey = 'ad_free_until';
+  static const String _premiumExpiryDateKey = 'premium_expiry_date';
 
   static PremiumService? _instance;
   SharedPreferences? _prefs;
@@ -30,11 +31,52 @@ class PremiumService {
 
   // Premium status management
   Future<bool> isPremiumUnlocked() async {
-    return _prefs?.getBool(_premiumUnlockedKey) ?? false;
+    final isUnlocked = _prefs?.getBool(_premiumUnlockedKey) ?? false;
+    
+    // Check if premium has expired
+    if (isUnlocked) {
+      final expiryDate = await getPremiumExpiryDate();
+      if (expiryDate != null && DateTime.now().isAfter(expiryDate)) {
+        // Premium has expired, revoke access
+        await setPremiumUnlocked(false);
+        await clearPremiumExpiryDate();
+        return false;
+      }
+    }
+    
+    return isUnlocked;
   }
 
   Future<void> setPremiumUnlocked(bool unlocked) async {
     await _prefs?.setBool(_premiumUnlockedKey, unlocked);
+  }
+
+  // Premium expiry date management
+  Future<DateTime?> getPremiumExpiryDate() async {
+    final expiryDateString = _prefs?.getString(_premiumExpiryDateKey);
+    if (expiryDateString == null) return null;
+
+    try {
+      return DateTime.parse(expiryDateString);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> setPremiumExpiryDate(DateTime expiryDate) async {
+    await _prefs?.setString(_premiumExpiryDateKey, expiryDate.toIso8601String());
+  }
+
+  Future<void> clearPremiumExpiryDate() async {
+    await _prefs?.remove(_premiumExpiryDateKey);
+  }
+
+  Future<int> getPremiumDaysRemaining() async {
+    final expiryDate = await getPremiumExpiryDate();
+    if (expiryDate == null) return 0;
+
+    final remaining = expiryDate.difference(DateTime.now()).inDays;
+    return remaining > 0 ? remaining : 0;
   }
 
   // Ad-free status management

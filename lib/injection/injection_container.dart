@@ -7,6 +7,10 @@ import '../core/services/ad_service.dart';
 import '../core/services/currency_service.dart';
 import '../core/services/authentication_service.dart';
 import '../core/services/premium_service.dart';
+import '../core/services/google_drive_service.dart';
+import '../core/services/trash_service.dart';
+import '../core/services/iap_service.dart';
+import '../core/services/auto_backup_service.dart';
 import '../core/utils/logger.dart';
 
 // Data
@@ -78,6 +82,42 @@ Future<void> initializeDependencies() async {
     } catch (e) {
       AppLogger.error('Currency service initialization error', e);
       // Continue with default currency
+    }
+
+    // Initialize Google Drive Service
+    try {
+      await GoogleDriveService.instance.initialize();
+      AppLogger.info('Google Drive service initialized successfully');
+    } catch (e) {
+      AppLogger.error('Google Drive service initialization error', e);
+      // Continue without cloud backup
+    }
+
+    // Initialize Trash Service
+    try {
+      await TrashService.instance.initialize();
+      AppLogger.info('Trash service initialized successfully');
+    } catch (e) {
+      AppLogger.error('Trash service initialization error', e);
+      // Continue without trash functionality
+    }
+
+    // Initialize IAP Service
+    try {
+      await IAPService.instance.initialize();
+      AppLogger.info('IAP service initialized successfully');
+    } catch (e) {
+      AppLogger.error('IAP service initialization error', e);
+      // Continue without in-app purchases
+    }
+
+    // Initialize Auto Backup Service
+    try {
+      await AutoBackupService.instance.initialize();
+      AppLogger.info('Auto backup service initialized successfully');
+    } catch (e) {
+      AppLogger.error('Auto backup service initialization error', e);
+      // Continue without auto backup
     }
 
     // Data sources

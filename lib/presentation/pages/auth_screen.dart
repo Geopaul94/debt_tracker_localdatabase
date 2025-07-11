@@ -269,7 +269,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                       ),
                                     ),
                                     Text(
-                                      'Watch a short ad to use the app\nwithout authentication for 2 hours',
+                                      'Watch a short ad to use the app\nwithout any ads for two hours with premium features',
                                       style: TextStyle(
                                         fontSize: 12.sp,
                                         color: Colors.white.withOpacity(0.8),

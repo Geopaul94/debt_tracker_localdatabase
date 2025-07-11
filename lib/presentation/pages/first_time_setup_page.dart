@@ -21,7 +21,7 @@ class FirstTimeSetupPage extends StatefulWidget {
 
 class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
   bool _isLoading = false;
-  bool _isAuthEnabled = true; // Default enabled
+  bool _isAuthEnabled = false; // Default enabled
   late CurrencyBloc _currencyBloc;
   late AuthBloc _authBloc;
 
