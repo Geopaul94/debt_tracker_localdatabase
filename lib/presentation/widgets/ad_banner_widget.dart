@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../core/services/ad_service.dart';
+import '../../core/services/connectivity_service.dart';
+import '../../injection/injection_container.dart';
 
 class AdBannerWidget extends StatefulWidget {
   final EdgeInsets? margin;
@@ -30,9 +32,21 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
   Future<void> _loadAdAsynchronously() async {
     if (_disposed) return;
 
-    _isLoadingNotifier.value = true;
-
     try {
+      // Check internet connection first
+      final connectivity = serviceLocator<ConnectivityService>();
+      final hasInternet = await connectivity.checkInternetConnection();
+
+      if (!hasInternet) {
+        // No internet - don't show loading, just return
+        if (kDebugMode) {
+          print('No internet connection - skipping banner ad loading');
+        }
+        return;
+      }
+
+      _isLoadingNotifier.value = true;
+
       // Load ad in background with timeout
       final ad = await Future.any([
         AdService.instance.createBannerAd(),

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/services/currency_service.dart';
+import '../../core/services/trash_service.dart';
+import '../../core/services/premium_service.dart';
+import '../../core/services/pricing_service.dart';
 import '../../injection/injection_container.dart';
 import '../bloc/transacton_bloc/transaction_bloc.dart';
 import '../bloc/transacton_bloc/transaction_event.dart';
@@ -14,6 +17,9 @@ import '../bloc/authentication/auth_state.dart';
 import 'currency_selection_page.dart';
 import 'privacy_policy_page.dart';
 import 'terms_conditions_page.dart';
+import 'cloud_backup_page.dart';
+import 'trash_page.dart';
+import 'premium_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -41,6 +47,17 @@ class SettingsPage extends StatelessWidget {
           children: [
             _buildSectionHeader('Currency'),
             _buildCurrencyTile(context),
+
+            SizedBox(height: 24.h),
+
+            _buildSectionHeader('Premium Features'),
+            _buildPremiumTile(context),
+
+            SizedBox(height: 24.h),
+
+            _buildSectionHeader('Data Management'),
+            _buildCloudBackupTile(context),
+            _buildTrashTile(context),
 
             SizedBox(height: 24.h),
 
@@ -385,30 +402,166 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
+  Widget _buildPremiumTile(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: PremiumService.instance.isPremiumUnlocked(),
+      builder: (context, snapshot) {
+        final isPremium = snapshot.data ?? false;
+        final userCurrency = CurrencyService.instance.currentCurrency;
+        final pricing = PricingService.instance.getCurrentPricing(userCurrency);
+
+        return Card(
+          child: ListTile(
+            leading: Container(
+              width: 40.w,
+              height: 40.w,
+              decoration: BoxDecoration(
+                color: isPremium ? Colors.purple[100] : Colors.orange[100],
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Icon(
+                isPremium ? Icons.star : Icons.star_border,
+                color: isPremium ? Colors.purple[600] : Colors.orange[600],
+              ),
+            ),
+            title: Text(isPremium ? 'Premium Active' : 'Upgrade to Premium'),
+            subtitle: Text(
+              isPremium
+                  ? 'Ad-free experience & automatic backups'
+                  : 'Starting from ${pricing.formattedYearlyPrice}/year',
+            ),
+            trailing: Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (context) => PremiumPage()));
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCloudBackupTile(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: Container(
+          width: 40.w,
+          height: 40.w,
+          decoration: BoxDecoration(
+            color: Colors.blue[100],
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: Icon(Icons.cloud_upload, color: Colors.blue[600]),
+        ),
+        title: Text('Cloud Backup'),
+        subtitle: Text('Backup your data to Google Drive'),
+        trailing: Icon(Icons.chevron_right),
+        onTap: () {
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (context) => CloudBackupPage()));
+        },
+      ),
+    );
+  }
+
+  Widget _buildTrashTile(BuildContext context) {
+    return FutureBuilder<int>(
+      future: TrashService.instance.getTrashCount(),
+      builder: (context, snapshot) {
+        final count = snapshot.data ?? 0;
+        return Card(
+          child: ListTile(
+            leading: Container(
+              width: 40.w,
+              height: 40.w,
+              decoration: BoxDecoration(
+                color: Colors.red[100],
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Icon(Icons.delete, color: Colors.red[600]),
+            ),
+            title: Text('Trash'),
+            subtitle: Text(
+              count > 0
+                  ? '$count deleted items (kept for 30 days)'
+                  : 'Deleted items will appear here',
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (count > 0)
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8.w,
+                      vertical: 4.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red[100],
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red[700],
+                      ),
+                    ),
+                  ),
+                SizedBox(width: 8.w),
+                Icon(Icons.chevron_right),
+              ],
+            ),
+            onTap: () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (context) => TrashPage()));
+            },
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildwithlove() {
     return Padding(
       padding: EdgeInsets.only(bottom: 12.h),
-      child:  Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
-        
         children: [
-
-        Text(
-        'Build with love by @Geo Paulson',
-        style: TextStyle(
-          fontSize: 18.sp,
-          fontWeight: FontWeight.bold,
-          color: Colors.teal[800],
-        ),
+          Text(
+            'Build with love by @Geo Paulson',
+            style: TextStyle(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.bold,
+              color: Colors.teal[800],
+            ),
+          ),
+          Text(
+            "Version 1.2.0",
+            style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+          ),
+          Text(
+            "Copyright 2025",
+            style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+          ),
+          Text(
+            "All rights reserved",
+            style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+          ),
+          Text(
+            "Geo Paulson",
+            style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+          ),
+          Text(
+            "geo@geopaulson.com",
+            style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+          ),
+        ],
       ),
-      Text("Version 1.2.0", style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),),
-      Text("Copyright 2025", style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),),
-      Text("All rights reserved", style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),),
-      Text("Geo Paulson", style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),),
-      Text("geo@geopaulson.com", style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),),
-     
-      ],)  
     );
   }
 }

@@ -11,6 +11,9 @@ import 'package:debt_tracker/presentation/pages/home_page.dart';
 import 'package:debt_tracker/presentation/pages/splash_screen.dart';
 import 'package:debt_tracker/presentation/pages/transaction_history.dart';
 import 'package:debt_tracker/presentation/pages/auth_screen.dart';
+import 'package:debt_tracker/presentation/pages/cloud_backup_page.dart';
+import 'package:debt_tracker/presentation/pages/trash_page.dart';
+import 'package:debt_tracker/presentation/pages/premium_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -103,6 +106,9 @@ class OweTrackerApp extends StatelessWidget {
               '/home': (context) => HomePage(),
               '/add-transaction': (context) => AddTransactionPage(),
               '/currency-selection': (context) => CurrencySelectionPage(),
+              '/cloud-backup': (context) => CloudBackupPage(),
+              '/trash': (context) => TrashPage(),
+              '/premium': (context) => PremiumPage(),
             },
             onGenerateRoute: (settings) {
               switch (settings.name) {

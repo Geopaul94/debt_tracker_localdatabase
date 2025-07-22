@@ -94,12 +94,9 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
               ),
             );
           } else if (state is TransactionOperationSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.green,
-              ),
-            );
+            // Note: Success snackbar is handled by the Add Transaction page
+            // No need to show duplicate snackbar here
+
             // Reload transactions
             _loadRelatedTransactions();
           } else if (state is TransactionLoaded) {

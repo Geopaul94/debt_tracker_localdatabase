@@ -21,7 +21,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDatabase,
       onUpgrade: _upgradeDatabase,
     );
@@ -41,6 +41,21 @@ class DatabaseHelper {
       )
     ''');
 
+    // Create trash table for soft deletes
+    await db.execute('''
+      CREATE TABLE trash (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL,
+        amount REAL NOT NULL,
+        type TEXT NOT NULL,
+        date TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        deleted_at TEXT NOT NULL
+      )
+    ''');
+
     // Create indexes for better performance
     await db.execute('''
       CREATE INDEX idx_transactions_type ON transactions(type)
@@ -53,6 +68,10 @@ class DatabaseHelper {
     await db.execute('''
       CREATE INDEX idx_transactions_name ON transactions(name)
     ''');
+
+    await db.execute('''
+      CREATE INDEX idx_trash_deleted_at ON trash(deleted_at)
+    ''');
   }
 
   Future<void> _upgradeDatabase(
@@ -62,8 +81,24 @@ class DatabaseHelper {
   ) async {
     // Handle database upgrades here
     if (oldVersion < 2) {
-      // Example: Add new columns in future versions
-      // await db.execute('ALTER TABLE transactions ADD COLUMN category TEXT');
+      // Add trash table for soft deletes
+      await db.execute('''
+        CREATE TABLE trash (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          description TEXT NOT NULL,
+          amount REAL NOT NULL,
+          type TEXT NOT NULL,
+          date TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          deleted_at TEXT NOT NULL
+        )
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_trash_deleted_at ON trash(deleted_at)
+      ''');
     }
   }
 

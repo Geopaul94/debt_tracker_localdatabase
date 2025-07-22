@@ -46,7 +46,7 @@ dependencies:
   path: ^1.9.0
   
   # Google AdMob (revenue generation)
-  google_mobile_ads: ^5.1.0
+  google_mobile_ads: ^5.2.0
   
   # SharedPreferences (lightweight storage)
   shared_preferences: ^2.3.2
@@ -55,6 +55,25 @@ dependencies:
   uuid: ^4.4.0 
   dartz: ^0.10.1
   local_auth: ^2.3.0
+  
+  # Google Services for Drive Backup
+  google_sign_in: ^7.1.1
+  
+  # Network connectivity checking
+  connectivity_plus: ^6.0.5
+  googleapis: ^13.2.0
+  googleapis_auth: ^1.4.1
+  http: ^1.2.1
+  
+  # In-App Purchases
+  in_app_purchase: ^3.2.0
+  
+  # Background tasks and scheduling - using older stable version
+  workmanager: ^0.7.0
+  
+  # File operations
+  path_provider: ^2.1.4
+  
 
 dev_dependencies:
   flutter_test:
