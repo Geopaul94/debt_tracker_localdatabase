@@ -83,13 +83,31 @@ class PreferenceService {
     final hasReal = await hasRealTransaction();
     final sessionCount = await getAppSessionCount();
 
-    // Clean up if user has added real transaction OR after 2 app sessions
-    return hasDummy && (hasReal || sessionCount >= 2);
+    // Clean up if user has added real transaction OR after 1 app session (first view)
+    return hasDummy && (hasReal || sessionCount >= 1);
+  }
+
+  // Check if sample data is currently being displayed
+  Future<bool> isSampleDataDisplayed() async {
+    final hasDummy = await hasDummyData();
+    final hasReal = await hasRealTransaction();
+
+    // Sample data is displayed if we have dummy data but no real transactions yet
+    return hasDummy && !hasReal;
   }
 
   // Reset dummy data flags
   Future<void> resetDummyDataFlags() async {
     await setHasDummyData(false);
+  }
+
+  // Force cleanup after first view
+  Future<void> markFirstViewCompleted() async {
+    final sessionCount = await getAppSessionCount();
+    if (sessionCount == 1) {
+      // After first view, mark that dummy data should be cleaned up
+      await setHasDummyData(false);
+    }
   }
 
   // Ads methods

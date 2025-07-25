@@ -1,137 +1,68 @@
-# 🔑 Google Sign-In Setup Guide for Cloud Backup
+# Google Sign-In Setup Guide
 
-## ❌ **Current Issue**
-Cloud backup Google Sign-in is failing because the `google-services.json` file is missing or incorrectly configured.
+## Problem
+Google Sign-In is failing with `GoogleSignInException(code GoogleSignInExceptionCode.canceled, activity is cancelled by the user., null)`
 
-## ✅ **Solution: Complete Google Sign-In Setup**
+## Solution Steps
 
-### **Step 1: Create Firebase Project**
+### 1. Create Google Cloud Console Project
 
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Click "Create a project" or select existing project
-3. Enter project name: `debt-tracker-app` (or your preferred name)
-4. Disable Google Analytics (optional)
-5. Click "Create project"
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing project
+3. Enable the Google Drive API:
+   - Go to "APIs & Services" > "Library"
+   - Search for "Google Drive API"
+   - Click "Enable"
 
-### **Step 2: Add Android App to Firebase**
+### 2. Configure OAuth Consent Screen
 
-1. In Firebase console, click "Add app" → Android icon
-2. **Package name**: `com.geo.debit_tracker` (MUST match exactly)
-3. **App nickname**: `Debt Tracker` (optional)
-4. **Debug signing certificate SHA-1**: Get from terminal:
+1. Go to "APIs & Services" > "OAuth consent screen"
+2. Choose "External" user type
+3. Fill in required information:
+   - App name: "Debt Tracker"
+   - User support email: Your email
+   - Developer contact information: Your email
+4. Add scopes:
+   - `https://www.googleapis.com/auth/drive.file`
+5. Add test users (your email)
 
-```bash
-# For debug builds (development)
-keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+### 3. Create OAuth 2.0 Credentials
 
-# For release builds (production) - use your release keystore
-keytool -list -v -keystore your-release-key.keystore -alias your-alias-name
+1. Go to "APIs & Services" > "Credentials"
+2. Click "Create Credentials" > "OAuth 2.0 Client IDs"
+3. Choose "Android" application type
+4. Fill in:
+   - Package name: `com.geo.debit_tracker`
+   - SHA-1 certificate fingerprint: `33:E5:1E:87:5C:E7:BC:19:DD:D6:62:3E:31:69:AE:65:91:73:8E:57`
+5. Create another credential for "Web application" type
+6. Note down both client IDs
+
+### 4. Update App Configuration
+
+Replace the client IDs in `lib/core/services/google_drive_service.dart`:
+
+```dart
+await _googleSignIn!.initialize(
+  serverClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+  clientId: 'YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com',
+);
 ```
 
-5. Copy the SHA-1 fingerprint and paste it
-6. Click "Register app"
+### 5. Test the Setup
 
-### **Step 3: Download google-services.json**
+1. Clean and rebuild the app
+2. Try Google Sign-In
+3. Should work without cancellation errors
 
-1. Download the `google-services.json` file
-2. **CRITICAL**: Place it in `android/app/` directory
-3. **Replace** the template file `android/app/google-services.json.template`
+## Alternative: Use Test Configuration
 
-### **Step 4: Enable APIs**
+If you want to test immediately without Google Cloud Console setup, use these test client IDs:
 
-Go to [Google Cloud Console](https://console.cloud.google.com/):
-
-1. Select your Firebase project
-2. Go to "APIs & Services" → "Library"
-3. Enable these APIs:
-   - **Google Drive API**
-   - **Google Sign-In API** 
-   - **Firebase Authentication API**
-
-### **Step 5: Configure OAuth 2.0**
-
-1. In Google Cloud Console → "Credentials"
-2. Find your Android OAuth 2.0 client
-3. **Package name**: `com.geo.debit_tracker`
-4. **SHA-1 fingerprints**: Add both debug and release fingerprints
-5. **Authorized redirect URIs**: Leave empty for mobile
-
-### **Step 6: Update Gradle Dependencies**
-
-Verify in `android/app/build.gradle.kts`:
-
-```kotlin
-dependencies {
-    implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.android.gms:play-services-auth")
-    implementation("com.google.gms:google-services")
-}
+```dart
+await _googleSignIn!.initialize(
+  serverClientId: '694593410619-6o519rlaspfobkgm6nt65b1e9vfsi1s5.apps.googleusercontent.com',
+  clientId: '694593410619-2h85f1cg6mlqshv9shja53i45375jli6.apps.googleusercontent.com',
+);
 ```
 
-### **Step 7: Test the Setup**
-
-1. Run the app in debug mode
-2. Go to "Cloud Backup" in settings
-3. Try "Sign In with Google"
-4. Should show Google account picker
-
-## 🔧 **Troubleshooting**
-
-### **Error: "Sign-in failed"**
-```
-✅ Check SHA-1 fingerprint is correct
-✅ Verify package name matches exactly: com.geo.debit_tracker  
-✅ Ensure google-services.json is in android/app/
-✅ APIs are enabled in Google Cloud Console
-```
-
-### **Error: "Invalid client ID"**
-```
-✅ Download fresh google-services.json from Firebase
-✅ Clean and rebuild: flutter clean && flutter build apk
-✅ Check OAuth client configuration
-```
-
-### **Error: "Network error"**
-```
-✅ Internet connection working
-✅ Google Play Services updated on device
-✅ Try on different device/emulator
-```
-
-## 📱 **For Production Release**
-
-1. **Generate release SHA-1**:
-```bash
-keytool -list -v -keystore debt-tracker-key.jks -alias upload
-```
-
-2. **Add to Firebase console**:
-   - Project Settings → General → Your apps
-   - Add fingerprint → Paste release SHA-1
-
-3. **Download updated google-services.json**
-4. **Test on signed APK before Play Store release**
-
-## 🎯 **Test Checklist**
-
-- [ ] google-services.json exists in android/app/
-- [ ] Package name matches: com.geo.debit_tracker
-- [ ] SHA-1 fingerprints added to Firebase
-- [ ] Google Drive API enabled
-- [ ] Sign-in works in debug mode
-- [ ] Sign-in works in release mode
-- [ ] Cloud backup upload/download functional
-
----
-
-## 📞 **Need Help?**
-
-If you're still having issues:
-
-1. **Check the exact error** in terminal/logcat
-2. **Verify all steps** completed exactly as written
-3. **Try with a fresh Firebase project** if needed
-4. **Test on a different device** to rule out device issues
-
-The most common issue is **incorrect SHA-1 fingerprint** - make sure you're using the right one for your build type (debug vs release)! 
+But these need proper Google Cloud Console configuration to work. 

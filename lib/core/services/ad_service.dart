@@ -4,6 +4,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'preference_service.dart';
 import 'connectivity_service.dart';
 import 'premium_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum AdWeek {
   week1, // No ads
@@ -49,6 +50,30 @@ class AdService {
           ? 'ca-app-pub-3940256099942544/5224354917' // Test ad unit - works for testing
           : 'ca-app-pub-3940256099942544/1712485313';
 
+  // Test method to verify reward ad logic
+  Future<void> testRewardAdLogic() async {
+    print('🧪 Testing reward ad logic...');
+    final shouldShow = await _shouldShowAdType('rewarded');
+    print('🧪 Should show rewarded ads: $shouldShow');
+
+    final currentWeek = await _getCurrentAdWeek();
+    print('🧪 Current week: $currentWeek');
+
+    final installDate = await PreferenceService.instance.getInstallDate();
+    print('🧪 Install date: $installDate');
+  }
+
+  // Method to clear ad-free status for testing
+  Future<void> clearAdFreeStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('ad_free_until');
+      print('✅ Ad-free status cleared');
+    } catch (e) {
+      print('❌ Error clearing ad-free status: $e');
+    }
+  }
+
   // Initialize ads asynchronously
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -66,6 +91,12 @@ class AdService {
       _isInitialized = true;
       print('AdMob initialized successfully');
 
+      // Clear ad-free status for testing reward ads
+      await clearAdFreeStatus();
+
+      // Test reward ad logic
+      await testRewardAdLogic();
+
       // Start background ad loading after initialization
       _startBackgroundLoading();
     } catch (e) {
@@ -76,27 +107,53 @@ class AdService {
   // Determine current ad week based on install date
   Future<AdWeek> _getCurrentAdWeek() async {
     final installDate = await PreferenceService.instance.getInstallDate();
-    if (installDate == null) return AdWeek.week1; // First install - no ads
+    print('📅 Install date: $installDate');
+
+    if (installDate == null) {
+      print('❌ No install date found - returning week1');
+      return AdWeek.week1; // First install - no ads
+    }
 
     final daysSinceInstall = DateTime.now().difference(installDate).inDays;
     final weeksSinceInstall = (daysSinceInstall / 7).floor();
 
-    if (weeksSinceInstall == 0) return AdWeek.week1; // Week 1: No ads
-    if (weeksSinceInstall == 1)
-      return AdWeek.week2; // Week 2: Interstitial + rewarded only
-    if (weeksSinceInstall == 2) return AdWeek.week3; // Week 3: Add app open ads
-    return AdWeek.week4Plus; // Week 4+: All ads including banners
+    print('📊 Days since install: $daysSinceInstall');
+    print('📊 Weeks since install: $weeksSinceInstall');
+
+    if (weeksSinceInstall == 0) {
+      print('📅 Returning AdWeek.week1');
+      return AdWeek.week1; // Week 1: No ads
+    }
+    if (weeksSinceInstall == 1) {
+      print('📅 Returning AdWeek.week2');
+     // return AdWeek.week2; // Week 2: Interstitial + rewarded only
+      return AdWeek.week1; // Week 1: No ads
+    }
+    if (weeksSinceInstall == 2) {
+      print('📅 Returning AdWeek.week3');
+     // return AdWeek.week3; // Week 3: Add app open ads
+      return AdWeek.week1; // Week 1: No ads
+    }
+    print('📅 Returning AdWeek.week4Plus');
+    //   return AdWeek.week4Plus; // Week 4+: All ads including banners
+    return AdWeek.week1; // Week 1: No ads
   }
 
   // Check if specific ad type should be shown
   Future<bool> _shouldShowAdType(String adType) async {
+    print('🔍 Checking if should show ad type: $adType');
+
     // First check if user has ad-free access from rewarded ads or premium
     try {
       final isPremium = await PremiumService.instance.isPremiumUnlocked();
       final isAdFree = await PremiumService.instance.isAdFree();
 
+      print('💰 Premium status: $isPremium');
+      print('🚫 Ad-free status: $isAdFree');
+
       // Premium users or users with ad-free access should not see ads
       if (isPremium || isAdFree) {
+        print('❌ User has premium or ad-free access - not showing ads');
         return false;
       }
     } catch (e) {
@@ -104,22 +161,28 @@ class AdService {
       // Continue with normal ad logic if premium service fails
     }
 
-    // For rewarded ads, always allow them (even in week 1) so users can get ad-free access
+    // For rewarded ads, always allow them from installation
     if (adType == 'rewarded') {
+      print('✅ Rewarded ads always allowed from installation');
       return true;
     }
 
     // For all other ads, check the current week
     final currentWeek = await _getCurrentAdWeek();
+    print('📅 Current ad week: $currentWeek');
 
     switch (currentWeek) {
       case AdWeek.week1:
+        print('❌ Week 1: No ads allowed (except rewarded)');
         return false; // No ads in first week (except rewarded)
       case AdWeek.week2:
+        print('✅ Week 2: Interstitial ads allowed');
         return adType == 'interstitial';
       case AdWeek.week3:
+        print('✅ Week 3: Interstitial and app open ads allowed');
         return adType == 'interstitial' || adType == 'openapp';
       case AdWeek.week4Plus:
+        print('✅ Week 4+: All ads allowed');
         return true; // All ad types allowed except rewarded (already handled above)
     }
   }

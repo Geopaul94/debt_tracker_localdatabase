@@ -3,7 +3,9 @@ import 'package:workmanager/workmanager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/logger.dart';
 import 'premium_service.dart';
+import 'local_backup_service.dart';
 import 'google_drive_service.dart';
+import 'backup_permission_service.dart';
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -61,7 +63,7 @@ class AutoBackupService {
   Future<void> _checkAndEnableAutoBackup() async {
     try {
       final isPremium = await PremiumService.instance.isPremiumUnlocked();
-      final isSignedIn = await GoogleDriveService.instance.isSignedIn();
+      final isSignedIn = await LocalBackupService.instance.isSignedIn();
 
       if (isPremium && isSignedIn) {
         await enableAutoBackup();
@@ -161,7 +163,7 @@ class AutoBackupService {
 
   Future<void> _performAutoBackup() async {
     try {
-      final isSignedIn = await GoogleDriveService.instance.isSignedIn();
+      final isSignedIn = await LocalBackupService.instance.isSignedIn();
       if (!isSignedIn) {
         AppLogger.info(
           'User not signed in to Google Drive, skipping auto backup',
@@ -169,7 +171,7 @@ class AutoBackupService {
         return;
       }
 
-      final success = await GoogleDriveService.instance.createBackup();
+      final success = await LocalBackupService.instance.createBackup();
       if (success) {
         await _prefs?.setString(
           _lastAutoBackupKey,
@@ -187,38 +189,57 @@ class AutoBackupService {
   // Background task methods (static for Workmanager)
   static Future<bool> _performBackgroundBackup() async {
     try {
-      AppLogger.info('Performing background backup...');
-
       // Initialize required services
       await PremiumService.create();
+      await LocalBackupService.instance.initialize();
       await GoogleDriveService.instance.initialize();
+      await BackupPermissionService.instance.initialize();
 
-      final isPremium = await PremiumService.instance.isPremiumUnlocked();
-      if (!isPremium) {
-        AppLogger.info('User not premium, skipping background backup');
-        return true;
-      }
-
-      final isSignedIn = await GoogleDriveService.instance.isSignedIn();
-      if (!isSignedIn) {
-        AppLogger.info(
-          'User not signed in to Google Drive, skipping background backup',
-        );
-        return true;
-      }
-
+      // Check if backup should run based on user type and schedule
       final shouldBackup =
-          await GoogleDriveService.instance.shouldPerformAutoBackup();
+          await BackupPermissionService.instance.shouldRunAutoBackup();
       if (!shouldBackup) {
-        AppLogger.info('Backup not needed yet');
+        AppLogger.info('Backup not needed yet based on schedule');
         return true;
       }
 
-      final success = await GoogleDriveService.instance.createBackup();
-      AppLogger.info('Background backup result: $success');
+      bool success = false;
+
+      // Always create local backup
+      final localSuccess = await LocalBackupService.instance.createBackup();
+      if (localSuccess) {
+        success = true;
+        AppLogger.info('Local auto backup completed successfully');
+      }
+
+      // Try cloud backup if available
+      try {
+        final isSignedIn = await GoogleDriveService.instance.isSignedIn();
+        if (isSignedIn) {
+          final cloudSuccess = await GoogleDriveService.instance.createBackup();
+          if (cloudSuccess) {
+            success = true;
+            AppLogger.info('Cloud auto backup completed successfully');
+          }
+        }
+      } catch (e) {
+        AppLogger.error(
+          'Cloud auto backup failed, but local backup succeeded',
+          e,
+        );
+      }
+
+      if (success) {
+        // Mark auto backup as completed
+        await BackupPermissionService.instance.markAutoBackupCompleted();
+        AppLogger.info('Background backup completed successfully');
+      } else {
+        AppLogger.error('Background backup failed');
+      }
+
       return success;
     } catch (e) {
-      AppLogger.error('Background backup failed', e);
+      AppLogger.error('Error in background backup', e);
       return false;
     }
   }
@@ -228,9 +249,9 @@ class AutoBackupService {
       AppLogger.info('Performing background cleanup...');
 
       // Initialize required services
-      await GoogleDriveService.instance.initialize();
+      await LocalBackupService.instance.initialize();
 
-      final isSignedIn = await GoogleDriveService.instance.isSignedIn();
+      final isSignedIn = await LocalBackupService.instance.isSignedIn();
       if (!isSignedIn) {
         AppLogger.info('User not signed in, skipping cleanup');
         return true;

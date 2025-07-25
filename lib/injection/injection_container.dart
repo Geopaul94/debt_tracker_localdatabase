@@ -4,14 +4,16 @@ import 'package:get_it/get_it.dart';
 // Core
 import '../core/database/database_helper.dart';
 import '../core/services/ad_service.dart';
-import '../core/services/currency_service.dart';
 import '../core/services/authentication_service.dart';
-import '../core/services/premium_service.dart';
-import '../core/services/google_drive_service.dart';
-import '../core/services/trash_service.dart';
-import '../core/services/iap_service.dart';
 import '../core/services/auto_backup_service.dart';
+import '../core/services/backup_permission_service.dart';
 import '../core/services/connectivity_service.dart';
+import '../core/services/currency_service.dart';
+import '../core/services/google_drive_service.dart';
+import '../core/services/iap_service.dart';
+import '../core/services/local_backup_service.dart';
+import '../core/services/premium_service.dart';
+import '../core/services/trash_service.dart';
 import '../core/utils/logger.dart';
 
 // Data
@@ -40,6 +42,10 @@ Future<void> initializeDependencies() async {
     serviceLocator.registerLazySingleton(() => AdService.instance);
     serviceLocator.registerLazySingleton(() => CurrencyService.instance);
     serviceLocator.registerLazySingleton(() => ConnectivityService.instance);
+    serviceLocator.registerLazySingleton(
+      () => BackupPermissionService.instance,
+    );
+    serviceLocator.registerLazySingleton(() => LocalBackupService.instance);
 
     // Register BLoCs immediately (these are lightweight and needed for UI)
     _registerBlocs();
@@ -66,6 +72,8 @@ Future<void> initializeDependencies() async {
     futures.add(_initializeTrashService());
     futures.add(_initializeIAPService());
     futures.add(_initializeAutoBackupService());
+    futures.add(_initializeBackupPermissionService());
+    futures.add(_initializeLocalBackupService());
 
     // Wait for all services to initialize (or fail gracefully)
     await Future.wait(futures, eagerError: false);
@@ -126,9 +134,7 @@ void _registerUseCases() {
   serviceLocator.registerLazySingleton(
     () => GetAllTransactions(serviceLocator()),
   );
-  serviceLocator.registerLazySingleton(
-    () => AddTransaction(serviceLocator()),
-  );
+  serviceLocator.registerLazySingleton(() => AddTransaction(serviceLocator()));
   serviceLocator.registerLazySingleton(
     () => UpdateTransaction(repository: serviceLocator()),
   );
@@ -143,9 +149,7 @@ void _registerUseCases() {
 Future<void> _initializePremiumService() async {
   try {
     final premiumService = await PremiumService.create();
-    serviceLocator.registerLazySingleton<PremiumService>(
-      () => premiumService,
-    );
+    serviceLocator.registerLazySingleton<PremiumService>(() => premiumService);
     AppLogger.info('Premium service initialized successfully');
   } catch (e) {
     AppLogger.error('Premium service initialization error', e);
@@ -226,6 +230,24 @@ Future<void> _initializeAutoBackupService() async {
     await AutoBackupService.instance.initialize();
     AppLogger.info('Auto backup service initialized successfully');
   } catch (e) {
-    AppLogger.error('Auto backup service initialization error', e);
+    AppLogger.error('Auto backup service initialization failed', e);
+  }
+}
+
+Future<void> _initializeBackupPermissionService() async {
+  try {
+    await BackupPermissionService.instance.initialize();
+    AppLogger.info('Backup permission service initialized successfully');
+  } catch (e) {
+    AppLogger.error('Backup permission service initialization failed', e);
+  }
+}
+
+Future<void> _initializeLocalBackupService() async {
+  try {
+    await LocalBackupService.instance.initialize();
+    AppLogger.info('Local backup service initialized successfully');
+  } catch (e) {
+    AppLogger.error('Local backup service initialization failed', e);
   }
 }
