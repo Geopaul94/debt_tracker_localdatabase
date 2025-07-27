@@ -1,30 +1,74 @@
 import '../constants/currencies.dart';
 
 class PremiumPricing {
-  final double yearlyPrice;
   final double monthlyPrice;
+  final double yearlyPrice;
+  final double threeYearPrice;
+  final double lifetimePrice;
   final Currency currency;
 
   const PremiumPricing({
-    required this.yearlyPrice,
     required this.monthlyPrice,
+    required this.yearlyPrice,
+    required this.threeYearPrice,
+    required this.lifetimePrice,
     required this.currency,
   });
 
-  String get formattedYearlyPrice =>
-      '${currency.symbol}${_formatPrice(yearlyPrice)}';
   String get formattedMonthlyPrice =>
       '${currency.symbol}${_formatPrice(monthlyPrice)}';
+  String get formattedYearlyPrice =>
+      '${currency.symbol}${_formatPrice(yearlyPrice)}';
+  String get formattedThreeYearPrice =>
+      '${currency.symbol}${_formatPrice(threeYearPrice)}';
+  String get formattedLifetimePrice =>
+      '${currency.symbol}${_formatPrice(lifetimePrice)}';
 
   String get formattedMonthlyCostOfYearly {
     final monthlyCost = yearlyPrice / 12;
     return '${currency.symbol}${_formatPrice(monthlyCost)}';
   }
 
-  String get formattedSavings {
+  String get formattedMonthlyCostOfThreeYear {
+    final monthlyCost = threeYearPrice / 36;
+    return '${currency.symbol}${_formatPrice(monthlyCost)}';
+  }
+
+  String get formattedYearlySavings {
     final totalMonthly = monthlyPrice * 12;
     final savings = totalMonthly - yearlyPrice;
     return '${currency.symbol}${_formatPrice(savings)}';
+  }
+
+  String get formattedThreeYearSavings {
+    final totalMonthly = monthlyPrice * 36;
+    final savings = totalMonthly - threeYearPrice;
+    return '${currency.symbol}${_formatPrice(savings)}';
+  }
+
+  String get formattedLifetimeSavings {
+    // Compare lifetime to 10 years of monthly payments
+    final totalMonthly = monthlyPrice * 120;
+    final savings = totalMonthly - lifetimePrice;
+    return '${currency.symbol}${_formatPrice(savings)}';
+  }
+
+  int get yearlySavingsPercentage {
+    final totalMonthly = monthlyPrice * 12;
+    final savings = totalMonthly - yearlyPrice;
+    return ((savings / totalMonthly) * 100).round();
+  }
+
+  int get threeYearSavingsPercentage {
+    final totalMonthly = monthlyPrice * 36;
+    final savings = totalMonthly - threeYearPrice;
+    return ((savings / totalMonthly) * 100).round();
+  }
+
+  int get lifetimeSavingsPercentage {
+    final totalMonthly = monthlyPrice * 120; // 10 years
+    final savings = totalMonthly - lifetimePrice;
+    return ((savings / totalMonthly) * 100).round();
   }
 
   String _formatPrice(double price) {
@@ -42,12 +86,14 @@ class PricingService {
   static PricingService get instance => _instance ??= PricingService._();
   PricingService._();
 
-  // Base pricing in different currencies (approximate conversions from ₹750/year, ₹99/month)
+  // Base pricing in different currencies (converted from INR: monthly ₹90, yearly ₹750, 3-year ₹1250, lifetime ₹2000)
   static const Map<String, PremiumPricing> _currencyPricing = {
     // North America
     'USD': PremiumPricing(
+      monthlyPrice: 1.19,
       yearlyPrice: 9.99,
-      monthlyPrice: 1.49,
+      threeYearPrice: 15.99,
+      lifetimePrice: 25.99,
       currency: Currency(
         code: 'USD',
         symbol: '\$',
@@ -56,8 +102,10 @@ class PricingService {
       ),
     ),
     'CAD': PremiumPricing(
+      monthlyPrice: 1.59,
       yearlyPrice: 13.99,
-      monthlyPrice: 1.99,
+      threeYearPrice: 21.99,
+      lifetimePrice: 34.99,
       currency: Currency(
         code: 'CAD',
         symbol: 'C\$',
@@ -66,8 +114,10 @@ class PricingService {
       ),
     ),
     'MXN': PremiumPricing(
+      monthlyPrice: 24.99,
       yearlyPrice: 199.99,
-      monthlyPrice: 29.99,
+      threeYearPrice: 319.99,
+      lifetimePrice: 499.99,
       currency: Currency(
         code: 'MXN',
         symbol: '\$',
@@ -78,13 +128,17 @@ class PricingService {
 
     // Europe
     'EUR': PremiumPricing(
+      monthlyPrice: 1.09,
       yearlyPrice: 8.99,
-      monthlyPrice: 1.29,
+      threeYearPrice: 14.99,
+      lifetimePrice: 23.99,
       currency: Currency(code: 'EUR', symbol: '€', name: 'Euro', flag: '🇪🇺'),
     ),
     'GBP': PremiumPricing(
+      monthlyPrice: 0.99,
       yearlyPrice: 7.99,
-      monthlyPrice: 1.19,
+      threeYearPrice: 12.99,
+      lifetimePrice: 20.99,
       currency: Currency(
         code: 'GBP',
         symbol: '£',
@@ -93,8 +147,10 @@ class PricingService {
       ),
     ),
     'CHF': PremiumPricing(
+      monthlyPrice: 1.19,
       yearlyPrice: 9.99,
-      monthlyPrice: 1.49,
+      threeYearPrice: 15.99,
+      lifetimePrice: 25.99,
       currency: Currency(
         code: 'CHF',
         symbol: 'Fr',
@@ -103,8 +159,10 @@ class PricingService {
       ),
     ),
     'NOK': PremiumPricing(
+      monthlyPrice: 12.99,
       yearlyPrice: 99.99,
-      monthlyPrice: 14.99,
+      threeYearPrice: 159.99,
+      lifetimePrice: 249.99,
       currency: Currency(
         code: 'NOK',
         symbol: 'kr',
@@ -113,8 +171,10 @@ class PricingService {
       ),
     ),
     'SEK': PremiumPricing(
+      monthlyPrice: 12.99,
       yearlyPrice: 99.99,
-      monthlyPrice: 14.99,
+      threeYearPrice: 159.99,
+      lifetimePrice: 249.99,
       currency: Currency(
         code: 'SEK',
         symbol: 'kr',
@@ -123,8 +183,10 @@ class PricingService {
       ),
     ),
     'DKK': PremiumPricing(
+      monthlyPrice: 8.99,
       yearlyPrice: 69.99,
-      monthlyPrice: 9.99,
+      threeYearPrice: 109.99,
+      lifetimePrice: 179.99,
       currency: Currency(
         code: 'DKK',
         symbol: 'kr',
@@ -135,8 +197,10 @@ class PricingService {
 
     // Asia
     'JPY': PremiumPricing(
+      monthlyPrice: 149,
       yearlyPrice: 1299,
-      monthlyPrice: 179,
+      threeYearPrice: 1999,
+      lifetimePrice: 3199,
       currency: Currency(
         code: 'JPY',
         symbol: '¥',
@@ -145,8 +209,10 @@ class PricingService {
       ),
     ),
     'CNY': PremiumPricing(
+      monthlyPrice: 8.99,
       yearlyPrice: 69.99,
-      monthlyPrice: 9.99,
+      threeYearPrice: 109.99,
+      lifetimePrice: 179.99,
       currency: Currency(
         code: 'CNY',
         symbol: '¥',
@@ -155,8 +221,10 @@ class PricingService {
       ),
     ),
     'KRW': PremiumPricing(
+      monthlyPrice: 1499,
       yearlyPrice: 12999,
-      monthlyPrice: 1799,
+      threeYearPrice: 19999,
+      lifetimePrice: 31999,
       currency: Currency(
         code: 'KRW',
         symbol: '₩',
@@ -165,8 +233,10 @@ class PricingService {
       ),
     ),
     'INR': PremiumPricing(
+      monthlyPrice: 90.00,
       yearlyPrice: 750.00,
-      monthlyPrice: 99.00,
+      threeYearPrice: 1250.00,
+      lifetimePrice: 2000.00,
       currency: Currency(
         code: 'INR',
         symbol: '₹',
@@ -175,8 +245,10 @@ class PricingService {
       ),
     ),
     'SGD': PremiumPricing(
+      monthlyPrice: 1.69,
       yearlyPrice: 13.99,
-      monthlyPrice: 1.99,
+      threeYearPrice: 21.99,
+      lifetimePrice: 34.99,
       currency: Currency(
         code: 'SGD',
         symbol: 'S\$',
@@ -185,8 +257,10 @@ class PricingService {
       ),
     ),
     'HKD': PremiumPricing(
+      monthlyPrice: 9.99,
       yearlyPrice: 79.99,
-      monthlyPrice: 11.99,
+      threeYearPrice: 129.99,
+      lifetimePrice: 199.99,
       currency: Currency(
         code: 'HKD',
         symbol: 'HK\$',
@@ -195,8 +269,10 @@ class PricingService {
       ),
     ),
     'MYR': PremiumPricing(
+      monthlyPrice: 5.49,
       yearlyPrice: 44.99,
-      monthlyPrice: 6.99,
+      threeYearPrice: 69.99,
+      lifetimePrice: 109.99,
       currency: Currency(
         code: 'MYR',
         symbol: 'RM',
@@ -205,8 +281,10 @@ class PricingService {
       ),
     ),
     'THB': PremiumPricing(
+      monthlyPrice: 39.99,
       yearlyPrice: 349.99,
-      monthlyPrice: 49.99,
+      threeYearPrice: 549.99,
+      lifetimePrice: 899.99,
       currency: Currency(
         code: 'THB',
         symbol: '฿',
@@ -215,8 +293,10 @@ class PricingService {
       ),
     ),
     'VND': PremiumPricing(
+      monthlyPrice: 29900,
       yearlyPrice: 249000,
-      monthlyPrice: 34900,
+      threeYearPrice: 399000,
+      lifetimePrice: 649000,
       currency: Currency(
         code: 'VND',
         symbol: '₫',
@@ -225,8 +305,10 @@ class PricingService {
       ),
     ),
     'PHP': PremiumPricing(
+      monthlyPrice: 69.99,
       yearlyPrice: 549.99,
-      monthlyPrice: 79.99,
+      threeYearPrice: 899.99,
+      lifetimePrice: 1399.99,
       currency: Currency(
         code: 'PHP',
         symbol: '₱',
@@ -235,8 +317,10 @@ class PricingService {
       ),
     ),
     'IDR': PremiumPricing(
+      monthlyPrice: 17900,
       yearlyPrice: 149000,
-      monthlyPrice: 19900,
+      threeYearPrice: 239000,
+      lifetimePrice: 389000,
       currency: Currency(
         code: 'IDR',
         symbol: 'Rp',
@@ -247,8 +331,10 @@ class PricingService {
 
     // Middle East & Africa
     'AED': PremiumPricing(
+      monthlyPrice: 4.49,
       yearlyPrice: 36.99,
-      monthlyPrice: 5.49,
+      threeYearPrice: 59.99,
+      lifetimePrice: 94.99,
       currency: Currency(
         code: 'AED',
         symbol: 'د.إ',
@@ -257,8 +343,10 @@ class PricingService {
       ),
     ),
     'SAR': PremiumPricing(
+      monthlyPrice: 4.49,
       yearlyPrice: 37.99,
-      monthlyPrice: 5.49,
+      threeYearPrice: 59.99,
+      lifetimePrice: 94.99,
       currency: Currency(
         code: 'SAR',
         symbol: '﷼',
@@ -267,8 +355,10 @@ class PricingService {
       ),
     ),
     'ZAR': PremiumPricing(
+      monthlyPrice: 21.99,
       yearlyPrice: 179.99,
-      monthlyPrice: 24.99,
+      threeYearPrice: 289.99,
+      lifetimePrice: 459.99,
       currency: Currency(
         code: 'ZAR',
         symbol: 'R',
@@ -277,8 +367,10 @@ class PricingService {
       ),
     ),
     'EGP': PremiumPricing(
+      monthlyPrice: 59.99,
       yearlyPrice: 489.99,
-      monthlyPrice: 69.99,
+      threeYearPrice: 789.99,
+      lifetimePrice: 1249.99,
       currency: Currency(
         code: 'EGP',
         symbol: '£',
@@ -289,8 +381,10 @@ class PricingService {
 
     // Oceania
     'AUD': PremiumPricing(
+      monthlyPrice: 1.79,
       yearlyPrice: 14.99,
-      monthlyPrice: 2.19,
+      threeYearPrice: 23.99,
+      lifetimePrice: 38.99,
       currency: Currency(
         code: 'AUD',
         symbol: 'A\$',
@@ -299,8 +393,10 @@ class PricingService {
       ),
     ),
     'NZD': PremiumPricing(
+      monthlyPrice: 1.89,
       yearlyPrice: 15.99,
-      monthlyPrice: 2.29,
+      threeYearPrice: 25.99,
+      lifetimePrice: 40.99,
       currency: Currency(
         code: 'NZD',
         symbol: 'NZ\$',
@@ -311,8 +407,10 @@ class PricingService {
 
     // South America
     'BRL': PremiumPricing(
+      monthlyPrice: 6.99,
       yearlyPrice: 54.99,
-      monthlyPrice: 7.99,
+      threeYearPrice: 89.99,
+      lifetimePrice: 139.99,
       currency: Currency(
         code: 'BRL',
         symbol: 'R\$',
@@ -321,8 +419,10 @@ class PricingService {
       ),
     ),
     'ARS': PremiumPricing(
+      monthlyPrice: 1199.99,
       yearlyPrice: 9999.99,
-      monthlyPrice: 1399.99,
+      threeYearPrice: 15999.99,
+      lifetimePrice: 24999.99,
       currency: Currency(
         code: 'ARS',
         symbol: '\$',
@@ -331,8 +431,10 @@ class PricingService {
       ),
     ),
     'CLP': PremiumPricing(
+      monthlyPrice: 999.99,
       yearlyPrice: 8999.99,
-      monthlyPrice: 1299.99,
+      threeYearPrice: 14999.99,
+      lifetimePrice: 23999.99,
       currency: Currency(
         code: 'CLP',
         symbol: '\$',
@@ -341,8 +443,10 @@ class PricingService {
       ),
     ),
     'COP': PremiumPricing(
+      monthlyPrice: 4699.99,
       yearlyPrice: 39999.99,
-      monthlyPrice: 5799.99,
+      threeYearPrice: 64999.99,
+      lifetimePrice: 99999.99,
       currency: Currency(
         code: 'COP',
         symbol: '\$',
@@ -365,25 +469,138 @@ class PricingService {
     return getPricingForCurrency(userCurrency);
   }
 
-  // Calculate percentage savings for yearly plan
-  double calculateYearlySavingsPercentage(PremiumPricing pricing) {
-    final totalMonthly = pricing.monthlyPrice * 12;
-    final savings = totalMonthly - pricing.yearlyPrice;
-    return (savings / totalMonthly) * 100;
+  // Get localized price description for specific plan
+  String getPriceDescription(PremiumPricing pricing, PlanType planType) {
+    switch (planType) {
+      case PlanType.monthly:
+        return '${pricing.formattedMonthlyPrice}/month';
+      case PlanType.yearly:
+        final savingsPercent = pricing.yearlySavingsPercentage;
+        return '${pricing.formattedYearlyPrice}/year (Save $savingsPercent%)';
+      case PlanType.threeYear:
+        final savingsPercent = pricing.threeYearSavingsPercentage;
+        return '${pricing.formattedThreeYearPrice}/3 years (Save $savingsPercent%)';
+      case PlanType.lifetime:
+        final savingsPercent = pricing.lifetimeSavingsPercentage;
+        return '${pricing.formattedLifetimePrice} lifetime (Save $savingsPercent%)';
+    }
   }
 
-  // Get localized price description
-  String getPriceDescription(PremiumPricing pricing, {required bool isYearly}) {
-    if (isYearly) {
-      final savingsPercent = calculateYearlySavingsPercentage(pricing);
-      return '${pricing.formattedYearlyPrice}/year (Save ${savingsPercent.toInt()}%)';
-    } else {
-      return '${pricing.formattedMonthlyPrice}/month';
+  // Get monthly equivalent cost for comparison
+  String getMonthlyCostDescription(PremiumPricing pricing, PlanType planType) {
+    switch (planType) {
+      case PlanType.monthly:
+        return pricing.formattedMonthlyPrice;
+      case PlanType.yearly:
+        return pricing.formattedMonthlyCostOfYearly;
+      case PlanType.threeYear:
+        return pricing.formattedMonthlyCostOfThreeYear;
+      case PlanType.lifetime:
+        return 'One-time payment';
+    }
+  }
+
+  // Get savings compared to monthly plan
+  String getSavingsDescription(PremiumPricing pricing, PlanType planType) {
+    switch (planType) {
+      case PlanType.monthly:
+        return '';
+      case PlanType.yearly:
+        return 'Save ${pricing.formattedYearlySavings} vs monthly';
+      case PlanType.threeYear:
+        return 'Save ${pricing.formattedThreeYearSavings} vs monthly';
+      case PlanType.lifetime:
+        return 'Save ${pricing.formattedLifetimeSavings} vs 10 years monthly';
     }
   }
 
   // Check if currency has special formatting rules
   bool usesCurrencyDecimals(String currencyCode) {
     return !['JPY', 'KRW', 'VND', 'IDR'].contains(currencyCode);
+  }
+
+  // Get all available plans with their benefits
+  List<PlanDetails> getAllPlans(Currency userCurrency) {
+    final pricing = getCurrentPricing(userCurrency);
+
+    return [
+      PlanDetails(
+        type: PlanType.monthly,
+        price: pricing.formattedMonthlyPrice,
+        period: 'month',
+        savings: '',
+        monthlyCost: pricing.formattedMonthlyPrice,
+        description: 'Perfect for trying premium features',
+        badge: '',
+        isPopular: false,
+      ),
+      PlanDetails(
+        type: PlanType.yearly,
+        price: pricing.formattedYearlyPrice,
+        period: 'year',
+        savings: 'Save ${pricing.yearlySavingsPercentage}%',
+        monthlyCost: pricing.formattedMonthlyCostOfYearly,
+        description: 'Most popular choice for regular users',
+        badge: 'Most Popular',
+        isPopular: true,
+      ),
+      PlanDetails(
+        type: PlanType.threeYear,
+        price: pricing.formattedThreeYearPrice,
+        period: '3 years',
+        savings: 'Save ${pricing.threeYearSavingsPercentage}%',
+        monthlyCost: pricing.formattedMonthlyCostOfThreeYear,
+        description: 'Best value for long-term users',
+        badge: 'Best Value',
+        isPopular: false,
+      ),
+      PlanDetails(
+        type: PlanType.lifetime,
+        price: pricing.formattedLifetimePrice,
+        period: 'lifetime',
+        savings: 'Save ${pricing.lifetimeSavingsPercentage}%',
+        monthlyCost: 'One-time',
+        description: 'Pay once, use forever',
+        badge: 'Lifetime',
+        isPopular: false,
+      ),
+    ];
+  }
+}
+
+enum PlanType { monthly, yearly, threeYear, lifetime }
+
+class PlanDetails {
+  final PlanType type;
+  final String price;
+  final String period;
+  final String savings;
+  final String monthlyCost;
+  final String description;
+  final String badge;
+  final bool isPopular;
+
+  const PlanDetails({
+    required this.type,
+    required this.price,
+    required this.period,
+    required this.savings,
+    required this.monthlyCost,
+    required this.description,
+    required this.badge,
+    required this.isPopular,
+  });
+
+  String get planName {
+    switch (type) {
+      case PlanType.monthly:
+        return 'Monthly';
+      case PlanType.yearly:
+        return 'Yearly';
+      case PlanType.threeYear:
+        return '3 Year';
+      case PlanType.lifetime:
+        return 'Lifetime';
+    }
   }
 }

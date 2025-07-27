@@ -36,6 +36,16 @@ class _SplashScreenState extends State<SplashScreen>
     }
   }
 
+  // Helper method to safely check if AuthenticationService is available
+  bool _isAuthServiceAvailable() {
+    try {
+      serviceLocator<AuthenticationService>();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -68,8 +78,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _checkAppState() async {
     try {
-      // Wait for animations to start
-      await Future.delayed(const Duration(milliseconds: 1500));
+      // Minimal delay - just enough for animation to be visible
+      await Future.delayed(const Duration(milliseconds: 300));
 
       print('🔍 Checking app state...');
 
@@ -85,11 +95,24 @@ class _SplashScreenState extends State<SplashScreen>
         return;
       }
 
-      // Check authentication requirements
-      final isAuthEnabled =
-          await serviceLocator<AuthenticationService>()
-              .isAuthenticationEnabled();
-      print('🔐 Authentication enabled: $isAuthEnabled');
+      // Check authentication requirements with fallback
+      bool isAuthEnabled = false;
+      if (_isAuthServiceAvailable()) {
+        try {
+          isAuthEnabled =
+              await serviceLocator<AuthenticationService>()
+                  .isAuthenticationEnabled();
+          print('🔐 Authentication enabled: $isAuthEnabled');
+        } catch (e) {
+          print('⚠️ Auth service error, proceeding without authentication: $e');
+          isAuthEnabled = false;
+        }
+      } else {
+        print(
+          '⚠️ Authentication service not yet available, skipping auth check',
+        );
+        isAuthEnabled = false;
+      }
 
       if (isAuthEnabled) {
         // Check if user has premium or ad-free access to skip authentication
@@ -112,7 +135,7 @@ class _SplashScreenState extends State<SplashScreen>
             canSkipAuth = false;
           }
         } else {
-          print('⚠️ Premium service not available');
+          print('⚠️ Premium service not yet available');
           canSkipAuth = false;
         }
 
@@ -136,7 +159,8 @@ class _SplashScreenState extends State<SplashScreen>
     } catch (e) {
       print('❌ Error during app state check: $e');
 
-      // Fallback navigation
+      // Fallback navigation - always navigate to home if there's any error
+      print('🏠 Fallback: navigating to home');
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/home');
       }

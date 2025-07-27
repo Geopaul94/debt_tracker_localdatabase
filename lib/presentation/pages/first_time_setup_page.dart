@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/constants/currencies.dart';
 import '../../core/services/preference_service.dart';
+import '../../core/services/google_drive_service.dart';
 import '../../injection/injection_container.dart';
 import '../bloc/currency_bloc/currency_bloc.dart';
 import '../bloc/currency_bloc/currency_event.dart';
@@ -22,6 +23,8 @@ class FirstTimeSetupPage extends StatefulWidget {
 class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
   bool _isLoading = false;
   bool _isAuthEnabled = false; // Default enabled
+  bool _isGoogleSignedIn = false;
+  String? _userEmail;
   late CurrencyBloc _currencyBloc;
   late AuthBloc _authBloc;
 
@@ -31,6 +34,7 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
     _currencyBloc =
         serviceLocator<CurrencyBloc>()..add(LoadCurrentCurrencyEvent());
     _authBloc = serviceLocator<AuthBloc>()..add(LoadAuthSettingsEvent());
+    _checkGoogleSignInStatus();
   }
 
   @override
@@ -38,6 +42,107 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
     _currencyBloc.close();
     _authBloc.close();
     super.dispose();
+  }
+
+  Future<void> _checkGoogleSignInStatus() async {
+    try {
+      await GoogleDriveService.instance.initialize();
+      final isSignedIn = await GoogleDriveService.instance.isSignedIn();
+      if (mounted) {
+        setState(() {
+          _isGoogleSignedIn = isSignedIn;
+          _userEmail = GoogleDriveService.instance.userEmail;
+        });
+      }
+    } catch (e) {
+      print('Error checking Google sign-in status: $e');
+    }
+  }
+
+  Future<void> _signInToGoogle() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final success = await GoogleDriveService.instance.signIn();
+
+      if (success) {
+        await _checkGoogleSignInStatus();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ Successfully signed in to Google Drive!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Failed to sign in to Google Drive'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error signing in to Google Drive: $e'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _signOutFromGoogle() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await GoogleDriveService.instance.signOut();
+      await _checkGoogleSignInStatus();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Successfully signed out from Google Drive'),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error signing out from Google Drive: $e'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -318,7 +423,7 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
                           SizedBox(height: 10.h),
 
                           Text(
-                            'This app uses local database storage. Your data is saved directly on your phone.',
+                            'Connect with Google Drive in the setttings  to backup and restore  your data and access it on multiple devices.',
                             style: TextStyle(
                               fontSize: 14.sp,
                               color: Colors.red[700],
@@ -329,16 +434,9 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
 
                           SizedBox(height: 8.h),
 
-                          Text(
-                            '⚠️ Do NOT uninstall the app or clear app data\n'
-                            '⚠️ This will lead to permanent data loss\n'
-                            '⚠️ All your transactions will be deleted forever',
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              color: Colors.red[600],
-                              height: 1.5,
-                            ),
-                          ),
+                        
+                     
+
                         ],
                       ),
                     ),
@@ -507,7 +605,19 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
       // Mark first time setup as complete
       await PreferenceService.instance.setFirstLaunchCompleted();
 
-      // Add sample transactions to demonstrate the app
+      // If user is signed in to Google Drive, create an initial backup
+      if (_isGoogleSignedIn) {
+        try {
+          final success = await GoogleDriveService.instance.createBackup();
+          if (success) {
+            print('Initial Google Drive backup created successfully');
+          } else {
+            print('Failed to create initial Google Drive backup');
+          }
+        } catch (e) {
+          print('Error creating initial Google Drive backup: $e');
+        }
+      }
 
       if (mounted) {
         // Navigate to home page
@@ -588,3 +698,4 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
     );
   }
 }
+

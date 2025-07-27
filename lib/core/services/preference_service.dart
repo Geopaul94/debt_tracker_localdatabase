@@ -5,8 +5,6 @@ class PreferenceService {
   static const String _installDateKey = 'install_date';
   static const String _adsEnabledKey = 'ads_enabled';
   static const String _sampleDataAddedKey = 'sample_data_added';
-  static const String _hasDummyDataKey = 'has_dummy_data';
-  static const String _hasRealTransactionKey = 'has_real_transaction';
   static const String _appSessionCountKey = 'app_session_count';
 
   static PreferenceService? _instance;
@@ -50,23 +48,6 @@ class PreferenceService {
     return null;
   }
 
-  // Dummy data management methods
-  Future<bool> hasDummyData() async {
-    return _prefs?.getBool(_hasDummyDataKey) ?? false;
-  }
-
-  Future<void> setHasDummyData(bool hasData) async {
-    await _prefs?.setBool(_hasDummyDataKey, hasData);
-  }
-
-  Future<bool> hasRealTransaction() async {
-    return _prefs?.getBool(_hasRealTransactionKey) ?? false;
-  }
-
-  Future<void> setHasRealTransaction(bool hasReal) async {
-    await _prefs?.setBool(_hasRealTransactionKey, hasReal);
-  }
-
   // App session tracking
   Future<int> getAppSessionCount() async {
     return _prefs?.getInt(_appSessionCountKey) ?? 0;
@@ -75,21 +56,6 @@ class PreferenceService {
   Future<void> incrementAppSession() async {
     final currentCount = await getAppSessionCount();
     await _prefs?.setInt(_appSessionCountKey, currentCount + 1);
-  }
-
-  // Check if dummy data should be cleaned up
-  Future<bool> shouldCleanupDummyData() async {
-    final hasDummy = await hasDummyData();
-    final hasReal = await hasRealTransaction();
-    final sessionCount = await getAppSessionCount();
-
-    // Clean up if user has added real transaction OR after 2 app sessions
-    return hasDummy && (hasReal || sessionCount >= 2);
-  }
-
-  // Reset dummy data flags
-  Future<void> resetDummyDataFlags() async {
-    await setHasDummyData(false);
   }
 
   // Ads methods

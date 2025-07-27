@@ -5,7 +5,7 @@ import '../../presentation/widgets/update_notification_dialog.dart';
 class UpdateNotificationService {
   static const String _lastShownVersionKey = 'last_shown_update_version';
   static const String _currentVersion =
-      '1.3.0'; // Update this with each release
+      '1.2.0'; // Update this with each release
 
   static UpdateNotificationService? _instance;
   static UpdateNotificationService get instance =>
@@ -59,11 +59,11 @@ class UpdateNotificationService {
         return [
           '🔐 MAJOR FIX: Authentication now works with ALL security methods!',
           '📱 PIN Users: Your PIN authentication now works perfectly',
-          '🔒 Pattern Users:google drive backup',
+          '🔑 Password Users: Device passwords are now fully supported',
           '🎨 Pattern Users: Pattern locks now work seamlessly',
-          '👆 watch one ad and use 2 hours ad free ',
-          '🛡️ Trash bin for 30 days deleted data backup',
-          '🚀 Ad free premium features',
+          '👆 Biometric Users: Face ID, Touch ID, and Fingerprint still work great',
+          '🛡️ Enhanced Security: Better protection for your debt tracking data',
+          '🚀 No More Auth Errors: Fixed all authentication-related crashes',
           '💯 Universal Compatibility: Works on all Android devices regardless of security setup',
         ];
       case '1.1.9':

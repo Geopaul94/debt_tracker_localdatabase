@@ -23,7 +23,7 @@ test/
 ## 🧪 Test Categories
 
 ### Unit Tests
-- **PreferenceService Tests**: Dummy data management, app session tracking, ad preferences
+- **PreferenceService Tests**: App session tracking, ad preferences, first launch detection
 - **AdService Tests**: Weekly ad progression, loading states, singleton pattern
 - **TransactionBloc Tests**: State management, event handling, error scenarios
 
@@ -62,7 +62,7 @@ flutter test --coverage
 The test suite covers:
 
 ### Core Services (90%+ coverage)
-- ✅ PreferenceService: Dummy data lifecycle, session tracking, first launch detection
+- ✅ PreferenceService: Session tracking, first launch detection, ad preferences
 - ✅ AdService: Weekly progression system, loading states, cooldown management
 
 ### State Management (85%+ coverage)
@@ -75,12 +75,6 @@ The test suite covers:
 - ✅ App initialization: Navigation, error handling, state persistence
 
 ## 🎯 Key Test Scenarios
-
-### Dummy Data Management
-- New install shows 3 sample transactions
-- Cleanup after first real transaction
-- Cleanup after 2 app sessions
-- Proper state tracking
 
 ### Ad System Testing
 - Weekly progression: Week 1 (no ads) → Week 4+ (all ads)
@@ -98,7 +92,7 @@ The test suite covers:
 - Text overflow handling with ellipsis
 - Tap interactions and navigation
 - Different transaction types display
-- Sample vs real transaction styling
+- Transaction styling and formatting
 
 ## 🔧 Test Configuration
 
@@ -125,7 +119,7 @@ dev_dependencies:
 - setState reduction (60-80% improvement with ValueNotifier)
 - Background ad loading (eliminates UI blocking)
 - Memory management (proper disposal)
-- Database operations (dummy data cleanup)
+- Database operations (efficient CRUD operations)
 
 ## 🐛 Debugging Tests
 
@@ -153,7 +147,7 @@ All tests are designed to validate:
 - ✅ **Reliability**: App works correctly under different scenarios
 - ✅ **Performance**: Optimizations don't break functionality
 - ✅ **User Experience**: UI updates properly and responsively
-- ✅ **Business Logic**: Dummy data and ad systems work as expected
+- ✅ **Business Logic**: Ad systems and transaction management work as expected
 
 ## 🚀 Continuous Integration
 

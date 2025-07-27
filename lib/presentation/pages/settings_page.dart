@@ -20,6 +20,7 @@ import 'terms_conditions_page.dart';
 import 'cloud_backup_page.dart';
 import 'trash_page.dart';
 import 'premium_page.dart';
+import 'hybrid_backup_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -460,7 +461,7 @@ class SettingsPage extends StatelessWidget {
         onTap: () {
           Navigator.of(
             context,
-          ).push(MaterialPageRoute(builder: (context) => CloudBackupPage()));
+          ).push(MaterialPageRoute(builder: (context) => HybridBackupPage()));
         },
       ),
     );

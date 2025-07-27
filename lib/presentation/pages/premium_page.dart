@@ -7,7 +7,7 @@ import '../../core/services/pricing_service.dart';
 import '../../core/services/currency_service.dart';
 
 class PremiumPage extends StatefulWidget {
-  const PremiumPage({Key? key}) : super(key: key);
+   PremiumPage({Key? key}) : super(key: key);
 
   @override
   State<PremiumPage> createState() => _PremiumPageState();
@@ -17,18 +17,23 @@ class _PremiumPageState extends State<PremiumPage> {
   bool _isLoading = false;
   bool _isPremium = false;
   PurchaseInfo? _purchaseInfo;
-  PremiumPricing? _currentPricing;
+  List<PlanDetails> _availablePlans = [];
+  String? _lastError;
+  bool _showDebugInfo = false;
 
   @override
   void initState() {
     super.initState();
     _initializeIAP();
     _checkPremiumStatus();
-    _loadCurrentPricing();
+    _loadAvailablePlans();
   }
 
   Future<void> _initializeIAP() async {
     await IAPService.instance.initialize();
+    setState(() {
+      _lastError = IAPService.instance.lastError;
+    });
   }
 
   Future<void> _checkPremiumStatus() async {
@@ -41,44 +46,39 @@ class _PremiumPageState extends State<PremiumPage> {
     });
   }
 
-  void _loadCurrentPricing() {
+  void _loadAvailablePlans() {
     final userCurrency = CurrencyService.instance.currentCurrency;
-    final pricing = PricingService.instance.getCurrentPricing(userCurrency);
+    final plans = PricingService.instance.getAllPlans(userCurrency);
 
     setState(() {
-      _currentPricing = pricing;
+      _availablePlans = plans;
     });
   }
 
-  Future<void> _purchaseYearly() async {
-    setState(() => _isLoading = true);
+  Future<void> _purchasePlan(PlanType planType) async {
+    setState(() {
+      _isLoading = true;
+      _lastError = null;
+    });
 
-    final success = await IAPService.instance.purchaseYearlyPremium();
+    PurchaseResult result;
 
-    if (success) {
-      await _checkPremiumStatus();
-      // Enable auto backup for premium users
-      try {
-        await AutoBackupService.instance.enableAutoBackup();
-      } catch (e) {
-        // Auto backup setup failed, but premium is still active
-      }
-      _showSuccessSnackBar(
-        '🎉 Premium activated! Welcome to the premium experience!',
-      );
-    } else {
-      _showErrorSnackBar('❌ Purchase failed. Please try again.');
+    switch (planType) {
+      case PlanType.monthly:
+        result = await IAPService.instance.purchaseMonthlyPremium();
+        break;
+      case PlanType.yearly:
+        result = await IAPService.instance.purchaseYearlyPremium();
+        break;
+      case PlanType.threeYear:
+        result = await IAPService.instance.purchase3YearPremium();
+        break;
+      case PlanType.lifetime:
+        result = await IAPService.instance.purchaseLifetimePremium();
+        break;
     }
 
-    setState(() => _isLoading = false);
-  }
-
-  Future<void> _purchaseMonthly() async {
-    setState(() => _isLoading = true);
-
-    final success = await IAPService.instance.purchaseMonthlyPremium();
-
-    if (success) {
+    if (result.isSuccess) {
       await _checkPremiumStatus();
       // Enable auto backup for premium users
       try {
@@ -90,14 +90,20 @@ class _PremiumPageState extends State<PremiumPage> {
         '🎉 Premium activated! Welcome to the premium experience!',
       );
     } else {
-      _showErrorSnackBar('❌ Purchase failed. Please try again.');
+      setState(() {
+        _lastError = result.message;
+      });
+      _showErrorDialog('Purchase Failed', result.message);
     }
 
     setState(() => _isLoading = false);
   }
 
   Future<void> _restorePurchases() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _lastError = null;
+    });
 
     await IAPService.instance.restorePurchases();
     await _checkPremiumStatus();
@@ -132,8 +138,87 @@ class _PremiumPageState extends State<PremiumPage> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
-        duration: Duration(seconds: 3),
+        duration: Duration(seconds: 4),
       ),
+    );
+  }
+
+  void _showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text(title),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(message),
+                SizedBox(height: 16),
+                Text(
+                  'Troubleshooting tips:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text('• Check your internet connection'),
+                Text('• Make sure you\'re signed into Google Play'),
+                Text('• Try restarting the app'),
+                Text('• Contact support if the problem persists'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('OK'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _showDebugDialog();
+                },
+                child: Text('Debug Info'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _showDebugDialog() {
+    final debugInfo = IAPService.instance.getDebugInfo();
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Debug Information'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Platform: ${debugInfo['platform']}'),
+                  Text('IAP Available: ${debugInfo['isAvailable']}'),
+                  Text('Products Loaded: ${debugInfo['productsLoaded']}'),
+                  Text('Purchase Pending: ${debugInfo['purchasePending']}'),
+                  if (debugInfo['lastError'] != null)
+                    Text('Last Error: ${debugInfo['lastError']}'),
+                  SizedBox(height: 16),
+                  Text(
+                    'Products:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  ...((debugInfo['products'] as List).map(
+                    (product) =>
+                        Text('• ${product['id']}: ${product['price']}'),
+                  )),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Close'),
+              ),
+            ],
+          ),
     );
   }
 
@@ -146,9 +231,13 @@ class _PremiumPageState extends State<PremiumPage> {
         actions: [
           if (!_isPremium)
             TextButton(
-              onPressed: _restorePurchases,
+              onPressed: _isLoading ? null : _restorePurchases,
               child: Text('Restore', style: TextStyle(color: Colors.white)),
             ),
+          IconButton(
+            onPressed: () => setState(() => _showDebugInfo = !_showDebugInfo),
+            icon: Icon(Icons.bug_report, size: 20),
+          ),
         ],
       ),
       body:
@@ -159,6 +248,8 @@ class _PremiumPageState extends State<PremiumPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (_showDebugInfo) _buildDebugSection(),
+                    if (_lastError != null) _buildErrorSection(),
                     if (_isPremium)
                       _buildPremiumActiveSection()
                     else
@@ -173,522 +264,211 @@ class _PremiumPageState extends State<PremiumPage> {
     );
   }
 
-  Widget _buildPremiumActiveSection() {
-    return Card(
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.purple[600]!, Colors.purple[400]!],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+  Widget _buildDebugSection() {
+    final debugInfo = IAPService.instance.getDebugInfo();
+    return Container(
+      margin: EdgeInsets.only(bottom: 16.h),
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Debug Info', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text('IAP Available: ${debugInfo['isAvailable']}'),
+          Text('Products: ${debugInfo['productsLoaded']}'),
+          if (debugInfo['lastError'] != null)
+            Text(
+              'Error: ${debugInfo['lastError']}',
+              style: TextStyle(color: Colors.red),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorSection() {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16.h),
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.red[50],
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.red[200]!),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Purchase Issue',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                  ),
+                ),
+                Text(_lastError!, style: TextStyle(color: Colors.red[700])),
+              ],
+            ),
           ),
-          borderRadius: BorderRadius.circular(12.r),
+          TextButton(
+            onPressed: () => _showErrorDialog('Purchase Issue', _lastError!),
+            child: Text('Help'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumActiveSection() {
+    return Container(
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.purple[400]!, Colors.purple[600]!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        padding: EdgeInsets.all(24.w),
-        child: Column(
-          children: [
-            Icon(Icons.star, size: 48.sp, color: Colors.white),
-            SizedBox(height: 16.h),
-            Text(
-              'Premium Active',
-              style: TextStyle(
-                fontSize: 24.sp,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.star, color: Colors.white, size: 48.sp),
+          SizedBox(height: 12.h),
+          Text(
+            'Premium Active! 🎉',
+            style: TextStyle(
+              fontSize: 24.sp,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
-            SizedBox(height: 8.h),
+          ),
+          SizedBox(height: 8.h),
+          if (_purchaseInfo != null) ...[
             Text(
-              'Thank you for supporting our app!',
+              '${_purchaseInfo!.planType} Plan',
               style: TextStyle(fontSize: 16.sp, color: Colors.white70),
-              textAlign: TextAlign.center,
             ),
-            if (_purchaseInfo != null) ...[
-              SizedBox(height: 16.h),
-              Container(
-                padding: EdgeInsets.all(12.w),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Plan:', style: TextStyle(color: Colors.white70)),
-                        Text(
-                          _purchaseInfo!.isYearly ? 'Yearly' : 'Monthly',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8.h),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Expires:',
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                        Text(
-                          _purchaseInfo!.formattedExpiryDate,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8.h),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Days remaining:',
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                        Text(
-                          '${_purchaseInfo!.daysRemaining} days',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+            SizedBox(height: 4.h),
+            if (!_purchaseInfo!.isLifetime) ...[
+              Text(
+                '${_purchaseInfo!.daysRemaining} days remaining',
+                style: TextStyle(fontSize: 14.sp, color: Colors.white70),
               ),
-            ],
+              Text(
+                'Expires: ${_purchaseInfo!.formattedExpiryDate}',
+                style: TextStyle(fontSize: 12.sp, color: Colors.white60),
+              ),
+            ] else
+              Text(
+                'Lifetime Access - No Expiry!',
+                style: TextStyle(fontSize: 14.sp, color: Colors.white70),
+              ),
           ],
-        ),
+          SizedBox(height: 16.h),
+          Text(
+            'Enjoy ad-free experience and automatic backups!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: Colors.white.withOpacity(0.8),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildPremiumOfferSection() {
-    return Card(
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.purple[600]!, Colors.purple[400]!],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return Container(
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.orange[400]!, Colors.orange[600]!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.star_border, color: Colors.white, size: 48.sp),
+          SizedBox(height: 12.h),
+          Text(
+            'Upgrade to Premium',
+            style: TextStyle(
+              fontSize: 24.sp,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-        padding: EdgeInsets.all(24.w),
-        child: Column(
-          children: [
-            Icon(Icons.star, size: 48.sp, color: Colors.white),
-            SizedBox(height: 16.h),
-            Text(
-              'Upgrade to Premium',
-              style: TextStyle(
-                fontSize: 24.sp,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+          SizedBox(height: 8.h),
+          Text(
+            'Unlock premium features and support development',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: Colors.white.withOpacity(0.8),
             ),
-            SizedBox(height: 20.h),
-
-            // Free Features Card
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 16.w),
-              padding: EdgeInsets.all(16.w),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.blue[800]!, Colors.blue[600]!],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 8,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.play_circle_filled,
-                      color: Colors.white,
-                      size: 24.sp,
-                    ),
-                  ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '🎬 Free Option',
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 4.h),
-                        Text(
-                          'Watch one ad for 2 hours of ad-free usage',
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            SizedBox(height: 16.h),
-
-            // Premium Support Card
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 16.w),
-              padding: EdgeInsets.all(16.w),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.purple[800]!, Colors.purple[600]!],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 8,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.favorite,
-                      color: Colors.white,
-                      size: 24.sp,
-                    ),
-                  ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '💝 Support Developer',
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 4.h),
-                        Text(
-                          'Help us continue building amazing features for you',
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            SizedBox(height: 16.h),
-
-            // Reassurance Card
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 16.w),
-              padding: EdgeInsets.all(16.w),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.green[800]!, Colors.green[600]!],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 8,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.sentiment_satisfied_alt,
-                      color: Colors.white,
-                      size: 24.sp,
-                    ),
-                  ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '😊 No Pressure!',
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 4.h),
-                        Text(
-                          'Can\'t afford premium? No worries! Use all features with manual backup and occasional ads.',
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            SizedBox(height: 24.h),
-            Text(
-              'Unlock all features and enjoy an ad-free experience',
-              style: TextStyle(fontSize: 16.sp, color: Colors.white70),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 24.h),
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.all(16.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Best Value',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.yellow[300],
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        Text(
-                          _currentPricing?.formattedYearlyPrice ?? '₹750',
-                          style: TextStyle(
-                            fontSize: 28.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          'per year',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            color: Colors.white70,
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        Text(
-                          'Save ${_currentPricing?.formattedSavings ?? '₹438'}',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green[300],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(width: 16.w),
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.all(16.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: Column(
-                      children: [
-                        SizedBox(height: 20.h),
-                        Text(
-                          _currentPricing?.formattedMonthlyPrice ?? '₹99',
-                          style: TextStyle(
-                            fontSize: 28.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          'per month',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            color: Colors.white70,
-                          ),
-                        ),
-                        SizedBox(height: 20.h),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildFeatureComparison() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Features Comparison',
-              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16.h),
-            _buildFeatureRow(
-              icon: Icons.delete_outline,
-              title: 'Trash & Recovery',
-              free: true,
-              premium: true,
-            ),
-            _buildFeatureRow(
-              icon: Icons.cloud_upload,
-              title: 'Manual Cloud Backup',
-              free: true,
-              premium: true,
-              freeNote: 'With ads',
-            ),
-            _buildFeatureRow(
-              icon: Icons.backup,
-              title: 'Automatic Daily Backup',
-              free: false,
-              premium: true,
-            ),
-            _buildFeatureRow(
-              icon: Icons.ads_click,
-              title: 'Ad-Free Experience',
-              free: false,
-              premium: true,
-            ),
-            _buildFeatureRow(
-              icon: Icons.restore,
-              title: 'Data Restore',
-              free: true,
-              premium: true,
-              freeNote: 'With ads',
-            ),
-            _buildFeatureRow(
-              icon: Icons.schedule,
-              title: '15-Day Backup History',
-              free: false,
-              premium: true,
-            ),
-            _buildFeatureRow(
-              icon: Icons.security,
-              title: 'Priority Support',
-              free: false,
-              premium: true,
-            ),
-            _buildFeatureRow(
-              icon: Icons.update,
-              title: 'Early Access to Features',
-              free: false,
-              premium: true,
-            ),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'What\'s Included',
+          style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold),
         ),
-      ),
+        SizedBox(height: 16.h),
+        _buildFeatureItem('🚫', 'No Ads', 'Enjoy uninterrupted experience'),
+        _buildFeatureItem('☁️', 'Auto Backup', 'Daily automatic cloud backups'),
+        _buildFeatureItem(
+          '🗑️',
+          'Advanced Features',
+          'Trash bin, restore deleted transactions',
+        ),
+        _buildFeatureItem('🎨', 'Premium Themes', 'Beautiful custom themes'),
+        _buildFeatureItem('📧', 'Priority Support', 'Get help faster'),
+        _buildFeatureItem('💾', 'Data Export', 'Export your data anytime'),
+      ],
     );
   }
 
-  Widget _buildFeatureRow({
-    required IconData icon,
-    required String title,
-    required bool free,
-    required bool premium,
-    String? freeNote,
-  }) {
+  Widget _buildFeatureItem(String icon, String title, String description) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 8.h),
       child: Row(
         children: [
-          Icon(icon, color: Colors.teal[600], size: 20.sp),
-          SizedBox(width: 12.w),
-          Expanded(child: Text(title, style: TextStyle(fontSize: 14.sp))),
-          Container(
-            width: 60.w,
+          Text(icon, style: TextStyle(fontSize: 24.sp)),
+          SizedBox(width: 16.w),
+          Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  free ? Icons.check : Icons.close,
-                  color: free ? Colors.green : Colors.red,
-                  size: 20.sp,
-                ),
-                if (freeNote != null && free)
-                  Text(
-                    freeNote,
-                    style: TextStyle(
-                      fontSize: 10.sp,
-                      color: Colors.orange[600],
-                    ),
-                    textAlign: TextAlign.center,
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
                   ),
+                ),
+                Text(
+                  description,
+                  style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+                ),
               ],
-            ),
-          ),
-          SizedBox(width: 20.w),
-          Container(
-            width: 60.w,
-            child: Icon(
-              premium ? Icons.check : Icons.close,
-              color: premium ? Colors.green : Colors.red,
-              size: 20.sp,
             ),
           ),
         ],
@@ -702,143 +482,133 @@ class _PremiumPageState extends State<PremiumPage> {
       children: [
         Text(
           'Choose Your Plan',
-          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 16.h),
+        ..._availablePlans.map((plan) => _buildPlanCard(plan)).toList(),
+      ],
+    );
+  }
 
-        // Yearly Plan (Recommended)
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.purple, width: 2),
-            borderRadius: BorderRadius.circular(12.r),
+  Widget _buildPlanCard(PlanDetails plan) {
+    final isPopular = plan.isPopular;
+    final hasSpecialBadge = plan.badge.isNotEmpty;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 16.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: isPopular ? Colors.orange : Colors.grey[300]!,
+          width: isPopular ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
-          child: Card(
-            margin: EdgeInsets.zero,
-            child: Padding(
-              padding: EdgeInsets.all(16.w),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8.w,
-                          vertical: 4.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.purple,
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        child: Text(
-                          'RECOMMENDED',
-                          style: TextStyle(
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      Spacer(),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8.w,
-                          vertical: 4.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green[100],
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        child: Text(
-                          'Save ${_currentPricing?.formattedSavings ?? '₹438'}',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green[700],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 16.h),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        _currentPricing?.formattedYearlyPrice ?? '₹750',
-                        style: TextStyle(
-                          fontSize: 32.sp,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.purple,
-                        ),
-                      ),
-                      Text(
-                        ' /year',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      Spacer(),
-                      Text(
-                        '${_currentPricing?.formattedMonthlyCostOfYearly ?? '₹62.5'}/month',
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 16.h),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _purchaseYearly,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple,
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(vertical: 16.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                      ),
-                      child: Text(
-                        'Get Yearly Premium',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+        ],
+      ),
+      child: Column(
+        children: [
+          if (hasSpecialBadge)
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(vertical: 8.h),
+              decoration: BoxDecoration(
+                color: isPopular ? Colors.orange : Colors.purple,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12.r),
+                  topRight: Radius.circular(12.r),
+                ),
+              ),
+              child: Text(
+                plan.badge,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14.sp,
+                ),
               ),
             ),
-          ),
-        ),
-
-        SizedBox(height: 16.h),
-
-        // Monthly Plan
-        Card(
-          child: Padding(
-            padding: EdgeInsets.all(16.w),
+          Padding(
+            padding: EdgeInsets.all(20.w),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      _currentPricing?.formattedMonthlyPrice ?? '₹99',
-                      style: TextStyle(
-                        fontSize: 32.sp,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.teal,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          plan.planName,
+                          style: TextStyle(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          plan.description,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          plan.price,
+                          style: TextStyle(
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green[600],
+                          ),
+                        ),
+                        Text(
+                          '/${plan.period}',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+                if (plan.type != PlanType.monthly) ...[
+                  Row(
+                    children: [
+                      Icon(Icons.savings, size: 16.sp, color: Colors.green),
+                      SizedBox(width: 4.w),
+                      Text(
+                        plan.savings,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: Colors.green[600],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 4.h),
+                ],
+                Row(
+                  children: [
+                    Icon(Icons.calculate, size: 16.sp, color: Colors.grey[600]),
+                    SizedBox(width: 4.w),
                     Text(
-                      ' /month',
+                      '${plan.monthlyCost}/month equivalent',
                       style: TextStyle(
-                        fontSize: 16.sp,
+                        fontSize: 12.sp,
                         color: Colors.grey[600],
                       ),
                     ),
@@ -847,21 +617,22 @@ class _PremiumPageState extends State<PremiumPage> {
                 SizedBox(height: 16.h),
                 SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: _purchaseMonthly,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.teal,
-                      side: BorderSide(color: Colors.teal),
-                      padding: EdgeInsets.symmetric(vertical: 16.h),
+                  child: ElevatedButton(
+                    onPressed:
+                        _isLoading ? null : () => _purchasePlan(plan.type),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isPopular ? Colors.orange : Colors.teal,
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8.r),
                       ),
                     ),
                     child: Text(
-                      'Get Monthly Premium',
+                      'Choose ${plan.planName}',
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -869,45 +640,8 @@ class _PremiumPageState extends State<PremiumPage> {
               ],
             ),
           ),
-        ),
-
-        SizedBox(height: 24.h),
-
-        // Terms and conditions
-        Container(
-          padding: EdgeInsets.all(16.w),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(8.r),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Terms & Conditions:',
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[700],
-                ),
-              ),
-              SizedBox(height: 8.h),
-              Text(
-                '• Payment will be charged to your Google Play account\n'
-                '• Subscription automatically renews unless auto-renew is turned off\n'
-                '• You can manage your subscription in Google Play Store\n'
-                '• No refunds for unused time periods\n'
-                '• Premium features are tied to your Google account',
-                style: TextStyle(
-                  fontSize: 11.sp,
-                  color: Colors.grey[600],
-                  height: 1.4,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

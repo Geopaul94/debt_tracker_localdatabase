@@ -10,26 +10,41 @@ import 'core/utils/logger.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize AdMob early
-  try {
-    await MobileAds.instance.initialize();
-    AppLogger.info('AdMob initialized successfully in main');
-  } catch (e) {
-    AppLogger.error('AdMob initialization failed in main', e);
-  }
   try {
     AppLogger.info('Starting app initialization...');
-    await initializeDependencies();
 
-    // Initialize preference service
+    // Initialize only critical services that are needed for UI
     await PreferenceService.instance.initialize();
     AppLogger.info('Preference service initialized');
 
-    AppLogger.info('App initialization completed successfully');
+    // Initialize dependencies synchronously to ensure BLoCs are available
+    await initializeDependencies();
+    AppLogger.info('Dependencies initialized successfully');
+
+    AppLogger.info('App initialization completed successfully - showing UI');
     runApp(const OweTrackerApp());
   } catch (e) {
     AppLogger.error('Failed to initialize app', e);
     runApp(ErrorApp(error: e.toString()));
+  }
+}
+
+// Initialize dependencies in background after UI is shown
+void _initializeDependenciesInBackground() async {
+  try {
+    // Initialize AdMob early but don't block app launch
+    MobileAds.instance
+        .initialize()
+        .then((_) {
+          AppLogger.info('AdMob initialized successfully in background');
+        })
+        .catchError((e) {
+          AppLogger.error('AdMob initialization failed in background', e);
+        });
+
+    AppLogger.info('Background dependencies initialization completed');
+  } catch (e) {
+    AppLogger.error('Background dependency initialization failed', e);
   }
 }
 
@@ -78,3 +93,4 @@ class ErrorApp extends StatelessWidget {
     );
   }
 }
+

@@ -1,9 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
-import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,26 +28,40 @@ class GoogleDriveService {
 
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
-    _googleSignIn = GoogleSignIn(
-      scopes: ['email', 'https://www.googleapis.com/auth/drive.file'],
+    _googleSignIn = GoogleSignIn.instance;
+
+    // Initialize the Google Sign-In instance for mobile (Android/iOS)
+    await _googleSignIn!.initialize(
+      // Web Client ID for Google Drive API access
+      serverClientId:
+          '694593410619-6o519rlaspfobkgm6nt65b1e9vfsi1s5.apps.googleusercontent.com',
+      // Explicitly set the Android client ID
+      clientId:
+          '694593410619-2h85f1cg6mlqshv9shja53i45375jli6.apps.googleusercontent.com',
     );
   }
 
   // Authentication Methods
   Future<bool> signIn() async {
     try {
-      if (_googleSignIn == null) await initialize();
+      await initialize();
 
-      final account = await _googleSignIn!.signIn();
+      final account = await _googleSignIn!.authenticate();
       if (account == null) return false;
 
       _currentUser = account;
       await _prefs?.setString(_userEmailKey, account.email);
 
-      // Initialize Drive API
-      final authHeaders = await account.authHeaders;
-      final authenticateClient = GoogleAuthClient(authHeaders);
-      _driveApi = drive.DriveApi(authenticateClient);
+      // Initialize Drive API with new authorization system
+      const scopes = ['https://www.googleapis.com/auth/drive.file'];
+      final authorization = await account.authorizationClient
+          .authorizationForScopes(scopes);
+      if (authorization != null) {
+        final authenticateClient = GoogleAuthClient({
+          'Authorization': 'Bearer ${authorization.accessToken}',
+        });
+        _driveApi = drive.DriveApi(authenticateClient);
+      }
 
       AppLogger.info('Google Drive sign-in successful: ${account.email}');
       return true;
@@ -73,14 +85,20 @@ class GoogleDriveService {
 
   Future<bool> isSignedIn() async {
     try {
-      if (_googleSignIn == null) await initialize();
-      final account = await _googleSignIn!.signInSilently();
+      await initialize();
+      final account = await _googleSignIn!.attemptLightweightAuthentication();
       if (account != null) {
         _currentUser = account;
-        final authHeaders = await account.authHeaders;
-        final authenticateClient = GoogleAuthClient(authHeaders);
-        _driveApi = drive.DriveApi(authenticateClient);
-        return true;
+        const scopes = ['https://www.googleapis.com/auth/drive.file'];
+        final authorization = await account.authorizationClient
+            .authorizationForScopes(scopes);
+        if (authorization != null) {
+          final authenticateClient = GoogleAuthClient({
+            'Authorization': 'Bearer ${authorization.accessToken}',
+          });
+          _driveApi = drive.DriveApi(authenticateClient);
+          return true;
+        }
       }
       return false;
     } catch (e) {
@@ -252,7 +270,7 @@ class GoogleDriveService {
   Future<void> _cleanupOldBackups() async {
     try {
       final cutoffDate = DateTime.now().subtract(
-        Duration(days: _maxBackupRetentionDays),
+        const Duration(days: _maxBackupRetentionDays),
       );
       final folderId = await _getOrCreateBackupFolder();
 
@@ -321,7 +339,7 @@ class BackupInfo {
   final DateTime createdAt;
   final int size;
 
-  BackupInfo({
+  const BackupInfo({
     required this.id,
     required this.name,
     required this.createdAt,

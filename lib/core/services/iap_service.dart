@@ -7,8 +7,11 @@ import '../utils/logger.dart';
 import 'premium_service.dart';
 
 class IAPService {
+  // Updated product IDs with new plans
+  static const String _premiumMonthlyProductId = 'premium_monthly_90';
   static const String _premiumYearlyProductId = 'premium_yearly_750';
-  static const String _premiumMonthlyProductId = 'premium_monthly_99';
+  static const String _premium3YearProductId = 'premium_3year_1250';
+  static const String _premiumLifetimeProductId = 'premium_lifetime_2000';
 
   static IAPService? _instance;
   static IAPService get instance => _instance ??= IAPService._();
@@ -21,83 +24,138 @@ class IAPService {
   List<ProductDetails> _products = [];
   bool _isAvailable = false;
   bool _purchasePending = false;
+  String? _lastError;
 
   // Getters
   List<ProductDetails> get products => _products;
   bool get isAvailable => _isAvailable;
   bool get purchasePending => _purchasePending;
+  String? get lastError => _lastError;
 
-  ProductDetails? get yearlyProduct => _products.firstWhere(
-    (product) => product.id == _premiumYearlyProductId,
-    orElse: () => throw Exception('Yearly product not found'),
-  );
+  ProductDetails? get monthlyProduct =>
+      _products
+          .where((product) => product.id == _premiumMonthlyProductId)
+          .firstOrNull;
 
-  ProductDetails? get monthlyProduct => _products.firstWhere(
-    (product) => product.id == _premiumMonthlyProductId,
-    orElse: () => throw Exception('Monthly product not found'),
-  );
+  ProductDetails? get yearlyProduct =>
+      _products
+          .where((product) => product.id == _premiumYearlyProductId)
+          .firstOrNull;
+
+  ProductDetails? get threeYearProduct =>
+      _products
+          .where((product) => product.id == _premium3YearProductId)
+          .firstOrNull;
+
+  ProductDetails? get lifetimeProduct =>
+      _products
+          .where((product) => product.id == _premiumLifetimeProductId)
+          .firstOrNull;
 
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
+    _lastError = null;
 
-    // Check if in-app purchases are available
-    _isAvailable = await _inAppPurchase.isAvailable();
+    try {
+      // Check if in-app purchases are available
+      _isAvailable = await _inAppPurchase.isAvailable();
 
-    if (!_isAvailable) {
-      AppLogger.error('In-app purchases not available');
-      return;
+      if (!_isAvailable) {
+        _lastError = 'In-app purchases not available on this device';
+        AppLogger.error(_lastError!);
+        return;
+      }
+
+      // Listen to purchase updates
+      _subscription = _inAppPurchase.purchaseStream.listen(
+        _onPurchaseUpdate,
+        onDone: () => _subscription.cancel(),
+        onError: (error) {
+          _lastError = 'Purchase stream error: $error';
+          AppLogger.error(_lastError!, error);
+        },
+      );
+
+      // Load products
+      await _loadProducts();
+
+      // Check for any pending purchases
+      await _checkPendingPurchases();
+
+      // Restore purchases for existing users
+      await restorePurchases();
+
+      AppLogger.info(
+        'IAP Service initialized successfully with ${_products.length} products',
+      );
+    } catch (e) {
+      _lastError = 'IAP initialization failed: $e';
+      AppLogger.error(_lastError!, e);
     }
-
-    // Listen to purchase updates
-    _subscription = _inAppPurchase.purchaseStream.listen(
-      _onPurchaseUpdate,
-      onDone: () => _subscription.cancel(),
-      onError: (error) => AppLogger.error('Purchase stream error', error),
-    );
-
-    // Load products
-    await _loadProducts();
-
-    // Restore purchases for existing users
-    await restorePurchases();
-
-    AppLogger.info('IAP Service initialized successfully');
   }
 
   Future<void> _loadProducts() async {
     final Set<String> productIds = {
-      _premiumYearlyProductId,
       _premiumMonthlyProductId,
+      _premiumYearlyProductId,
+      _premium3YearProductId,
+      _premiumLifetimeProductId,
     };
 
     try {
+      AppLogger.info('Loading products: $productIds');
       final ProductDetailsResponse response = await _inAppPurchase
           .queryProductDetails(productIds);
 
       if (response.notFoundIDs.isNotEmpty) {
-        AppLogger.error('Products not found: ${response.notFoundIDs}');
+        _lastError =
+            'Products not found in Play Console: ${response.notFoundIDs}';
+        AppLogger.error(_lastError!);
       }
 
       _products = response.productDetails;
-      AppLogger.info('Loaded ${_products.length} products');
+      AppLogger.info('Loaded ${_products.length} products successfully');
 
       for (final product in _products) {
         AppLogger.info(
-          'Product: ${product.id} - ${product.title} - ${product.price}',
+          'Product loaded: ${product.id} - ${product.title} - ${product.price}',
         );
       }
+
+      if (_products.isEmpty) {
+        _lastError =
+            'No products found. Please check Play Console configuration.';
+        AppLogger.error(_lastError!);
+      }
     } catch (e) {
-      AppLogger.error('Failed to load products', e);
+      _lastError = 'Failed to load products: $e';
+      AppLogger.error(_lastError!, e);
+    }
+  }
+
+  Future<void> _checkPendingPurchases() async {
+    try {
+      // Check for any pending purchases that weren't completed
+      AppLogger.info('Checking for pending purchases...');
+    } catch (e) {
+      AppLogger.error('Error checking pending purchases', e);
     }
   }
 
   void _onPurchaseUpdate(List<PurchaseDetails> purchaseDetailsList) {
+    AppLogger.info(
+      'Purchase update received: ${purchaseDetailsList.length} items',
+    );
     for (final PurchaseDetails purchaseDetails in purchaseDetailsList) {
       _handlePurchase(purchaseDetails);
     }
   }
 
   Future<void> _handlePurchase(PurchaseDetails purchaseDetails) async {
+    AppLogger.info(
+      'Handling purchase: ${purchaseDetails.productID} - Status: ${purchaseDetails.status}',
+    );
+
     if (purchaseDetails.status == PurchaseStatus.pending) {
       _purchasePending = true;
       AppLogger.info('Purchase pending: ${purchaseDetails.productID}');
@@ -105,34 +163,57 @@ class IAPService {
       _purchasePending = false;
 
       if (purchaseDetails.status == PurchaseStatus.error) {
-        AppLogger.error('Purchase error', purchaseDetails.error);
+        _lastError =
+            'Purchase error: ${purchaseDetails.error?.message ?? 'Unknown error'}';
+        AppLogger.error(_lastError!, purchaseDetails.error);
       } else if (purchaseDetails.status == PurchaseStatus.purchased ||
           purchaseDetails.status == PurchaseStatus.restored) {
         // Verify purchase and grant premium access
         await _verifyAndGrantPurchase(purchaseDetails);
+      } else if (purchaseDetails.status == PurchaseStatus.canceled) {
+        _lastError = 'Purchase was canceled by user';
+        AppLogger.info(_lastError!);
       }
 
       // Complete the purchase
       if (purchaseDetails.pendingCompletePurchase) {
-        await _inAppPurchase.completePurchase(purchaseDetails);
+        try {
+          await _inAppPurchase.completePurchase(purchaseDetails);
+          AppLogger.info('Purchase completed: ${purchaseDetails.productID}');
+        } catch (e) {
+          AppLogger.error('Failed to complete purchase', e);
+        }
       }
     }
   }
 
   Future<void> _verifyAndGrantPurchase(PurchaseDetails purchaseDetails) async {
     try {
+      AppLogger.info(
+        'Verifying and granting purchase: ${purchaseDetails.productID}',
+      );
+
       // In a real app, you would verify the purchase with your server
       // For now, we'll grant access directly
 
       DateTime expiryDate;
-      if (purchaseDetails.productID == _premiumYearlyProductId) {
-        expiryDate = DateTime.now().add(Duration(days: 365));
-        AppLogger.info('Granting yearly premium access');
-      } else if (purchaseDetails.productID == _premiumMonthlyProductId) {
+      if (purchaseDetails.productID == _premiumMonthlyProductId) {
         expiryDate = DateTime.now().add(Duration(days: 30));
-        AppLogger.info('Granting monthly premium access');
+        AppLogger.info('Granting monthly premium access (30 days)');
+      } else if (purchaseDetails.productID == _premiumYearlyProductId) {
+        expiryDate = DateTime.now().add(Duration(days: 365));
+        AppLogger.info('Granting yearly premium access (365 days)');
+      } else if (purchaseDetails.productID == _premium3YearProductId) {
+        expiryDate = DateTime.now().add(Duration(days: 365 * 3));
+        AppLogger.info('Granting 3-year premium access (1095 days)');
+      } else if (purchaseDetails.productID == _premiumLifetimeProductId) {
+        expiryDate = DateTime.now().add(
+          Duration(days: 365 * 100),
+        ); // 100 years = lifetime
+        AppLogger.info('Granting lifetime premium access');
       } else {
-        AppLogger.error('Unknown product ID: ${purchaseDetails.productID}');
+        _lastError = 'Unknown product ID: ${purchaseDetails.productID}';
+        AppLogger.error(_lastError!);
         return;
       }
 
@@ -144,8 +225,10 @@ class IAPService {
       await _storePurchaseInfo(purchaseDetails, expiryDate);
 
       AppLogger.info('Premium access granted until: $expiryDate');
+      _lastError = null; // Clear any previous errors
     } catch (e) {
-      AppLogger.error('Failed to verify and grant purchase', e);
+      _lastError = 'Failed to verify and grant purchase: $e';
+      AppLogger.error(_lastError!, e);
     }
   }
 
@@ -165,38 +248,108 @@ class IAPService {
     await _prefs?.setString('purchase_date', DateTime.now().toIso8601String());
   }
 
-  // Purchase methods
-  Future<bool> purchaseYearlyPremium() async {
-    return await _purchaseProduct(_premiumYearlyProductId);
+  // Purchase methods with enhanced error handling
+  Future<PurchaseResult> purchaseMonthlyPremium() async {
+    return await _purchaseProductWithRetry(_premiumMonthlyProductId);
   }
 
-  Future<bool> purchaseMonthlyPremium() async {
-    return await _purchaseProduct(_premiumMonthlyProductId);
+  Future<PurchaseResult> purchaseYearlyPremium() async {
+    return await _purchaseProductWithRetry(_premiumYearlyProductId);
   }
 
-  Future<bool> _purchaseProduct(String productId) async {
+  Future<PurchaseResult> purchase3YearPremium() async {
+    return await _purchaseProductWithRetry(_premium3YearProductId);
+  }
+
+  Future<PurchaseResult> purchaseLifetimePremium() async {
+    return await _purchaseProductWithRetry(_premiumLifetimeProductId);
+  }
+
+  Future<PurchaseResult> _purchaseProductWithRetry(
+    String productId, {
+    int retryCount = 0,
+  }) async {
     try {
+      AppLogger.info(
+        'Attempting purchase for: $productId (attempt ${retryCount + 1})',
+      );
+
       if (!_isAvailable) {
-        AppLogger.error('In-app purchases not available');
-        return false;
+        return PurchaseResult.failure(
+          'In-app purchases not available on this device. Please check your Play Store settings.',
+        );
       }
 
-      final product = _products.firstWhere(
-        (product) => product.id == productId,
-        orElse: () => throw Exception('Product not found: $productId'),
-      );
+      if (_products.isEmpty) {
+        await _loadProducts(); // Try to reload products
+        if (_products.isEmpty) {
+          return PurchaseResult.failure(
+            'No products available. Please check your internet connection and try again.',
+          );
+        }
+      }
+
+      final product =
+          _products.where((product) => product.id == productId).firstOrNull;
+      if (product == null) {
+        return PurchaseResult.failure(
+          'Product not found: $productId. Please contact support.',
+        );
+      }
 
       final PurchaseParam purchaseParam = PurchaseParam(
         productDetails: product,
       );
 
-      AppLogger.info('Initiating purchase for: $productId');
-      return await _inAppPurchase.buyNonConsumable(
+      AppLogger.info(
+        'Initiating purchase for: ${product.title} - ${product.price}',
+      );
+      final bool purchaseStarted = await _inAppPurchase.buyNonConsumable(
         purchaseParam: purchaseParam,
       );
+
+      if (purchaseStarted) {
+        return PurchaseResult.success('Purchase initiated successfully');
+      } else {
+        return PurchaseResult.failure(
+          'Failed to start purchase process. Please try again.',
+        );
+      }
     } catch (e) {
-      AppLogger.error('Purchase failed for $productId', e);
-      return false;
+      _lastError = 'Purchase failed for $productId: $e';
+      AppLogger.error(_lastError!, e);
+
+      // Retry logic for network errors
+      if (retryCount < 2 &&
+          (e.toString().contains('network') ||
+              e.toString().contains('timeout'))) {
+        AppLogger.info('Retrying purchase due to network error...');
+        await Future.delayed(Duration(seconds: 2));
+        return await _purchaseProductWithRetry(
+          productId,
+          retryCount: retryCount + 1,
+        );
+      }
+
+      return PurchaseResult.failure(_getHumanReadableError(e.toString()));
+    }
+  }
+
+  String _getHumanReadableError(String error) {
+    if (error.contains('network') || error.contains('timeout')) {
+      return 'Network connection issue. Please check your internet and try again.';
+    } else if (error.contains('user_cancelled') || error.contains('canceled')) {
+      return 'Purchase was canceled.';
+    } else if (error.contains('billing_unavailable')) {
+      return 'Billing service is unavailable. Please update Google Play Store.';
+    } else if (error.contains('item_unavailable')) {
+      return 'This product is currently unavailable. Please try again later.';
+    } else if (error.contains('developer_error')) {
+      return 'App configuration error. Please contact support.';
+    } else if (error.contains('item_already_owned')) {
+      return 'You already own this product. Try restoring purchases.';
+    } else {
+      return 'Purchase failed. Please try again or contact support.';
     }
   }
 
@@ -206,8 +359,10 @@ class IAPService {
 
       AppLogger.info('Restoring purchases...');
       await _inAppPurchase.restorePurchases();
+      AppLogger.info('Restore purchases completed');
     } catch (e) {
-      AppLogger.error('Failed to restore purchases', e);
+      _lastError = 'Failed to restore purchases: $e';
+      AppLogger.error(_lastError!, e);
     }
   }
 
@@ -265,7 +420,7 @@ class IAPService {
     _subscription.cancel();
   }
 
-  // Pricing helpers
+  // Pricing helpers for backward compatibility
   String get yearlyPrice {
     try {
       return yearlyProduct?.price ?? '₹750';
@@ -276,30 +431,59 @@ class IAPService {
 
   String get monthlyPrice {
     try {
-      return monthlyProduct?.price ?? '₹99';
+      return monthlyProduct?.price ?? '₹90';
     } catch (e) {
-      return '₹99';
+      return '₹90';
     }
   }
 
-  String get yearlySavings {
-    // Calculate yearly savings compared to monthly
+  String get threeYearPrice {
     try {
-      final monthly = monthlyProduct;
-      final yearly = yearlyProduct;
-
-      if (monthly != null && yearly != null) {
-        // This is simplified - in reality you'd parse the actual price values
-        final monthlyCost = 99 * 12; // ₹99 x 12 months
-        final yearlyCost = 750;
-        final savings = monthlyCost - yearlyCost;
-        return '₹$savings';
-      }
+      return threeYearProduct?.price ?? '₹1250';
     } catch (e) {
-      // Fallback calculation
+      return '₹1250';
     }
-    return '₹438'; // ₹99 x 12 - ₹750 = ₹438 savings
   }
+
+  String get lifetimePrice {
+    try {
+      return lifetimeProduct?.price ?? '₹2000';
+    } catch (e) {
+      return '₹2000';
+    }
+  }
+
+  // Get system info for debugging
+  Map<String, dynamic> getDebugInfo() {
+    return {
+      'isAvailable': _isAvailable,
+      'productsLoaded': _products.length,
+      'lastError': _lastError,
+      'purchasePending': _purchasePending,
+      'platform':
+          Platform.isAndroid
+              ? 'Android'
+              : Platform.isIOS
+              ? 'iOS'
+              : 'Unknown',
+      'products':
+          _products
+              .map((p) => {'id': p.id, 'title': p.title, 'price': p.price})
+              .toList(),
+    };
+  }
+}
+
+class PurchaseResult {
+  final bool isSuccess;
+  final String message;
+
+  PurchaseResult._(this.isSuccess, this.message);
+
+  factory PurchaseResult.success(String message) =>
+      PurchaseResult._(true, message);
+  factory PurchaseResult.failure(String message) =>
+      PurchaseResult._(false, message);
 }
 
 class PurchaseInfo {
@@ -318,6 +502,17 @@ class PurchaseInfo {
   bool get isActive => DateTime.now().isBefore(expiryDate);
 
   bool get isYearly => productId == IAPService._premiumYearlyProductId;
+  bool get isMonthly => productId == IAPService._premiumMonthlyProductId;
+  bool get is3Year => productId == IAPService._premium3YearProductId;
+  bool get isLifetime => productId == IAPService._premiumLifetimeProductId;
+
+  String get planType {
+    if (isLifetime) return 'Lifetime';
+    if (is3Year) return '3 Year';
+    if (isYearly) return 'Yearly';
+    if (isMonthly) return 'Monthly';
+    return 'Unknown';
+  }
 
   int get daysRemaining => expiryDate.difference(DateTime.now()).inDays;
 

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 import '../../core/database/database_helper.dart';
-import '../../core/services/preference_service.dart';
 import '../../core/utils/logger.dart';
 import '../models/transaction_model.dart';
 import '../../domain/entities/transaction_entity.dart';
@@ -23,10 +22,6 @@ abstract class TransactionSQLiteDataSource {
   Future<List<TransactionModel>> searchTransactions(String query);
   Future<Map<String, double>> getTransactionSummary();
 
-  // Dummy data management
-  Future<void> cleanupDummyDataIfNeeded();
-  Future<void> addDummyDataIfNeeded();
-
   // Add dispose method for cleanup
   void dispose();
 }
@@ -36,13 +31,6 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
   StreamController<List<TransactionModel>>? _transactionController;
   bool _isInitialized = false;
   bool _isDisposed = false;
-
-  // Dummy transaction IDs for identification
-  static const List<String> _dummyTransactionIds = [
-    'dummy_1',
-    'dummy_2',
-    'dummy_3',
-  ];
 
   TransactionSQLiteDataSourceImpl({required DatabaseHelper databaseHelper})
     : _databaseHelper = databaseHelper;
@@ -65,116 +53,9 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
       // Initialize database schema only
       await _databaseHelper.database;
       _isInitialized = true;
-
-      // Add dummy data if needed and clean up if necessary
-      await addDummyDataIfNeeded();
-      await cleanupDummyDataIfNeeded();
     } catch (e) {
       AppLogger.error('Database initialization error', e);
       _isInitialized = true;
-    }
-  }
-
-  @override
-  Future<void> addDummyDataIfNeeded() async {
-    if (_isDisposed) return;
-
-    try {
-      final db = await _databaseHelper.database;
-      final result = await db.rawQuery(
-        'SELECT COUNT(*) as count FROM $_tableName',
-      );
-      final count = result.first['count'] as int? ?? 0;
-      final hasDummyData = await PreferenceService.instance.hasDummyData();
-
-      // Add dummy data only if no transactions exist and no dummy data flag is set
-      if (count == 0 && !hasDummyData) {
-        final dummyTransactions = _createDummyTransactions();
-
-        for (final transaction in dummyTransactions) {
-          await db.insert(
-            _tableName,
-            transaction.toMap(),
-            conflictAlgorithm: ConflictAlgorithm.replace,
-          );
-        }
-
-        // Mark that we have dummy data
-        await PreferenceService.instance.setHasDummyData(true);
-        AppLogger.info('Dummy data added for new user experience');
-      }
-    } catch (e) {
-      AppLogger.error('Error adding dummy data', e);
-    }
-  }
-
-  @override
-  Future<void> cleanupDummyDataIfNeeded() async {
-    if (_isDisposed) return;
-
-    try {
-      final shouldCleanup =
-          await PreferenceService.instance.shouldCleanupDummyData();
-
-      if (shouldCleanup) {
-        await _removeDummyTransactions();
-        await PreferenceService.instance.resetDummyDataFlags();
-        AppLogger.info('Dummy data cleaned up');
-      }
-    } catch (e) {
-      AppLogger.error('Error cleaning up dummy data', e);
-    }
-  }
-
-  List<TransactionModel> _createDummyTransactions() {
-    final now = DateTime.now();
-    return [
-      TransactionModel(
-        id: 'dummy_1',
-        name: "Alex Johnson",
-        description: 'Lunch at downtown cafe',
-        amount: 25.50,
-        type: TransactionType.iOwe,
-        date: now.subtract(const Duration(days: 3)),
-        createdAt: now,
-        updatedAt: now,
-      ),
-      TransactionModel(
-        id: 'dummy_2',
-        name: "Sarah Williams",
-        description: 'Freelance web design project',
-        amount: 150.00,
-        type: TransactionType.owesMe,
-        date: now.subtract(const Duration(days: 1)),
-        createdAt: now,
-        updatedAt: now,
-      ),
-      TransactionModel(
-        id: 'dummy_3',
-        name: "Mike Chen",
-        description: 'Movie tickets for weekend show',
-        amount: 18.00,
-        type: TransactionType.iOwe,
-        date: now,
-        createdAt: now,
-        updatedAt: now,
-      ),
-    ];
-  }
-
-  Future<void> _removeDummyTransactions() async {
-    if (_isDisposed) return;
-
-    try {
-      final db = await _databaseHelper.database;
-
-      for (final dummyId in _dummyTransactionIds) {
-        await db.delete(_tableName, where: 'id = ?', whereArgs: [dummyId]);
-      }
-
-      _notifyListeners();
-    } catch (e) {
-      AppLogger.error('Error removing dummy transactions', e);
     }
   }
 
@@ -228,16 +109,6 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
 
     try {
       final db = await _databaseHelper.database;
-
-      // Check if this is the user's first real transaction
-      final hasRealTransaction =
-          await PreferenceService.instance.hasRealTransaction();
-      if (!hasRealTransaction &&
-          !_dummyTransactionIds.contains(transaction.id)) {
-        await PreferenceService.instance.setHasRealTransaction(true);
-        // Clean up dummy data when user adds first real transaction
-        await cleanupDummyDataIfNeeded();
-      }
 
       await db.insert(
         _tableName,

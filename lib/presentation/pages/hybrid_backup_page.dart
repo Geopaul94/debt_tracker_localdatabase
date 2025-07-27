@@ -1,27 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../core/services/google_drive_service.dart';
 import '../../core/services/local_backup_service.dart';
 import '../../core/services/premium_service.dart';
-import '../../core/services/ad_service.dart';
-import '../../core/services/auto_backup_service.dart';
 import '../../core/services/backup_permission_service.dart';
 import '../../injection/injection_container.dart';
 import '../bloc/transacton_bloc/transaction_bloc.dart';
 import '../bloc/transacton_bloc/transaction_event.dart';
 
-class CloudBackupPage extends StatefulWidget {
-  const CloudBackupPage({Key? key}) : super(key: key);
+class HybridBackupPage extends StatefulWidget {
+  const HybridBackupPage({Key? key}) : super(key: key);
 
   @override
-  State<CloudBackupPage> createState() => _CloudBackupPageState();
+  State<HybridBackupPage> createState() => _HybridBackupPageState();
 }
 
-class _CloudBackupPageState extends State<CloudBackupPage> {
+class _HybridBackupPageState extends State<HybridBackupPage> {
   bool _isLoading = false;
-  bool _isSignedIn = false;
+  bool _isGoogleSignedIn = false;
   String? _userEmail;
-  List<BackupInfo> _availableBackups = [];
+  List<dynamic> _availableBackups = [];
   DateTime? _lastBackupDate;
   bool _isAutoBackupEnabled = false;
   DateTime? _lastAutoBackupDate;
@@ -29,72 +28,82 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
   @override
   void initState() {
     super.initState();
-    _checkSignInStatus();
+    _checkStatus();
   }
 
-  Future<void> _checkSignInStatus() async {
+  Future<void> _checkStatus() async {
     setState(() => _isLoading = true);
 
-    await LocalBackupService.instance.initialize();
-    final isSignedIn = await LocalBackupService.instance.isSignedIn();
+    try {
+      // Initialize services
+      await LocalBackupService.instance.initialize();
+      await GoogleDriveService.instance.initialize();
 
-    if (isSignedIn) {
-      final userEmail = LocalBackupService.instance.userEmail;
-      final backups = await LocalBackupService.instance.getAvailableBackups();
-      final lastBackup = LocalBackupService.instance.lastBackupDate;
-      final isAutoBackupEnabled =
-          await AutoBackupService.instance.isAutoBackupEnabled();
-      final lastAutoBackup = AutoBackupService.instance.lastAutoBackupDate;
+      // Check Google Drive sign-in status
+      final isGoogleSignedIn = await GoogleDriveService.instance.isSignedIn();
 
+      if (isGoogleSignedIn) {
+        final userEmail = GoogleDriveService.instance.userEmail;
+        final cloudBackups =
+            await GoogleDriveService.instance.getAvailableBackups();
+        final localBackups =
+            await LocalBackupService.instance.getAvailableBackups();
+
+        setState(() {
+          _isGoogleSignedIn = true;
+          _userEmail = userEmail;
+          _availableBackups = [...localBackups, ...cloudBackups];
+          _lastBackupDate = LocalBackupService.instance.lastBackupDate;
+        });
+      } else {
+        // Only local backups available
+        final localBackups =
+            await LocalBackupService.instance.getAvailableBackups();
+        setState(() {
+          _isGoogleSignedIn = false;
+          _userEmail = null;
+          _availableBackups = localBackups;
+          _lastBackupDate = LocalBackupService.instance.lastBackupDate;
+        });
+      }
+    } catch (e) {
+      // Fallback to local backup only
+      final localBackups =
+          await LocalBackupService.instance.getAvailableBackups();
       setState(() {
-        _isSignedIn = true;
-        _userEmail = userEmail;
-        _availableBackups = backups;
-        _lastBackupDate = lastBackup;
-        _isAutoBackupEnabled = isAutoBackupEnabled;
-        _lastAutoBackupDate = lastAutoBackup;
+        _isGoogleSignedIn = false;
+        _userEmail = null;
+        _availableBackups = localBackups;
+        _lastBackupDate = LocalBackupService.instance.lastBackupDate;
       });
     }
 
     setState(() => _isLoading = false);
   }
 
-  Future<void> _signIn() async {
+  Future<void> _signInToGoogle() async {
     setState(() => _isLoading = true);
 
-    final success = await LocalBackupService.instance.signIn();
-
-    if (success) {
-      await _checkSignInStatus();
-      _showSuccessSnackBar('✅ Successfully signed in to Google Drive!');
-    } else {
-      _showErrorSnackBar('❌ Failed to sign in to Google Drive');
+    try {
+      final success = await GoogleDriveService.instance.signIn();
+      if (success) {
+        await _checkStatus();
+        _showSuccessSnackBar('✅ Successfully signed in to Google Drive!');
+      } else {
+        _showErrorSnackBar('❌ Failed to sign in to Google Drive');
+      }
+    } catch (e) {
+      _showErrorSnackBar('❌ Error signing in to Google Drive');
     }
 
     setState(() => _isLoading = false);
-  }
-
-  Future<void> _signOut() async {
-    setState(() => _isLoading = true);
-
-    await LocalBackupService.instance.signOut();
-
-    setState(() {
-      _isSignedIn = false;
-      _userEmail = null;
-      _availableBackups = [];
-      _lastBackupDate = null;
-      _isLoading = false;
-    });
-
-    _showSuccessSnackBar('✅ Successfully signed out');
   }
 
   Future<void> _createBackup() async {
     setState(() => _isLoading = true);
 
     try {
-      // Check if user can perform manual backup
+      // Check backup permissions
       final canBackup =
           await BackupPermissionService.instance.canPerformManualBackup();
 
@@ -108,16 +117,34 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
         }
       }
 
-      // Perform the backup
-      final success = await LocalBackupService.instance.createBackup();
+      bool success = false;
 
+      // Always create local backup
+      final localSuccess = await LocalBackupService.instance.createBackup();
+      if (localSuccess) {
+        success = true;
+        _showSuccessSnackBar('✅ Local backup created successfully!');
+      }
+
+      // Try cloud backup if signed in
+      if (_isGoogleSignedIn) {
+        try {
+          final cloudSuccess = await GoogleDriveService.instance.createBackup();
+          if (cloudSuccess) {
+            success = true;
+            _showSuccessSnackBar('✅ Cloud backup created successfully!');
+          }
+        } catch (e) {
+          _showErrorSnackBar(
+            '⚠️ Local backup succeeded, but cloud backup failed',
+          );
+        }
+      }
+
+      // Reset backup ad status after successful backup
       if (success) {
-        // Reset backup ad status after successful backup
         await BackupPermissionService.instance.resetBackupAdStatus();
-        await _refreshBackups();
-        _showSuccessSnackBar('✅ Backup created successfully!');
-      } else {
-        _showErrorSnackBar('❌ Failed to create backup');
+        await _checkStatus();
       }
     } catch (e) {
       _showErrorSnackBar('❌ Error creating backup: $e');
@@ -126,7 +153,7 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
     setState(() => _isLoading = false);
   }
 
-  Future<void> _restoreBackup(BackupInfo backup) async {
+  Future<void> _restoreBackup(dynamic backup) async {
     // Show confirmation dialog
     final confirmed = await _showRestoreConfirmationDialog(backup);
     if (!confirmed) return;
@@ -134,7 +161,7 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
     setState(() => _isLoading = true);
 
     try {
-      // Check if user can perform manual backup (same permission for restore)
+      // Check backup permissions
       final canRestore =
           await BackupPermissionService.instance.canPerformManualBackup();
 
@@ -148,10 +175,18 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
         }
       }
 
-      // Perform the restore
-      final success = await LocalBackupService.instance.restoreFromBackup(
-        backup.id,
-      );
+      bool success = false;
+
+      // Determine backup type and restore
+      if (backup.isLocal) {
+        success = await LocalBackupService.instance.restoreFromBackup(
+          backup.id,
+        );
+      } else {
+        success = await GoogleDriveService.instance.restoreFromBackup(
+          backup.id,
+        );
+      }
 
       if (success) {
         // Reset backup ad status after successful restore
@@ -169,7 +204,7 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
     setState(() => _isLoading = false);
   }
 
-  Future<bool> _showRestoreConfirmationDialog(BackupInfo backup) async {
+  Future<bool> _showRestoreConfirmationDialog(dynamic backup) async {
     return await showDialog<bool>(
           context: context,
           builder:
@@ -186,6 +221,9 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text('📊 Size: ${backup.formattedSize}'),
+                    Text(
+                      '📍 Location: ${backup.isLocal ? "Local Device" : "Google Drive"}',
+                    ),
                     SizedBox(height: 16.h),
                     Container(
                       padding: EdgeInsets.all(12.w),
@@ -233,26 +271,6 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
         false;
   }
 
-  Future<void> _refreshBackups() async {
-    if (!_isSignedIn) return;
-
-    setState(() => _isLoading = true);
-
-    final backups = await LocalBackupService.instance.getAvailableBackups();
-    final lastBackup = LocalBackupService.instance.lastBackupDate;
-    final isAutoBackupEnabled =
-        await AutoBackupService.instance.isAutoBackupEnabled();
-    final lastAutoBackup = AutoBackupService.instance.lastAutoBackupDate;
-
-    setState(() {
-      _availableBackups = backups;
-      _lastBackupDate = lastBackup;
-      _isAutoBackupEnabled = isAutoBackupEnabled;
-      _lastAutoBackupDate = lastAutoBackup;
-      _isLoading = false;
-    });
-  }
-
   void _showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -276,7 +294,13 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('💾 Local Backup'), centerTitle: true),
+      appBar: AppBar(
+        title: Text('💾 Smart Backup'),
+        centerTitle: true,
+        actions: [
+          IconButton(icon: Icon(Icons.refresh), onPressed: _checkStatus),
+        ],
+      ),
       body:
           _isLoading
               ? Center(child: CircularProgressIndicator())
@@ -285,7 +309,7 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildAccountSection(),
+                    _buildStatusSection(),
                     SizedBox(height: 24.h),
                     _buildBackupSection(),
                     SizedBox(height: 24.h),
@@ -293,10 +317,17 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
                   ],
                 ),
               ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _createBackup,
+        icon: Icon(Icons.backup),
+        label: Text('Create Backup'),
+        backgroundColor: Colors.blue[600],
+        foregroundColor: Colors.white,
+      ),
     );
   }
 
-  Widget _buildAccountSection() {
+  Widget _buildStatusSection() {
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16.w),
@@ -308,7 +339,7 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
                 Icon(Icons.storage, color: Colors.teal[600], size: 24.sp),
                 SizedBox(width: 12.w),
                 Text(
-                  'Local Backup',
+                  'Backup Status',
                   style: TextStyle(
                     fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
@@ -317,6 +348,8 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
               ],
             ),
             SizedBox(height: 16.h),
+
+            // Local Backup Status
             Container(
               padding: EdgeInsets.all(12.w),
               decoration: BoxDecoration(
@@ -333,14 +366,14 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Backup Status:',
+                          'Local Backup:',
                           style: TextStyle(
                             fontSize: 12.sp,
                             color: Colors.green[700],
                           ),
                         ),
                         Text(
-                          'Local Device Storage',
+                          '✅ Always Available',
                           style: TextStyle(
                             fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
@@ -353,10 +386,72 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
                 ],
               ),
             ),
-            SizedBox(height: 16.h),
-            Text(
-              'Your data is backed up locally on your device. Backups are stored securely and automatically cleaned up after 30 days.',
-              style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+
+            SizedBox(height: 12.h),
+
+            // Cloud Backup Status
+            Container(
+              padding: EdgeInsets.all(12.w),
+              decoration: BoxDecoration(
+                color: _isGoogleSignedIn ? Colors.blue[50] : Colors.orange[50],
+                borderRadius: BorderRadius.circular(8.r),
+                border: Border.all(
+                  color:
+                      _isGoogleSignedIn
+                          ? Colors.blue[200]!
+                          : Colors.orange[200]!,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _isGoogleSignedIn ? Icons.cloud_done : Icons.cloud_off,
+                    color:
+                        _isGoogleSignedIn
+                            ? Colors.blue[600]
+                            : Colors.orange[600],
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Cloud Backup:',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color:
+                                _isGoogleSignedIn
+                                    ? Colors.blue[700]
+                                    : Colors.orange[700],
+                          ),
+                        ),
+                        Text(
+                          _isGoogleSignedIn
+                              ? '✅ Connected as ${_userEmail ?? 'Unknown'}'
+                              : '⏳ Sign in to enable',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                            color:
+                                _isGoogleSignedIn
+                                    ? Colors.blue[800]
+                                    : Colors.orange[800],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!_isGoogleSignedIn)
+                    TextButton(
+                      onPressed: _signInToGoogle,
+                      child: Text(
+                        'Sign In',
+                        style: TextStyle(color: Colors.blue[600]),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ],
         ),
@@ -461,76 +556,6 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
 
             SizedBox(height: 16.h),
 
-            // Auto Backup Status
-            FutureBuilder<DateTime?>(
-              future: Future.value(
-                BackupPermissionService.instance.lastAutoBackupDate,
-              ),
-              builder: (context, snapshot) {
-                final lastAutoBackup = snapshot.data;
-                final nextAutoBackup =
-                    BackupPermissionService.instance.nextAutoBackupDate;
-
-                return Container(
-                  padding: EdgeInsets.all(12.w),
-                  decoration: BoxDecoration(
-                    color: Colors.purple[50],
-                    borderRadius: BorderRadius.circular(8.r),
-                    border: Border.all(color: Colors.purple[200]!),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.schedule, color: Colors.purple[600]),
-                      SizedBox(width: 12.w),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Auto Backup (Every 4 days):',
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                color: Colors.purple[700],
-                              ),
-                            ),
-                            if (lastAutoBackup != null) ...[
-                              Text(
-                                'Last: ${_formatDate(lastAutoBackup)}',
-                                style: TextStyle(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.purple[800],
-                                ),
-                              ),
-                              if (nextAutoBackup != null)
-                                Text(
-                                  'Next: ${_formatDate(nextAutoBackup)}',
-                                  style: TextStyle(
-                                    fontSize: 12.sp,
-                                    color: Colors.purple[600],
-                                  ),
-                                ),
-                            ] else ...[
-                              Text(
-                                'No previous auto backup',
-                                style: TextStyle(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.purple[800],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-
-            SizedBox(height: 16.h),
-
             if (_lastBackupDate != null) ...[
               Container(
                 padding: EdgeInsets.all(12.w),
@@ -548,7 +573,7 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Last manual backup:',
+                            'Last backup:',
                             style: TextStyle(
                               fontSize: 12.sp,
                               color: Colors.blue[700],
@@ -571,18 +596,9 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
               SizedBox(height: 16.h),
             ],
 
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _createBackup,
-                icon: Icon(Icons.backup),
-                label: Text('Create Backup'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[600],
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 12.h),
-                ),
-              ),
+            Text(
+              'Tap the backup button below to create a backup. Premium users can backup anytime, others need to watch an ad.',
+              style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -608,39 +624,68 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Spacer(),
-                Text(
-                  '${_availableBackups.length} backups',
-                  style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
-                ),
               ],
             ),
             SizedBox(height: 16.h),
+
             if (_availableBackups.isEmpty) ...[
-              Center(
-                child: Column(
-                  children: [
-                    Icon(Icons.cloud_off, size: 48.sp, color: Colors.grey[400]),
-                    SizedBox(height: 8.h),
-                    Text(
-                      'No backups available',
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        color: Colors.grey[600],
+              Container(
+                padding: EdgeInsets.all(16.w),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.backup_outlined,
+                        color: Colors.grey[400],
+                        size: 48.sp,
                       ),
-                    ),
-                  ],
+                      SizedBox(height: 8.h),
+                      Text(
+                        'No backups yet',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'Create your first backup to see it here',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ] else ...[
-              ListView.separated(
+              ListView.builder(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
                 itemCount: _availableBackups.length,
-                separatorBuilder: (context, index) => SizedBox(height: 8.h),
                 itemBuilder: (context, index) {
                   final backup = _availableBackups[index];
-                  return _buildBackupItem(backup);
+                  return ListTile(
+                    leading: Icon(
+                      backup.isLocal ? Icons.phone_android : Icons.cloud,
+                      color:
+                          backup.isLocal ? Colors.green[600] : Colors.blue[600],
+                    ),
+                    title: Text(backup.name),
+                    subtitle: Text(
+                      '${backup.formattedDate} • ${backup.formattedSize}',
+                    ),
+                    trailing: IconButton(
+                      icon: Icon(Icons.restore, color: Colors.orange[600]),
+                      onPressed: () => _restoreBackup(backup),
+                    ),
+                  );
                 },
               ),
             ],
@@ -650,54 +695,17 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
     );
   }
 
-  Widget _buildBackupItem(BackupInfo backup) {
-    return Container(
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(8.w),
-            decoration: BoxDecoration(
-              color: Colors.purple[100],
-              borderRadius: BorderRadius.circular(6.r),
-            ),
-            child: Icon(Icons.backup, color: Colors.purple[600], size: 20.sp),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  backup.formattedDate,
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  backup.formattedSize,
-                  style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () => _restoreBackup(backup),
-            icon: Icon(Icons.download, color: Colors.green[600]),
-            tooltip: 'Restore this backup',
-          ),
-        ],
-      ),
-    );
-  }
-
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final backupDate = DateTime(date.year, date.month, date.day);
+
+    if (backupDate == today) {
+      return 'Today at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    } else if (backupDate == today.subtract(Duration(days: 1))) {
+      return 'Yesterday at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    } else {
+      return '${date.day}/${date.month}/${date.year} at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    }
   }
 }

@@ -88,7 +88,7 @@ class OweTrackerApp extends StatelessWidget {
               inputDecorationTheme: InputDecorationTheme(
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.r),
-                  borderSide: BorderSide(color: Colors.teal),
+                  borderSide: const   BorderSide(color: Colors.teal),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.r),

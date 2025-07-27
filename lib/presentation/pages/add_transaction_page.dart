@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 
 import '../../core/services/currency_service.dart';
 import '../../domain/entities/transaction_entity.dart';
@@ -64,6 +65,98 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     super.dispose();
   }
 
+  Future<void> _pickContact() async {
+    try {
+      // Request permission
+      if (!await FlutterContacts.requestPermission(readonly: true)) {
+        _showPermissionDialog();
+        return;
+      }
+
+      // Get all contacts
+      final contacts = await FlutterContacts.getContacts(
+        withProperties: true,
+        withPhoto: false,
+      );
+
+      if (contacts.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No contacts found on your device.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Show contact picker dialog
+      final selectedContact = await showDialog<Contact>(
+        context: context,
+        builder: (context) => ContactPickerDialog(contacts: contacts),
+      );
+
+      if (selectedContact != null) {
+        setState(() {
+          _nameController.text = selectedContact.displayName;
+        });
+      }
+    } catch (e) {
+      // Handle permission denied or other errors
+      if (e.toString().contains('permission') ||
+          e.toString().contains('Permission')) {
+        _showPermissionDialog();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error accessing contacts: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.contact_phone, color: Colors.blue),
+                SizedBox(width: 8),
+                Text('Contacts Permission'),
+              ],
+            ),
+            content: Text(
+              'This app needs access to your contacts to help you select contact names. Please grant the permission in your device settings.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // Note: User will need to manually go to settings
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Please go to Settings > Apps > Debt Tracker > Permissions and enable Contacts',
+                      ),
+                      backgroundColor: Colors.blue,
+                      duration: Duration(seconds: 5),
+                    ),
+                  );
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<TransactionBloc, TransactionState>(
@@ -107,6 +200,11 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   decoration: InputDecoration(
                     labelText: 'Name',
                     prefixIcon: Icon(Icons.person),
+                    suffixIcon: IconButton(
+                      icon: Icon(Icons.contact_phone),
+                      onPressed: _pickContact,
+                      tooltip: 'Select from contacts',
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -367,6 +465,157 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               ),
             ],
           ),
+    );
+  }
+}
+
+// Contact picker dialog widget
+class ContactPickerDialog extends StatefulWidget {
+  final List<Contact> contacts;
+
+  const ContactPickerDialog({Key? key, required this.contacts})
+    : super(key: key);
+
+  @override
+  _ContactPickerDialogState createState() => _ContactPickerDialogState();
+}
+
+class _ContactPickerDialogState extends State<ContactPickerDialog> {
+  List<Contact> _filteredContacts = [];
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredContacts = widget.contacts;
+    _searchController.addListener(_filterContacts);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterContacts() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredContacts = widget.contacts;
+      } else {
+        _filteredContacts =
+            widget.contacts
+                .where(
+                  (contact) =>
+                      contact.displayName.toLowerCase().contains(query),
+                )
+                .toList();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Container(
+        width: double.maxFinite,
+        height: MediaQuery.of(context).size.height * 0.7,
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: EdgeInsets.all(16.w),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(8.r),
+                  topRight: Radius.circular(8.r),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.contact_phone, color: Colors.white),
+                  SizedBox(width: 8.w),
+                  Text(
+                    'Select Contact',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Spacer(),
+                  IconButton(
+                    icon: Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+
+            // Search bar
+            Padding(
+              padding: EdgeInsets.all(16.w),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search contacts...',
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                ),
+              ),
+            ),
+
+            // Contacts list
+            Expanded(
+              child:
+                  _filteredContacts.isEmpty
+                      ? Center(
+                        child: Text(
+                          'No contacts found',
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      )
+                      : ListView.builder(
+                        itemCount: _filteredContacts.length,
+                        itemBuilder: (context, index) {
+                          final contact = _filteredContacts[index];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Theme.of(context).primaryColor,
+                              child: Text(
+                                contact.displayName.isNotEmpty
+                                    ? contact.displayName[0].toUpperCase()
+                                    : '?',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              contact.displayName,
+                              style: TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                            subtitle:
+                                contact.phones.isNotEmpty
+                                    ? Text(contact.phones.first.number)
+                                    : null,
+                            onTap: () {
+                              Navigator.of(context).pop(contact);
+                            },
+                          );
+                        },
+                      ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
