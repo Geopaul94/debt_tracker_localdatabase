@@ -24,6 +24,10 @@
 -keep class androidx.biometric.** { *; }
 -keep class android.hardware.fingerprint.** { *; }
 
+# WorkManager for background tasks
+-keep class androidx.work.** { *; }
+-keep class android.arch.work.** { *; }
+
 # Remove all logging in release builds for smaller APK
 -assumenosideeffects class android.util.Log {
     public static boolean isLoggable(java.lang.String, int);
@@ -51,19 +55,18 @@
     static void checkFieldIsNotNull(java.lang.Object, java.lang.String);
 }
 
-# Aggressive optimization settings
+# Optimization settings
 -allowaccessmodification
 -mergeinterfacesaggressively
 -overloadaggressively
 -repackageclasses ''
 
-# Maximum optimization passes
+# Optimization passes
 -optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
--optimizationpasses 7
+-optimizationpasses 5
 
 # Keep your application class and core components
 -keep class com.geo.debit_tracker.** { *; }
--keep class com.example.debit_tracker.** { *; }
 
 # Keep native methods
 -keepclassmembers class * {
@@ -104,19 +107,14 @@
 # Keep Play Core for app updates
 -keep class com.google.android.play.core.** { *; }
 
-# Optimize resource shrinking
--keepattributes SourceFile,LineNumberTable
+# Keep attributes for debugging and reflection
+-keepattributes SourceFile,LineNumberTable,Signature,InnerClasses,EnclosingMethod
 -renamesourcefileattribute SourceFile
 
-# Remove debug annotations and metadata
+# Keep annotations
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
 
-# Additional optimizations for smaller APK
--dontnote **
--dontwarn **
--ignorewarnings
-
-# Keep only essential attributes
+# Keep essential attributes
 -keepattributes Signature,RuntimeVisibleAnnotations,AnnotationDefault
 
 # Optimize method calls and field access
@@ -124,7 +122,7 @@
     int SDK_INT return 21..34;
 }
 
-# Remove unused resources
+# Keep resource classes
 -keep class **.R
 -keep class **.R$* {
     <fields>;
@@ -144,5 +142,26 @@
     public static void e(...);
 }
 
-# Final optimization - remove all unused classes and methods
--whyareyoukeeping class ** 
+# Keep Google Sign-In classes
+-keep class com.google.android.gms.auth.** { *; }
+-keep class com.google.android.gms.common.** { *; }
+
+# Keep WorkManager classes
+-keep class androidx.work.impl.** { *; }
+-keep class androidx.work.WorkManager { *; }
+
+# Keep Biometric classes
+-keep class androidx.biometric.BiometricManager { *; }
+-keep class androidx.biometric.BiometricPrompt { *; }
+
+# Keep AdMob specific classes
+-keep class com.google.android.gms.ads.MobileAds { *; }
+-keep class com.google.android.gms.ads.AdRequest { *; }
+-keep class com.google.android.gms.ads.AdView { *; }
+-keep class com.google.android.gms.ads.InterstitialAd { *; }
+-keep class com.google.android.gms.ads.rewarded.RewardedAd { *; }
+
+# Remove warnings for better build
+-dontnote **
+-dontwarn **
+-ignorewarnings 

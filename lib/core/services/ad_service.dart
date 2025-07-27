@@ -6,13 +6,6 @@ import 'connectivity_service.dart';
 import 'premium_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum AdWeek {
-  week1, // No ads
-  week2, // Interstitial and rewarded only
-  week3, // Add open app ads
-  week4Plus, // All ads including banners
-}
-
 class AdService {
   static final AdService _instance = AdService._internal();
   static AdService get instance => _instance;
@@ -27,52 +20,26 @@ class AdService {
   Timer? _backgroundLoadTimer;
   bool _isLoadingInBackground = false;
 
-  // Ad Unit IDs
-  // TODO: Replace test rewarded ad unit with properly configured production ad unit
-  // Current issue: ca-app-pub-5835078496383561/6447278212 is not configured as rewarded ad format
+  // Production Ad Unit IDs
   static final String _bannerAdUnitId =
       Platform.isAndroid
-          ? 'ca-app-pub-5835078496383561/9814827520'
-          : 'ca-app-pub-3940256099942544/2934735716';
+          ? 'ca-app-pub-5835078496383561/4425152477' // Production banner ad
+          : 'ca-app-pub-3940256099942544/2934735716'; // iOS test ad
 
   static final String _interstitialAdUnitId =
       Platform.isAndroid
-          ? 'ca-app-pub-5835078496383561/3282058826'
-          : 'ca-app-pub-3940256099942544/4411468910';
+          ? 'ca-app-pub-5835078496383561/3282058826' // Production interstitial ad
+          : 'ca-app-pub-3940256099942544/4411468910'; // iOS test ad
 
   static final String _openAppAdUnitId =
       Platform.isAndroid
-          ? 'ca-app-pub-5835078496383561~1877477818'
-          : 'ca-app-pub-5835078496383561/3262990911';
+          ? 'ca-app-pub-5835078496383561/5891428769' // Production app open ad
+          : 'ca-app-pub-5835078496383561/3262990911'; // iOS test ad
 
   static final String _rewardedAdUnitId =
       Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/5224354917' // Test ad unit - works for testing
-          : 'ca-app-pub-3940256099942544/1712485313';
-
-  // Test method to verify reward ad logic
-  Future<void> testRewardAdLogic() async {
-    print('🧪 Testing reward ad logic...');
-    final shouldShow = await _shouldShowAdType('rewarded');
-    print('🧪 Should show rewarded ads: $shouldShow');
-
-    final currentWeek = await _getCurrentAdWeek();
-    print('🧪 Current week: $currentWeek');
-
-    final installDate = await PreferenceService.instance.getInstallDate();
-    print('🧪 Install date: $installDate');
-  }
-
-  // Method to clear ad-free status for testing
-  Future<void> clearAdFreeStatus() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('ad_free_until');
-      print('✅ Ad-free status cleared');
-    } catch (e) {
-      print('❌ Error clearing ad-free status: $e');
-    }
-  }
+          ? 'ca-app-pub-5835078496383561/2160067314' // Production rewarded ad
+          : 'ca-app-pub-3940256099942544/1712485313'; // iOS test ad
 
   // Initialize ads asynchronously
   Future<void> initialize() async {
@@ -91,52 +58,11 @@ class AdService {
       _isInitialized = true;
       print('AdMob initialized successfully');
 
-      // Clear ad-free status for testing reward ads
-      await clearAdFreeStatus();
-
-      // Test reward ad logic
-      await testRewardAdLogic();
-
       // Start background ad loading after initialization
       _startBackgroundLoading();
     } catch (e) {
       print('AdMob initialization failed: $e');
     }
-  }
-
-  // Determine current ad week based on install date
-  Future<AdWeek> _getCurrentAdWeek() async {
-    final installDate = await PreferenceService.instance.getInstallDate();
-    print('📅 Install date: $installDate');
-
-    if (installDate == null) {
-      print('❌ No install date found - returning week1');
-      return AdWeek.week1; // First install - no ads
-    }
-
-    final daysSinceInstall = DateTime.now().difference(installDate).inDays;
-    final weeksSinceInstall = (daysSinceInstall / 7).floor();
-
-    print('📊 Days since install: $daysSinceInstall');
-    print('📊 Weeks since install: $weeksSinceInstall');
-
-    if (weeksSinceInstall == 0) {
-      print('📅 Returning AdWeek.week1');
-      return AdWeek.week1; // Week 1: No ads
-    }
-    if (weeksSinceInstall == 1) {
-      print('📅 Returning AdWeek.week2');
-     // return AdWeek.week2; // Week 2: Interstitial + rewarded only
-      return AdWeek.week1; // Week 1: No ads
-    }
-    if (weeksSinceInstall == 2) {
-      print('📅 Returning AdWeek.week3');
-     // return AdWeek.week3; // Week 3: Add app open ads
-      return AdWeek.week1; // Week 1: No ads
-    }
-    print('📅 Returning AdWeek.week4Plus');
-    //   return AdWeek.week4Plus; // Week 4+: All ads including banners
-    return AdWeek.week1; // Week 1: No ads
   }
 
   // Check if specific ad type should be shown
@@ -161,30 +87,23 @@ class AdService {
       // Continue with normal ad logic if premium service fails
     }
 
-    // For rewarded ads, always allow them from installation
-    if (adType == 'rewarded') {
-      print('✅ Rewarded ads always allowed from installation');
-      return true;
+    // Check if ads are enabled in preferences
+    final shouldShowAds = await PreferenceService.instance.shouldShowAds();
+    if (!shouldShowAds) {
+      print('❌ Ads disabled in preferences');
+      return false;
     }
 
-    // For all other ads, check the current week
-    final currentWeek = await _getCurrentAdWeek();
-    print('📅 Current ad week: $currentWeek');
-
-    switch (currentWeek) {
-      case AdWeek.week1:
-        print('❌ Week 1: No ads allowed (except rewarded)');
-        return false; // No ads in first week (except rewarded)
-      case AdWeek.week2:
-        print('✅ Week 2: Interstitial ads allowed');
-        return adType == 'interstitial';
-      case AdWeek.week3:
-        print('✅ Week 3: Interstitial and app open ads allowed');
-        return adType == 'interstitial' || adType == 'openapp';
-      case AdWeek.week4Plus:
-        print('✅ Week 4+: All ads allowed');
-        return true; // All ad types allowed except rewarded (already handled above)
+    // Check internet connection
+    final hasInternet = await _hasInternetConnection();
+    if (!hasInternet) {
+      print('❌ No internet connection - not showing ads');
+      return false;
     }
+
+    // All conditions met - show ads normally
+    print('✅ All conditions met - showing ads normally');
+    return true;
   }
 
   // Check if internet connection is available for ads
@@ -315,14 +234,9 @@ class AdService {
   Future<BannerAd?> createBannerAd() async {
     if (!_isInitialized) await initialize();
 
-    // Check internet connection first
-    if (!await _hasInternetConnection()) {
-      print('No internet connection - skipping banner ad');
-      return null;
-    }
-
+    // Check if ads should be shown
     if (!await _shouldShowAdType('banner')) {
-      print('Banner ads not allowed in current week');
+      print('Banner ads not allowed');
       return null;
     }
 
@@ -350,14 +264,8 @@ class AdService {
 
   // Show interstitial ad with background preloading
   Future<bool> showInterstitialAd() async {
-    // Check internet connection first
-    if (!await _hasInternetConnection()) {
-      print('No internet connection - skipping interstitial ad');
-      return false;
-    }
-
     if (!await _shouldShowAdType('interstitial')) {
-      print('Interstitial ads not allowed in current week');
+      print('Interstitial ads not allowed');
       return false;
     }
 
@@ -393,14 +301,8 @@ class AdService {
   Future<bool> showRewardedAd({
     required OnUserEarnedRewardCallback onUserEarnedReward,
   }) async {
-    // Check internet connection first
-    if (!await _hasInternetConnection()) {
-      print('No internet connection - skipping rewarded ad');
-      return false;
-    }
-
     if (!await _shouldShowAdType('rewarded')) {
-      print('Rewarded ads not allowed in current week');
+      print('Rewarded ads not allowed');
       return false;
     }
 
@@ -434,14 +336,8 @@ class AdService {
 
   // Show app open ad
   Future<bool> showAppOpenAd() async {
-    // Check internet connection first
-    if (!await _hasInternetConnection()) {
-      print('No internet connection - skipping app open ad');
-      return false;
-    }
-
     if (!await _shouldShowAdType('openapp')) {
-      print('App open ads not allowed in current week');
+      print('App open ads not allowed');
       return false;
     }
 
@@ -473,15 +369,14 @@ class AdService {
     }
   }
 
-  // Get current ad strategy info for debugging
+  // Get current ad status info for debugging
   Future<Map<String, dynamic>> getAdStatus() async {
-    final currentWeek = await _getCurrentAdWeek();
     return {
-      'currentWeek': currentWeek.toString(),
       'interstitialLoaded': _interstitialAd != null,
       'rewardedLoaded': _rewardedAd != null,
       'appOpenLoaded': _appOpenAd != null,
       'backgroundLoading': _isLoadingInBackground,
+      'hasInternet': await _hasInternetConnection(),
     };
   }
 

@@ -87,3 +87,4 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:20.7.0")
     implementation("androidx.appcompat:appcompat:1.6.1") // Added for google_mobile_ads
 }
+

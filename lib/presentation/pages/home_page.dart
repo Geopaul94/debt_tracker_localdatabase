@@ -393,7 +393,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(height: 300.h),
+          SizedBox(height: 130.h),
           Icon(
             Icons.account_balance_wallet_outlined,
             size: 64.sp,

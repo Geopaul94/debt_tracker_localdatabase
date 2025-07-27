@@ -59,8 +59,8 @@ class UpdateNotificationService {
         return [
           '🔐 MAJOR FIX: Authentication now works with ALL security methods!',
           '📱 PIN Users: Your PIN authentication now works perfectly',
-          '🔑 Password Users: Device passwords are now fully supported',
-          '🎨 Pattern Users: Pattern locks now work seamlessly',
+          '🔑 Select the users from the contact list',
+          '🎨 Remove the ads for the users ',
           '👆 Biometric Users: Face ID, Touch ID, and Fingerprint still work great',
           '🛡️ Enhanced Security: Better protection for your debt tracking data',
           '🚀 No More Auth Errors: Fixed all authentication-related crashes',

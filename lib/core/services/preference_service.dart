@@ -57,17 +57,22 @@ class PreferenceService {
     await _prefs?.setInt(_appSessionCountKey, currentCount + 1);
   }
 
-  // Ads methods
+  // Ads methods - simplified to show ads normally when enabled
   Future<bool> shouldShowAds() async {
-    final installDate = await getInstallDate();
-    if (installDate == null) return false;
+    // Check if ads are explicitly disabled
+    final adsEnabled = _prefs?.getBool(_adsEnabledKey);
 
-    final daysSinceInstall = DateTime.now().difference(installDate).inDays;
-    return daysSinceInstall >= 0;
+    // If ads are explicitly disabled, don't show them
+    if (adsEnabled == false) {
+      return false;
+    }
+
+    // Otherwise, ads are enabled by default
+    return true;
   }
 
   Future<bool> areAdsEnabled() async {
-    return _prefs?.getBool(_adsEnabledKey) ?? false;
+    return _prefs?.getBool(_adsEnabledKey) ?? true; // Default to true
   }
 
   Future<void> setAdsEnabled(bool enabled) async {
