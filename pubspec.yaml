@@ -74,6 +74,9 @@ dependencies:
   # File operations
   path_provider: ^2.1.4
   
+  # Contact picker
+  flutter_contacts: ^1.1.9+2
+  
 
 dev_dependencies:
   flutter_test:

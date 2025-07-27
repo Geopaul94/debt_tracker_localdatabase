@@ -1,14 +1,13 @@
-import 'package:debt_tracker/core/services/preference_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:debt_tracker/core/services/preference_service.dart';
 
 void main() {
-  group('PreferenceService Tests', () {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  group('PreferenceService', () {
     late PreferenceService preferenceService;
 
     setUp(() async {
-      // Set up fake shared preferences for testing
-      SharedPreferences.setMockInitialValues({});
       preferenceService = PreferenceService.instance;
       await preferenceService.initialize();
     });
@@ -28,54 +27,6 @@ void main() {
 
         final shouldShow = await preferenceService.shouldShowAds();
         expect(shouldShow, isTrue);
-      });
-    });
-
-    group('Dummy Data Management', () {
-      test('should track dummy data state correctly', () async {
-        // Initially should have no dummy data
-        expect(await preferenceService.hasDummyData(), isFalse);
-
-        // Set dummy data flag
-        await preferenceService.setHasDummyData(true);
-        expect(await preferenceService.hasDummyData(), isTrue);
-
-        // Reset dummy data flags
-        await preferenceService.resetDummyDataFlags();
-        expect(await preferenceService.hasDummyData(), isFalse);
-      });
-
-      test('should track real transaction state correctly', () async {
-        // Initially should have no real transactions
-        expect(await preferenceService.hasRealTransaction(), isFalse);
-
-        // Set real transaction flag
-        await preferenceService.setHasRealTransaction(true);
-        expect(await preferenceService.hasRealTransaction(), isTrue);
-      });
-
-      test(
-        'should cleanup dummy data when user adds real transaction',
-        () async {
-          await preferenceService.setHasDummyData(true);
-          await preferenceService.setHasRealTransaction(true);
-
-          final shouldCleanup =
-              await preferenceService.shouldCleanupDummyData();
-          expect(shouldCleanup, isTrue);
-        },
-      );
-
-      test('should cleanup dummy data after 2 app sessions', () async {
-        await preferenceService.setHasDummyData(true);
-
-        // First session - should not cleanup
-        await preferenceService.incrementAppSession();
-        expect(await preferenceService.shouldCleanupDummyData(), isFalse);
-
-        // Second session - should cleanup
-        await preferenceService.incrementAppSession();
-        expect(await preferenceService.shouldCleanupDummyData(), isTrue);
       });
     });
 

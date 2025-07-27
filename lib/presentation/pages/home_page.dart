@@ -62,9 +62,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
     });
 
-    // Track app session for dummy data management
-    _trackAppSession();
-
     // Initialize ads in background after data loading
     _initializeAdsInBackground();
 
@@ -72,28 +69,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _showUpdateNotificationIfNeeded();
   }
 
-  // Track app session for dummy data management
+  // Track app session
   Future<void> _trackAppSession() async {
     try {
       await PreferenceService.instance.incrementAppSession();
       print('App session tracked');
-
-      // Mark first view completed to trigger dummy data cleanup
-      await PreferenceService.instance.markFirstViewCompleted();
-
-      // Force cleanup after first view
-      final sessionCount =
-          await PreferenceService.instance.getAppSessionCount();
-      if (sessionCount == 1) {
-        // Trigger cleanup after first view
-        try {
-          final dataSource = serviceLocator<TransactionSQLiteDataSource>();
-          await dataSource.cleanupDummyDataIfNeeded();
-          print('Dummy data cleanup triggered after first view');
-        } catch (e) {
-          print('Error triggering dummy data cleanup: $e');
-        }
-      }
     } catch (e) {
       print('Error tracking app session: $e');
     }
@@ -338,6 +318,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             totalOwesMe: state.totalOwesMe,
             netAmount: state.netAmount,
           ),
+
+          Row(
+            children: [
+              SizedBox(width: 20),
+              Icon(Icons.people, size: 24),
+              SizedBox(width: 8),
+              Text(
+                'People',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+
           // Add banner ad after summary card (only if not ad-free and after 7 days)
           FutureBuilder<bool>(
             future: _shouldShowBannerAd(),
@@ -348,158 +341,48 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   : const SizedBox.shrink();
             },
           ),
+          state.groupedTransactions.isEmpty
+              ? _buildEmptyState()
+              : ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.symmetric(horizontal: 10.w),
+                itemCount:
+                    state.groupedTransactions.length +
+                    (state.groupedTransactions.length > 5 ? 1 : 0),
+                itemBuilder: (context, index) {
+                  // Insert another banner ad after every 5 transactions
+                  if (index > 0 &&
+                      index % 6 == 5 &&
+                      state.groupedTransactions.length > 5) {
+                    return FutureBuilder<bool>(
+                      future: _shouldShowBannerAd(),
+                      builder: (context, snapshot) {
+                        final shouldShowAd = snapshot.data ?? false;
+                        return shouldShowAd
+                            ? AdBannerWidget(
+                              margin: EdgeInsets.symmetric(vertical: 16.h),
+                            )
+                            : SizedBox.shrink();
+                      },
+                    );
+                  }
 
-          // Group transactions by user
-          if (state.groupedTransactions.isNotEmpty) ...[
-            SizedBox(height: 16.h),
+                  final transactionIndex = index > 5 ? index - 1 : index;
+                  if (transactionIndex >= state.groupedTransactions.length) {
+                    return SizedBox.shrink();
+                  }
 
-            // Sample data indicator - show only when sample data is displayed
-            FutureBuilder<bool>(
-              future: PreferenceService.instance.isSampleDataDisplayed(),
-              builder: (context, snapshot) {
-                final isSampleData = snapshot.data ?? false;
-                return isSampleData
-                    ? Container(
-                      margin: EdgeInsets.symmetric(
-                        horizontal: 16.w,
-                        vertical: 8.h,
-                      ),
-                      padding: EdgeInsets.all(12.w),
-                      decoration: BoxDecoration(
-                        color: Colors.blue[50],
-                        borderRadius: BorderRadius.circular(8.r),
-                        border: Border.all(color: Colors.blue[200]!),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.blue[700],
-                            size: 20.sp,
-                          ),
-                          SizedBox(width: 8.w),
-                          Expanded(
-                            child: Text(
-                              '📋 Sample Data - This shows how transactions will look. It will automatically disappear when you add your first real transaction.',
-                              style: TextStyle(
-                                fontSize: 13.sp,
-                                color: Colors.blue[800],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                    : const SizedBox.shrink();
-              },
-            ),
-
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.w),
-              child: Row(
-                children: [
-                  Icon(Icons.people, color: Colors.teal[700]),
-                  SizedBox(width: 8.w),
-                  Text(
-                    'People',
-                    style: TextStyle(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.teal[700],
-                    ),
-                  ),
-                ],
+                  final groupedTransaction =
+                      state.groupedTransactions[transactionIndex];
+                  return GroupedTransactionListItem(
+                    groupedTransaction: groupedTransaction,
+                    onTap:
+                        () =>
+                            _navigateToDebtDetail(context, groupedTransaction),
+                  );
+                },
               ),
-            ),
-            SizedBox(height: 8.h),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              itemCount: state.groupedTransactions.length,
-              itemBuilder: (context, index) {
-                final group = state.groupedTransactions[index];
-                return GroupedTransactionListItem(
-                  groupedTransaction: group,
-                  onTap: () => _navigateToDebtDetail(context, group),
-                );
-              },
-            ),
-          ] else ...[
-            // Empty state
-            SizedBox(height: 32.h),
-
-            // Sample data indicator for empty state
-            FutureBuilder<bool>(
-              future: PreferenceService.instance.isSampleDataDisplayed(),
-              builder: (context, snapshot) {
-                final isSampleData = snapshot.data ?? false;
-                return isSampleData
-                    ? Container(
-                      margin: EdgeInsets.symmetric(
-                        horizontal: 32.w,
-                        vertical: 16.h,
-                      ),
-                      padding: EdgeInsets.all(16.w),
-                      decoration: BoxDecoration(
-                        color: Colors.blue[50],
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(color: Colors.blue[200]!),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.blue[700],
-                            size: 24.sp,
-                          ),
-                          SizedBox(height: 8.h),
-                          Text(
-                            '📋 Sample Data',
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              color: Colors.blue[800],
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 8.h),
-                          Text(
-                            'This shows how transactions will look in your app. It will automatically disappear when you add your first real transaction.',
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              color: Colors.blue[700],
-                              fontWeight: FontWeight.w500,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    )
-                    : const SizedBox.shrink();
-              },
-            ),
-
-            Icon(
-              Icons.account_balance_wallet,
-              size: 64.sp,
-              color: Colors.grey[400],
-            ),
-            SizedBox(height: 16.h),
-            Text(
-              'No transactions yet',
-              style: TextStyle(
-                fontSize: 18.sp,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              'Tap the + button to add your first transaction',
-              style: TextStyle(fontSize: 14.sp, color: Colors.grey[500]),
-              textAlign: TextAlign.center,
-            ),
-          ],
         ],
       ),
     );
@@ -510,7 +393,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(height: 100.h),
+          SizedBox(height: 300.h),
           Icon(
             Icons.account_balance_wallet_outlined,
             size: 64.sp,

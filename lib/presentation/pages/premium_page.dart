@@ -7,7 +7,7 @@ import '../../core/services/pricing_service.dart';
 import '../../core/services/currency_service.dart';
 
 class PremiumPage extends StatefulWidget {
-  const PremiumPage({Key? key}) : super(key: key);
+   PremiumPage({Key? key}) : super(key: key);
 
   @override
   State<PremiumPage> createState() => _PremiumPageState();

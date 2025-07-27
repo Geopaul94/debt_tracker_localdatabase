@@ -59,11 +59,11 @@ void main() {
       expect(find.text('-\$50.00'), findsOneWidget);
     });
 
-    testWidgets('should display sample transaction with special styling', (
+    testWidgets('should display transaction with proper styling', (
       WidgetTester tester,
     ) async {
       final sampleTransaction = TransactionEntity(
-        id: 'dummy_1',
+        id: '1',
         name: 'Alex Johnson',
         description: 'Lunch at downtown cafe',
         amount: 25.50,

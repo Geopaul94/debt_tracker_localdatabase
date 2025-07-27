@@ -27,7 +27,6 @@ void main() {
         'selected_currency_name': 'US Dollar',
         'selected_currency_flag': '🇺🇸',
         'first_launch': false, // Simulate not first launch to avoid setup page
-        'has_dummy_data': false,
         'app_session_count': 5,
       });
 
@@ -104,9 +103,6 @@ void main() {
       final prefs = PreferenceService.instance;
 
       // Test preference service functionality (without UI)
-      await prefs.setHasDummyData(true);
-      expect(await prefs.hasDummyData(), isTrue);
-
       await prefs.setFirstLaunchCompleted();
       expect(await prefs.isFirstLaunch(), isFalse);
 
@@ -121,12 +117,11 @@ void main() {
       final prefs = PreferenceService.instance;
 
       // Test preference service setup
-      await prefs.resetDummyDataFlags(); // Reset for clean test
-      expect(await prefs.hasDummyData(), isFalse);
+      final initialFirstLaunch = await prefs.isFirstLaunch();
 
       // Verify the preferences work
-      await prefs.setHasDummyData(true);
-      expect(await prefs.hasDummyData(), isTrue);
+      await prefs.setFirstLaunchCompleted();
+      expect(await prefs.isFirstLaunch(), isFalse);
     });
 
     testWidgets('App basic widget structure', (WidgetTester tester) async {
