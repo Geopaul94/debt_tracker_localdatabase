@@ -53,12 +53,19 @@ class SettingsPage extends StatelessWidget {
             SizedBox(height: 24.h),
 
             _buildSectionHeader('Premium Features'),
-            _buildPremiumTile(context),
 
+            _buildPremiumUnderDevelopment(),
+
+            // _buildSectionHeader('Hybrid Backup'),
+
+            //    _buildPremiumTile(context),
             SizedBox(height: 24.h),
 
             _buildSectionHeader('Data Management'),
-            _buildCloudBackupTile(context),
+
+            //  _buildCloudBackupTile(context),
+            _buildCloudBackupUnderDevelopment(),
+
             _buildTrashTile(context),
 
             SizedBox(height: 24.h),
@@ -444,30 +451,30 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCloudBackupTile(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: Container(
-          width: 40.w,
-          height: 40.w,
-          decoration: BoxDecoration(
-            color: Colors.blue[100],
-            borderRadius: BorderRadius.circular(8.r),
-          ),
-          child: Icon(Icons.cloud_upload, color: Colors.blue[600]),
-        ),
-        title: Text('Cloud Backup'),
-        subtitle: Text('Backup your data locally'),
-        trailing: Icon(Icons.chevron_right),
-        onTap: () {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (context) => CloudBackupPage()));
-          //HybridBackupPage()));
-        },
-      ),
-    );
-  }
+  // Widget _buildCloudBackupTile(BuildContext context) {
+  //   return Card(
+  //     child: ListTile(
+  //       leading: Container(
+  //         width: 40.w,
+  //         height: 40.w,
+  //         decoration: BoxDecoration(
+  //           color: Colors.blue[100],
+  //           borderRadius: BorderRadius.circular(8.r),
+  //         ),
+  //         child: Icon(Icons.cloud_upload, color: Colors.blue[600]),
+  //       ),
+  //       title: Text('Cloud Backup'),
+  //       subtitle: Text('Backup your data locally'),
+  //       trailing: Icon(Icons.chevron_right),
+  //       onTap: () {
+  //         Navigator.of(
+  //           context,
+  //         ).push(MaterialPageRoute(builder: (context) => CloudBackupPage()));
+  //         //HybridBackupPage()));
+  //       },
+  //     ),
+  //   );
+  // }
 
   Widget _buildTrashTile(BuildContext context) {
     return FutureBuilder<int>(
@@ -556,6 +563,46 @@ class SettingsPage extends StatelessWidget {
             style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumUnderDevelopment() {
+    return Card(
+      child: ListTile(
+        leading: Container(
+          width: 40.w,
+          height: 40.w,
+          decoration: BoxDecoration(
+            color: Colors.purple[100],
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: Icon(Icons.info, color: Colors.purple[600]),
+        ),
+        title: Text('Premium Features'),
+        subtitle: Text('Coming Soon'),
+     //   trailing: Icon(Icons.chevron_right),
+        onTap: () => _showAppInfoDialog(),
+      ),
+    );
+  }
+
+  Widget _buildCloudBackupUnderDevelopment() {
+    return Card(
+      child: ListTile(
+        leading: Container(
+          width: 40.w,
+          height: 40.w,
+          decoration: BoxDecoration(
+            color: Colors.purple[100],
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: Icon(Icons.info, color: Colors.purple[600]),
+        ),
+        title: Text('Cloud Backup'),
+        subtitle: Text('Coming Soon'),
+       // trailing: Icon(Icons.chevron_right),
+        onTap: () => _showAppInfoDialog(),
       ),
     );
   }

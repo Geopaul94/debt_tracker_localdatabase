@@ -60,13 +60,13 @@ class UpdateNotificationService {
           '🔐 MAJOR FIX: Authentication now works with ALL security methods!',
           '📱 PIN Users: Your PIN authentication now works perfectly',
           '🔑 Select the users from the contact list',
-          '🎨 Remove the ads for the users ',
-          '👆 Biometric Users: Face ID, Touch ID, and Fingerprint still work great',
-          '🛡️ Enhanced Security: Better protection for your debt tracking data',
-          '🚀 No More Auth Errors: Fixed all authentication-related crashes',
-          '💯 Universal Compatibility: Works on all Android devices regardless of security setup',
+          '🎨 Cloud backup under development ',
+          '👆 Premium features under development',
+        //  '🛡️ Enhanced Security: Better protection for your debt tracking data',
+     //     '🚀 No More Auth Errors: Fixed all authentication-related crashes',
+     //     '💯 Universal Compatibility: Works on all Android devices regardless of security setup', 
         ];
-      case '1.1.9':
+      case '1.0.6':
         return [
           '🎨 UI Improvements: Enhanced authentication screen design',
           '🐛 Bug fixes and performance optimizations',
