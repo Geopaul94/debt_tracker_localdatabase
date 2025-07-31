@@ -165,9 +165,7 @@ class AutoBackupService {
     try {
       final isSignedIn = await LocalBackupService.instance.isSignedIn();
       if (!isSignedIn) {
-        AppLogger.info(
-          'User not signed in to Google Drive, skipping auto backup',
-        );
+        AppLogger.info('Auto backup not needed');
         return;
       }
 
@@ -192,7 +190,6 @@ class AutoBackupService {
       // Initialize required services
       await PremiumService.create();
       await LocalBackupService.instance.initialize();
-      await GoogleDriveService.instance.initialize();
       await BackupPermissionService.instance.initialize();
 
       // Check if backup should run based on user type and schedule
@@ -210,23 +207,6 @@ class AutoBackupService {
       if (localSuccess) {
         success = true;
         AppLogger.info('Local auto backup completed successfully');
-      }
-
-      // Try cloud backup if available
-      try {
-        final isSignedIn = await GoogleDriveService.instance.isSignedIn();
-        if (isSignedIn) {
-          final cloudSuccess = await GoogleDriveService.instance.createBackup();
-          if (cloudSuccess) {
-            success = true;
-            AppLogger.info('Cloud auto backup completed successfully');
-          }
-        }
-      } catch (e) {
-        AppLogger.error(
-          'Cloud auto backup failed, but local backup succeeded',
-          e,
-        );
       }
 
       if (success) {
@@ -257,7 +237,6 @@ class AutoBackupService {
         return true;
       }
 
-      // Note: The cleanup is handled automatically in GoogleDriveService.createBackup()
       // This task serves as a periodic check
       AppLogger.info('Background cleanup completed');
       return true;

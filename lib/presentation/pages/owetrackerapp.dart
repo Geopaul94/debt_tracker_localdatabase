@@ -106,7 +106,7 @@ class OweTrackerApp extends StatelessWidget {
               '/home': (context) => HomePage(),
               '/add-transaction': (context) => AddTransactionPage(),
               '/currency-selection': (context) => CurrencySelectionPage(),
-              '/cloud-backup': (context) => CloudBackupPage(),
+          //    '/cloud-backup': (context) => CloudBackupPage(),
               '/trash': (context) => TrashPage(),
               '/premium': (context) => PremiumPage(),
             },

@@ -1,23 +1,25 @@
 
-import java.util.Properties
-import java.io.FileInputStream
+
+
+
+
+
 
 plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
-    // Note: Google Services plugin not needed when using direct OAuth configuration
 }
+
+import java.util.Properties
+import java.io.FileInputStream
 
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
-    try {
-        keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-    } catch (e: Exception) {
-        error("Failed to load key.properties: ${e.message}")
-    }
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
+
 android {
     namespace = "com.geo.debit_tracker"
     compileSdk = flutter.compileSdkVersion
@@ -26,6 +28,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -34,57 +37,117 @@ android {
 
     defaultConfig {
         applicationId = "com.geo.debit_tracker"
-        minSdk = flutter.minSdkVersion
+        minSdk = 21
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         manifestPlaceholders["googleClientId"] = "@string/google_client_id"
     }
 
-    lint {
-        baseline = file("lint-baseline.xml")
-    }
-
     signingConfigs {
         create("release") {
-            if (keystoreProperties.containsKey("storeFile") &&
-                keystoreProperties.containsKey("storePassword") &&
-                keystoreProperties.containsKey("keyAlias") &&
-                keystoreProperties.containsKey("keyPassword")) {
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
-                storePassword = keystoreProperties.getProperty("storePassword")
-                keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
             } else {
-                println("Warning: key.properties is missing required fields. Using debug signing config for release.")
-                storeFile = file("~/.android/debug.keystore")
-                storePassword = "android"
+                println("Warning: key.properties not found, using debug signing")
                 keyAlias = "androiddebugkey"
                 keyPassword = "android"
+                storeFile = file(System.getProperty("user.home") + "/.android/debug.keystore")
+                storePassword = "android"
             }
+        }
+    }
+
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a")
+            isUniversalApk = true
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            isDebuggable = false
+            isJniDebuggable = false
+            isPseudoLocalesEnabled = false
+            isCrunchPngs = true
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
-            signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = false
+            isShrinkResources = false
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
         }
     }
+
+    buildFeatures {
+        buildConfig = true
+        aidl = false
+        renderScript = false
+        shaders = false
+        compose = false
+        mlModelBinding = false
+        prefab = false
+    }
+
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+        baseline = file("lint-baseline.xml")
+    }
+
+    packaging {
+        resources {
+            excludes += listOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE",
+                "META-INF/NOTICE"
+            )
+        }
+        jniLibs {
+            useLegacyPackaging = false
+        }
+        dex {
+            useLegacyPackaging = false
+        }
+    }
+
+    bundle {
+        language { enableSplit = true }
+        density { enableSplit = true }
+        abi { enableSplit = true }
+    }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
+    
+    // Google Play Services for AdMob and authentication
+    implementation("com.google.android.gms:play-services-ads:22.6.0")
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+    implementation("com.google.android.gms:play-services-base:18.3.0")
+    
+    // AndroidX support
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.core:core-ktx:1.12.0")
+    
+    // Biometric authentication
+    implementation("androidx.biometric:biometric:1.1.0")
+    
+    // WorkManager for background tasks
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 }
 
 flutter {
     source = "../.."
 }
-
-dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
-    implementation("com.google.android.gms:play-services-auth:20.7.0")
-    implementation("androidx.appcompat:appcompat:1.6.1") // Added for google_mobile_ads
-}
-

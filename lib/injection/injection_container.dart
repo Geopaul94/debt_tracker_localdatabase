@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+
 import 'package:get_it/get_it.dart';
 
 // Core
@@ -9,7 +9,7 @@ import '../core/services/auto_backup_service.dart';
 import '../core/services/backup_permission_service.dart';
 import '../core/services/connectivity_service.dart';
 import '../core/services/currency_service.dart';
-import '../core/services/google_drive_service.dart';
+
 import '../core/services/iap_service.dart';
 import '../core/services/local_backup_service.dart';
 import '../core/services/premium_service.dart';
@@ -68,7 +68,7 @@ Future<void> initializeDependencies() async {
     futures.add(_initializeAdService());
     futures.add(_initializeCurrencyService());
     futures.add(_initializeConnectivityService());
-    futures.add(_initializeGoogleDriveService());
+
     futures.add(_initializeTrashService());
     futures.add(_initializeIAPService());
     futures.add(_initializeAutoBackupService());
@@ -195,15 +195,6 @@ Future<void> _initializeConnectivityService() async {
     AppLogger.info('Connectivity service initialized successfully');
   } catch (e) {
     AppLogger.error('Connectivity service initialization error', e);
-  }
-}
-
-Future<void> _initializeGoogleDriveService() async {
-  try {
-    await GoogleDriveService.instance.initialize();
-    AppLogger.info('Google Drive service initialized successfully');
-  } catch (e) {
-    AppLogger.error('Google Drive service initialization error', e);
   }
 }
 

@@ -6,7 +6,6 @@ import '../../data/models/transaction_model.dart';
 import '../database/database_helper.dart';
 import '../utils/logger.dart';
 import '../entities/backup_info.dart';
-import 'google_drive_service.dart' hide BackupInfo;
 import 'backup_permission_service.dart';
 
 class HybridBackupService {
@@ -17,12 +16,10 @@ class HybridBackupService {
 
   SharedPreferences? _prefs;
   Directory? _backupDirectory;
-  bool _isGoogleDriveAvailable = false;
 
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
     await _createBackupDirectory();
-    await _checkGoogleDriveAvailability();
     AppLogger.info('Hybrid backup service initialized');
   }
 
@@ -36,18 +33,7 @@ class HybridBackupService {
     }
   }
 
-  Future<void> _checkGoogleDriveAvailability() async {
-    try {
-      await GoogleDriveService.instance.initialize();
-      _isGoogleDriveAvailable = true;
-      AppLogger.info('Google Drive is available');
-    } catch (e) {
-      _isGoogleDriveAvailable = false;
-      AppLogger.info('Google Drive not available: $e');
-    }
-  }
-
-  // Create backup (local + cloud if available)
+  // Create backup (local only)
   Future<bool> createBackup({bool showAd = true}) async {
     try {
       // Check backup permissions if showing ad
@@ -77,34 +63,18 @@ class HybridBackupService {
         'transactions': transactions.map((t) => t.toMap()).toList(),
       };
 
-      bool success = false;
-
       // Always create local backup
       final localSuccess = await _createLocalBackup(backupData);
       if (localSuccess) {
-        success = true;
         AppLogger.info('Local backup created successfully');
       }
 
-      // Try cloud backup if available
-      if (_isGoogleDriveAvailable) {
-        try {
-          final cloudSuccess = await _createCloudBackup(backupData);
-          if (cloudSuccess) {
-            success = true;
-            AppLogger.info('Cloud backup created successfully');
-          }
-        } catch (e) {
-          AppLogger.error('Cloud backup failed, but local backup succeeded', e);
-        }
-      }
-
       // Reset backup ad status after successful backup
-      if (success && showAd) {
+      if (localSuccess && showAd) {
         await BackupPermissionService.instance.resetBackupAdStatus();
       }
 
-      return success;
+      return localSuccess;
     } catch (e) {
       AppLogger.error('Failed to create backup', e);
       return false;
@@ -117,17 +87,18 @@ class HybridBackupService {
         await _createBackupDirectory();
       }
 
+      // Create backup file with timestamp
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final backupFile = File(
         '${_backupDirectory!.path}/debt_tracker_backup_$timestamp.json',
       );
 
       await backupFile.writeAsString(jsonEncode(backupData));
-      await _prefs?.setString(
-        'last_local_backup_date',
-        DateTime.now().toIso8601String(),
-      );
 
+      // Clean up old backups
+      await _cleanupOldBackups();
+
+      AppLogger.info('Local backup created successfully: ${backupFile.path}');
       return true;
     } catch (e) {
       AppLogger.error('Failed to create local backup', e);
@@ -135,62 +106,47 @@ class HybridBackupService {
     }
   }
 
-  Future<bool> _createCloudBackup(Map<String, dynamic> backupData) async {
+  Future<void> _cleanupOldBackups() async {
     try {
-      // Check if signed in to Google Drive
-      final isSignedIn = await GoogleDriveService.instance.isSignedIn();
-      if (!isSignedIn) {
-        AppLogger.info('Not signed in to Google Drive, skipping cloud backup');
-        return false;
-      }
+      final files = _backupDirectory!.listSync();
+      final backupFiles =
+          files
+              .where(
+                (file) =>
+                    file is File && file.path.contains('debt_tracker_backup_'),
+              )
+              .cast<File>()
+              .toList();
 
-      // Create cloud backup
-      final success = await GoogleDriveService.instance.createBackup();
-      return success;
+      // Keep only the last 10 backups
+      if (backupFiles.length > 10) {
+        backupFiles.sort(
+          (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
+        );
+
+        for (int i = 10; i < backupFiles.length; i++) {
+          await backupFiles[i].delete();
+          AppLogger.info('Deleted old backup: ${backupFiles[i].path}');
+        }
+      }
     } catch (e) {
-      AppLogger.error('Failed to create cloud backup', e);
-      return false;
+      AppLogger.error('Error cleaning up old backups', e);
     }
   }
 
-  // Get available backups (local + cloud)
+  // Get available backups
   Future<List<BackupInfo>> getAvailableBackups() async {
-    final backups = <BackupInfo>[];
+    try {
+      final localBackups = await _getLocalBackups();
 
-    // Get local backups
-    final localBackups = await _getLocalBackups();
-    backups.addAll(localBackups);
+      // Sort by date (newest first)
+      localBackups.sort((a, b) => b.date.compareTo(a.date));
 
-    // Get cloud backups if available
-    if (_isGoogleDriveAvailable) {
-      try {
-        final isSignedIn = await GoogleDriveService.instance.isSignedIn();
-        if (isSignedIn) {
-          final cloudBackups =
-              await GoogleDriveService.instance.getAvailableBackups();
-          // Convert cloud backups to our BackupInfo format
-          for (final cloudBackup in cloudBackups) {
-            backups.add(
-              BackupInfo(
-                id: cloudBackup.id,
-                name: cloudBackup.name,
-                date: cloudBackup.createdAt,
-                size: cloudBackup.size,
-                isLocal: false,
-                userEmail: GoogleDriveService.instance.userEmail,
-              ),
-            );
-          }
-        }
-      } catch (e) {
-        AppLogger.error('Failed to get cloud backups', e);
-      }
+      return localBackups;
+    } catch (e) {
+      AppLogger.error('Failed to get available backups', e);
+      return [];
     }
-
-    // Sort by date (newest first)
-    backups.sort((a, b) => b.date.compareTo(a.date));
-
-    return backups;
   }
 
   Future<List<BackupInfo>> _getLocalBackups() async {
@@ -244,7 +200,7 @@ class HybridBackupService {
       if (backup.isLocal) {
         return await _restoreFromLocalBackup(backup.id);
       } else {
-        return await _restoreFromCloudBackup(backup.id);
+        return false; // No cloud backup support
       }
     } catch (e) {
       AppLogger.error('Failed to restore from backup', e);
@@ -274,18 +230,6 @@ class HybridBackupService {
     }
   }
 
-  Future<bool> _restoreFromCloudBackup(String backupId) async {
-    try {
-      final success = await GoogleDriveService.instance.restoreFromBackup(
-        backupId,
-      );
-      return success;
-    } catch (e) {
-      AppLogger.error('Failed to restore from cloud backup', e);
-      return false;
-    }
-  }
-
   Future<bool> _restoreTransactions(List<TransactionModel> transactions) async {
     try {
       final dbHelper = DatabaseHelper();
@@ -309,48 +253,36 @@ class HybridBackupService {
     }
   }
 
-  // Sign in to Google Drive
-  Future<bool> signInToGoogleDrive() async {
-    try {
-      final success = await GoogleDriveService.instance.signIn();
-      if (success) {
-        _isGoogleDriveAvailable = true;
-        AppLogger.info('Successfully signed in to Google Drive');
-      }
-      return success;
-    } catch (e) {
-      AppLogger.error('Failed to sign in to Google Drive', e);
-      return false;
-    }
+  // Sign in method (always returns true for local backup)
+  Future<bool> signIn() async {
+    await initialize();
+    return true;
   }
 
-  // Check if signed in to Google Drive
-  Future<bool> isSignedInToGoogleDrive() async {
-    try {
-      return await GoogleDriveService.instance.isSignedIn();
-    } catch (e) {
-      return false;
-    }
+  // Sign out method (no-op for local backup)
+  Future<void> signOut() async {
+    // No sign out needed for local backup
   }
 
-  // Get user email for Google Drive
-  String? get googleDriveUserEmail => GoogleDriveService.instance.userEmail;
-
-  // Get last backup date
-  DateTime? get lastBackupDate {
-    final dateString = _prefs?.getString('last_local_backup_date');
-    if (dateString == null) return null;
-    try {
-      return DateTime.parse(dateString);
-    } catch (e) {
-      return null;
-    }
+  // Check if signed in (always true for local backup)
+  Future<bool> isSignedIn() async {
+    return true;
   }
 
-  // Check if Google Drive is available
-  bool get isGoogleDriveAvailable => _isGoogleDriveAvailable;
+  // Get user email (returns null for local backup)
+  String? get userEmail => null;
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final backupDate = DateTime(date.year, date.month, date.day);
+
+    if (backupDate == today) {
+      return 'Today at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    } else if (backupDate == today.subtract(Duration(days: 1))) {
+      return 'Yesterday at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    } else {
+      return '${date.day}/${date.month}/${date.year} at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    }
   }
 }

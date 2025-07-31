@@ -1,3 +1,4 @@
+import 'package:debt_tracker/presentation/pages/cloud_backup_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -17,7 +18,7 @@ import '../bloc/authentication/auth_state.dart';
 import 'currency_selection_page.dart';
 import 'privacy_policy_page.dart';
 import 'terms_conditions_page.dart';
-import 'cloud_backup_page.dart';
+
 import 'trash_page.dart';
 import 'premium_page.dart';
 import 'hybrid_backup_page.dart';
@@ -456,12 +457,13 @@ class SettingsPage extends StatelessWidget {
           child: Icon(Icons.cloud_upload, color: Colors.blue[600]),
         ),
         title: Text('Cloud Backup'),
-        subtitle: Text('Backup your data to Google Drive'),
+        subtitle: Text('Backup your data locally'),
         trailing: Icon(Icons.chevron_right),
         onTap: () {
           Navigator.of(
             context,
-          ).push(MaterialPageRoute(builder: (context) => HybridBackupPage()));
+          ).push(MaterialPageRoute(builder: (context) => CloudBackupPage()));
+          //HybridBackupPage()));
         },
       ),
     );
@@ -534,15 +536,15 @@ class SettingsPage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'Build with love by @Geo Paulson',
+            'Build with ❤️ by GP',
             style: TextStyle(
-              fontSize: 18.sp,
+              fontSize: 14.sp,
               fontWeight: FontWeight.bold,
               color: Colors.teal[800],
             ),
           ),
           Text(
-            "Version 1.2.0",
+            "Version 1.4.0",
             style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
           ),
           Text(
@@ -551,14 +553,6 @@ class SettingsPage extends StatelessWidget {
           ),
           Text(
             "All rights reserved",
-            style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
-          ),
-          Text(
-            "Geo Paulson",
-            style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
-          ),
-          Text(
-            "geo@geopaulson.com",
             style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
           ),
         ],
