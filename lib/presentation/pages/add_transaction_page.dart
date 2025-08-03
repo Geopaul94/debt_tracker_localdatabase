@@ -506,43 +506,76 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       builder:
           (context) => Dialog(
             child: Container(
-              width: double.maxFinite,
-              height: MediaQuery.of(context).size.height * 0.7,
+              width: MediaQuery.of(context).size.width * 0.9,
+              height: MediaQuery.of(context).size.height * 0.85,
               child: Column(
                 children: [
                   // Header
                   Container(
-                    padding: EdgeInsets.all(16.w),
+                    padding: EdgeInsets.all(20.w),
                     decoration: BoxDecoration(
                       color: Theme.of(context).primaryColor,
                       borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(8.r),
-                        topRight: Radius.circular(8.r),
+                        topLeft: Radius.circular(12.r),
+                        topRight: Radius.circular(12.r),
                       ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.monetization_on, color: Colors.white),
-                        SizedBox(width: 8.w),
+                        Icon(
+                          Icons.monetization_on,
+                          color: Colors.white,
+                          size: 24.sp,
+                        ),
+                        SizedBox(width: 12.w),
                         Text(
                           'Select Currency',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 18.sp,
+                            fontSize: 20.sp,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Spacer(),
                         IconButton(
-                          icon: Icon(Icons.close, color: Colors.white),
+                          icon: Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 24.sp,
+                          ),
                           onPressed: () => Navigator.of(context).pop(),
                         ),
                       ],
                     ),
                   ),
+
+                  // Search/Info section
+                  Container(
+                    padding: EdgeInsets.all(16.w),
+                    color: Colors.grey[50],
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.grey[600],
+                          size: 16.sp,
+                        ),
+                        SizedBox(width: 8.w),
+                        Text(
+                          '${CurrencyConstants.supportedCurrencies.length} currencies available',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                   // Currency list
                   Expanded(
                     child: ListView.builder(
+                      padding: EdgeInsets.symmetric(vertical: 8.h),
                       itemCount: CurrencyConstants.supportedCurrencies.length,
                       itemBuilder: (context, index) {
                         final currency =
@@ -550,34 +583,92 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                         final isSelected =
                             _selectedCurrency?.code == currency.code;
 
-                        return ListTile(
-                          leading: Text(
-                            currency.flag,
-                            style: TextStyle(fontSize: 24.sp),
+                        return Container(
+                          margin: EdgeInsets.symmetric(
+                            horizontal: 8.w,
+                            vertical: 2.h,
                           ),
-                          title: Text(
-                            '${currency.symbol} ${currency.code}',
-                            style: TextStyle(
-                              fontWeight:
-                                  isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8.r),
+                            color:
+                                isSelected
+                                    ? Theme.of(
+                                      context,
+                                    ).primaryColor.withOpacity(0.1)
+                                    : null,
+                            border:
+                                isSelected
+                                    ? Border.all(
+                                      color: Theme.of(context).primaryColor,
+                                      width: 2,
+                                    )
+                                    : null,
+                          ),
+                          child: ListTile(
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16.w,
+                              vertical: 8.h,
                             ),
+                            leading: Container(
+                              width: 50.w,
+                              height: 50.h,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(25.r),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  currency.flag,
+                                  style: TextStyle(fontSize: 28.sp),
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              '${currency.symbol} ${currency.code}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16.sp,
+                                color:
+                                    isSelected
+                                        ? Theme.of(context).primaryColor
+                                        : Colors.grey[800],
+                              ),
+                            ),
+                            subtitle: Text(
+                              currency.name,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            trailing:
+                                isSelected
+                                    ? Container(
+                                      padding: EdgeInsets.all(8.w),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).primaryColor,
+                                        borderRadius: BorderRadius.circular(
+                                          20.r,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.check,
+                                        color: Colors.white,
+                                        size: 16.sp,
+                                      ),
+                                    )
+                                    : Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: Colors.grey[400],
+                                      size: 16.sp,
+                                    ),
+                            onTap: () {
+                              setState(() {
+                                _selectedCurrency = currency;
+                              });
+                              Navigator.of(context).pop();
+                            },
                           ),
-                          subtitle: Text(currency.name),
-                          trailing:
-                              isSelected
-                                  ? Icon(
-                                    Icons.check,
-                                    color: Theme.of(context).primaryColor,
-                                  )
-                                  : null,
-                          onTap: () {
-                            setState(() {
-                              _selectedCurrency = currency;
-                            });
-                            Navigator.of(context).pop();
-                          },
                         );
                       },
                     ),

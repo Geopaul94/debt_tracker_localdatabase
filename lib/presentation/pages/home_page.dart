@@ -29,6 +29,7 @@ import 'add_transaction_page.dart';
 import 'settings_page.dart';
 import 'grouped_debt_detail_page.dart';
 import 'premium_page.dart';
+import 'transaction_detail_page.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -577,8 +578,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   ) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder:
-            (context) => AddTransactionPage(transactionToEdit: transaction),
+        builder: (context) => TransactionDetailPage(transaction: transaction),
       ),
     );
   }
