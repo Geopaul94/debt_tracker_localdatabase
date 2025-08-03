@@ -72,7 +72,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(height: 40.h), // Top spacing
+                    SizedBox(height: 30.h), // Top spacing
                     // App Logo/Icon
                     Container(
                       width: 120.w,
@@ -96,7 +96,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
 
-                    SizedBox(height: 40.h),
+                    SizedBox(height: 30.h),
 
                     // App Title
                     Text(
@@ -120,7 +120,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
 
-                    SizedBox(height: 60.h),
+                    SizedBox(height: 45.h),
 
                     // Authentication Icon
                     Container(
@@ -137,7 +137,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
 
-                    SizedBox(height: 32.h),
+                    SizedBox(height: 27.h),
 
                     // Authentication Message
                     Text(
@@ -150,7 +150,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
 
-                    SizedBox(height: 48.h),
+                    SizedBox(height: 35.h),
 
                     // Authenticate Button
                     BlocBuilder<AuthBloc, AuthState>(
@@ -211,7 +211,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       },
                     ),
 
-                    SizedBox(height: 32.h),
+                    SizedBox(height: 25.h),
 
                     // Help Text
                     Text(
@@ -224,114 +224,114 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
 
-                    SizedBox(height: 60.h),
+                    SizedBox(height: 40.h),
 
                     // Alternative Option - Watch Ad for 2 Hours Access
-                    // Container(
-                    //   width: double.infinity,
-                    //   padding: EdgeInsets.all(20.w),
-                    //   decoration: BoxDecoration(
-                    //     color: Colors.white.withOpacity(0.15),
-                    //     borderRadius: BorderRadius.circular(16.r),
-                    //     border: Border.all(
-                    //       color: Colors.white.withOpacity(0.3),
-                    //       width: 1,
-                    //     ),
-                    //   ),
-                    //   child: Column(
-                    //     children: [
-                    //       Row(
-                    //         children: [
-                    //           Container(
-                    //             width: 40.w,
-                    //             height: 40.w,
-                    //             decoration: BoxDecoration(
-                    //               color: Colors.white.withOpacity(0.2),
-                    //               borderRadius: BorderRadius.circular(10.r),
-                    //             ),
-                    //             child: Icon(
-                    //               Icons.play_circle_filled,
-                    //               color: Colors.white,
-                    //               size: 24.sp,
-                    //             ),
-                    //           ),
-                    //           SizedBox(width: 12.w),
-                    //           Expanded(
-                    //             child: Column(
-                    //               crossAxisAlignment: CrossAxisAlignment.start,
-                    //               children: [
-                    //                 Text(
-                    //                   'Alternative Access',
-                    //                   style: TextStyle(
-                    //                     fontSize: 16.sp,
-                    //                     fontWeight: FontWeight.bold,
-                    //                     color: Colors.white,
-                    //                   ),
-                    //                 ),
-                    //                 Text(
-                    //                   'Watch a short ad to use the app\nwithout any ads for two hours with premium features',
-                    //                   style: TextStyle(
-                    //                     fontSize: 12.sp,
-                    //                     color: Colors.white.withOpacity(0.8),
-                    //                     height: 1.3,
-                    //                   ),
-                    //                 ),
-                    //               ],
-                    //             ),
-                    //           ),
-                    //         ],
-                    //       ),
-                    //       SizedBox(height: 16.h),
-                    //       SizedBox(
-                    //         width: double.infinity,
-                    //         height: 48.h,
-                    //         child: ElevatedButton(
-                    //           onPressed:
-                    //               _isLoadingAd ? null : _watchAdFor2Hours,
-                    //           style: ElevatedButton.styleFrom(
-                    //             backgroundColor: Colors.amber[600],
-                    //             foregroundColor: Colors.white,
-                    //             shape: RoundedRectangleBorder(
-                    //               borderRadius: BorderRadius.circular(12.r),
-                    //             ),
-                    //             elevation: 2,
-                    //           ),
-                    //           child:
-                    //               _isLoadingAd
-                    //                   ? SizedBox(
-                    //                     width: 20.w,
-                    //                     height: 20.w,
-                    //                     child: CircularProgressIndicator(
-                    //                       strokeWidth: 2,
-                    //                       valueColor:
-                    //                           AlwaysStoppedAnimation<Color>(
-                    //                             Colors.white,
-                    //                           ),
-                    //                     ),
-                    //                   )
-                    //                   : Row(
-                    //                     mainAxisAlignment:
-                    //                         MainAxisAlignment.center,
-                    //                     children: [
-                    //                       Icon(
-                    //                         Icons.video_library,
-                    //                         size: 20.sp,
-                    //                       ),
-                    //                       SizedBox(width: 8.w),
-                    //                       Text(
-                    //                         'Watch Ad for 2 Hours Access',
-                    //                         style: TextStyle(
-                    //                           fontSize: 14.sp,
-                    //                           fontWeight: FontWeight.bold,
-                    //                         ),
-                    //                       ),
-                    //                     ],
-                    //                   ),
-                    //         ),
-                    //       ),
-                    //     ],
-                    //   ),
-                    // ),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(20.w),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 40.w,
+                                height: 40.w,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(10.r),
+                                ),
+                                child: Icon(
+                                  Icons.play_circle_filled,
+                                  color: Colors.white,
+                                  size: 24.sp,
+                                ),
+                              ),
+                              SizedBox(width: 12.w),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Remove Ads',
+                                      style: TextStyle(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Watch a short ad to use the app\nwithout any ads for two hours with premium features',
+                                      style: TextStyle(
+                                        fontSize: 12.sp,
+                                        color: Colors.white.withOpacity(0.8),
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 16.h),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48.h,
+                            child: ElevatedButton(
+                              onPressed:
+                                  _isLoadingAd ? null : _watchAdFor2Hours,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.amber[600],
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                                elevation: 2,
+                              ),
+                              child:
+                                  _isLoadingAd
+                                      ? SizedBox(
+                                        width: 20.w,
+                                        height: 20.w,
+                                        child: const CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                        ),
+                                      )
+                                      : Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.video_library,
+                                            size: 20.sp,
+                                          ),
+                                          SizedBox(width: 8.w),
+                                          Text(
+                                            'Watch Ad for 2 Hours Access',
+                                            style: TextStyle(
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
                     SizedBox(height: 40.h), // Bottom spacing
                   ],
@@ -351,6 +351,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       final success = await AdService.instance.showRewardedAd(
+        allowDuringAdFree: true, // Allow extending ad-free time
         onUserEarnedReward: (ad, reward) async {
           if (mounted) {
             try {
@@ -377,11 +378,8 @@ class _AuthScreenState extends State<AuthScreen> {
               );
             }
 
-            // Navigate to home after successful ad watch
-            await Future.delayed(const Duration(seconds: 1));
-            if (mounted) {
-              Navigator.of(context).pushReplacementNamed('/home');
-            }
+            // Don't navigate automatically - user still needs to authenticate
+            // The ad-free status is already set, but authentication is still required
           }
         },
       );

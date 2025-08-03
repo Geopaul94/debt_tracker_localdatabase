@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'preference_service.dart';
 import 'connectivity_service.dart';
@@ -23,31 +24,38 @@ class AdService {
   // Ad Unit IDs - Use test ads for development, production ads for release
   static final String _bannerAdUnitId =
       Platform.isAndroid
-          ? (kDebugMode 
+          ? (kDebugMode
               ? 'ca-app-pub-3940256099942544/6300978111' // Android test banner
               : 'ca-app-pub-5835078496383561/4425152477') // Production banner ad
           : 'ca-app-pub-3940256099942544/2934735716'; // iOS test ad
 
   static final String _interstitialAdUnitId =
       Platform.isAndroid
-          ? (kDebugMode 
+          ? (kDebugMode
               ? 'ca-app-pub-3940256099942544/1033173712' // Android test interstitial
               : 'ca-app-pub-5835078496383561/3282058826') // Production interstitial ad
           : 'ca-app-pub-3940256099942544/4411468910'; // iOS test ad
 
   static final String _openAppAdUnitId =
       Platform.isAndroid
-          ? (kDebugMode 
+          ? (kDebugMode
               ? 'ca-app-pub-3940256099942544/3419835294' // Android test app open
               : 'ca-app-pub-5835078496383561/5891428769') // Production app open ad
           : 'ca-app-pub-5835078496383561/3262990911'; // iOS test ad
 
   static final String _rewardedAdUnitId =
       Platform.isAndroid
-          ? (kDebugMode 
+          ? (kDebugMode
               ? 'ca-app-pub-3940256099942544/5224354917' // Android test rewarded
               : 'ca-app-pub-5835078496383561/2160067314') // Production rewarded ad
           : 'ca-app-pub-3940256099942544/1712485313'; // iOS test ad
+
+  static final String _nativeAdUnitId =
+      Platform.isAndroid
+          ? (kDebugMode
+              ? 'ca-app-pub-3940256099942544/2247696110' // Android test native
+              : 'ca-app-pub-5835078496383561/3804321478') // Production native ad
+          : 'ca-app-pub-3940256099942544/3986624511'; // iOS test ad
 
   // Initialize ads asynchronously
   Future<void> initialize() async {
@@ -321,10 +329,21 @@ class AdService {
     required OnUserEarnedRewardCallback onUserEarnedReward,
     VoidCallback? onAdDismissed,
     VoidCallback? onAdFailedToShow,
+    bool allowDuringAdFree =
+        false, // Allow rewarded ads even during ad-free periods
   }) async {
-    if (!await _shouldShowAdType('rewarded')) {
+    // For rewarded ads that extend ad-free time, bypass premium/ad-free checks
+    if (!allowDuringAdFree && !await _shouldShowAdType('rewarded')) {
       print('Rewarded ads not allowed');
       return false;
+    } else if (allowDuringAdFree) {
+      // Still check internet connection for rewarded ads during ad-free periods
+      final hasInternet = await _hasInternetConnection();
+      if (!hasInternet) {
+        print('❌ No internet connection - not showing rewarded ads');
+        return false;
+      }
+      print('✅ Showing rewarded ad during ad-free period to extend time');
     }
 
     if (_rewardedAd == null) {
@@ -408,6 +427,66 @@ class AdService {
       'hasInternet': await _hasInternetConnection(),
     };
   }
+
+  // Create native ad
+  Future<NativeAd?> createNativeAd({
+    String factoryId = 'listTile',
+    TemplateType template = TemplateType.medium,
+  }) async {
+    if (!_isInitialized) await initialize();
+
+    // Check if ads should be shown
+    if (!await _shouldShowAdType('native')) {
+      print('Native ads not allowed');
+      return null;
+    }
+
+    try {
+      final nativeAd = NativeAd(
+        adUnitId: _nativeAdUnitId,
+        factoryId: factoryId,
+        request: const AdRequest(),
+        listener: NativeAdListener(
+          onAdLoaded: (ad) => print('✅ Native ad loaded'),
+          onAdFailedToLoad: (ad, error) {
+            print('❌ Native ad failed to load: $error');
+            ad.dispose();
+          },
+          onAdClicked: (ad) => print('👆 Native ad clicked'),
+        ),
+        nativeTemplateStyle: NativeTemplateStyle(
+          templateType: template,
+          mainBackgroundColor: Colors.white,
+          cornerRadius: 8.0,
+          callToActionTextStyle: NativeTemplateTextStyle(
+            textColor: Colors.white,
+            backgroundColor: Colors.blue,
+            style: NativeTemplateFontStyle.bold,
+            size: 14.0,
+          ),
+          primaryTextStyle: NativeTemplateTextStyle(
+            textColor: Colors.black87,
+            style: NativeTemplateFontStyle.normal,
+            size: 16.0,
+          ),
+          secondaryTextStyle: NativeTemplateTextStyle(
+            textColor: Colors.black54,
+            style: NativeTemplateFontStyle.normal,
+            size: 14.0,
+          ),
+        ),
+      );
+
+      await nativeAd.load();
+      return nativeAd;
+    } catch (e) {
+      print('❌ Error creating native ad: $e');
+      return null;
+    }
+  }
+
+  // Get native ad unit ID
+  String get nativeAdUnitId => _nativeAdUnitId;
 
   // Utility methods
   bool get hasInterstitialAd => _interstitialAd != null;

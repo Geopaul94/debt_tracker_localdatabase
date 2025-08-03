@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../../core/services/currency_service.dart';
 import '../../core/constants/currencies.dart';
@@ -9,6 +10,7 @@ import '../bloc/transacton_bloc/transaction_bloc.dart';
 import '../bloc/transacton_bloc/transaction_event.dart';
 import '../bloc/transacton_bloc/transaction_state.dart';
 import '../widgets/ad_banner_widget.dart';
+import '../widgets/native_ad_widget.dart';
 import 'add_transaction_page.dart';
 import 'transaction_history.dart';
 
@@ -321,10 +323,13 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
                 _personTotals.length +
                 (_personTotals.length > 3 ? 1 : 0), // Add space for another ad
             itemBuilder: (context, index) {
-              // Insert banner ad after every 4 people
+              // Insert native ad after every 4 people (better integration)
               if (index > 0 && index % 5 == 4 && _personTotals.length > 3) {
-                return AdBannerWidget(
-                  margin: EdgeInsets.symmetric(vertical: 16.h),
+                return const NativeAdWidget(
+                  template: TemplateType.medium,
+                  margin: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                  backgroundColor: Colors.white,
+                  height: 110,
                 );
               }
 
@@ -479,8 +484,7 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
                                 ],
                               ),
                             ),
-                          )
-                          ,
+                          ),
                       if (transactions.length > 2)
                         Text(
                           '+${transactions.length - 2} more...',
@@ -587,7 +591,9 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
           SizedBox(height: 24.h),
           ElevatedButton(
             onPressed: () {
-              context.read<TransactionBloc>().add(const LoadTransactionsEvent());
+              context.read<TransactionBloc>().add(
+                const LoadTransactionsEvent(),
+              );
             },
             child: const Text('Try Again'),
           ),
@@ -598,7 +604,9 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
 
   void _addNewTransaction() {
     Navigator.of(context)
-        .push(MaterialPageRoute(builder: (context) => const AddTransactionPage()))
+        .push(
+          MaterialPageRoute(builder: (context) => const AddTransactionPage()),
+        )
         .then((_) {
           // Reload transactions after adding
           context.read<TransactionBloc>().add(const LoadTransactionsEvent());

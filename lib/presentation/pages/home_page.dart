@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../../core/services/ad_service.dart';
 import '../../core/services/connectivity_service.dart';
@@ -22,6 +23,7 @@ import '../bloc/currency_bloc/currency_state.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/transaction_list_item.dart';
 import '../widgets/ad_banner_widget.dart';
+import '../widgets/native_ad_widget.dart';
 import '../widgets/exit_confirmation_dialog.dart';
 import 'add_transaction_page.dart';
 import 'settings_page.dart';
@@ -37,9 +39,15 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
-  int _transactionAddCount = 0;
   late CurrencyBloc _currencyBloc;
   bool _hasShownAppOpenAd = false;
+
+  // Time-based interstitial ad system
+  Timer? _interstitialAdTimer;
+  static const Duration _interstitialAdInterval = Duration(
+    minutes: 1,
+    seconds: 30,
+  ); // 1.5 minutes
 
   @override
   void initState() {
@@ -69,6 +77,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     // Show update notification if needed
     _showUpdateNotificationIfNeeded();
+
+    // Start time-based interstitial ad timer
+    _startInterstitialAdTimer();
   }
 
   // Track app session
@@ -112,13 +123,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  // Handle app lifecycle changes for app open ads
+  // Handle app lifecycle changes for app open ads and interstitial timer
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    if (state == AppLifecycleState.resumed && !_hasShownAppOpenAd) {
-      _showAppOpenAdIfNeeded();
+    if (state == AppLifecycleState.resumed) {
+      if (!_hasShownAppOpenAd) {
+        _showAppOpenAdIfNeeded();
+      }
+      // Resume interstitial ad timer when app comes to foreground
+      _startInterstitialAdTimer();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      // Pause interstitial ad timer when app goes to background
+      _pauseInterstitialAdTimer();
     }
   }
 
@@ -143,6 +162,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _currencyBloc.close();
+    _interstitialAdTimer?.cancel(); // Clean up timer
     super.dispose();
   }
 
@@ -218,6 +238,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             ],
                           ),
                         ),
+
                         // PopupMenuItem(
                         //   value: 'premium',
                         //   child: Row(
@@ -228,17 +249,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         //     ],
                         //   ),
                         // ),
-
-                        // PopupMenuItem(
-                        //   value: 'ad_free',
-                        //   child: Row(
-                        //     children: [
-                        //       Icon(Icons.block, color: Colors.blue),
-                        //       SizedBox(width: 8),
-                        //       Text('Remove Ads (2h)'),
-                        //     ],
-                        //   ),
-                        // ),
+                        const PopupMenuItem(
+                          value: 'ad_free',
+                          child: Row(
+                            children: [
+                              Icon(Icons.block, color: Colors.blue),
+                              SizedBox(width: 8),
+                              Text('Remove Ads (2h)'),
+                            ],
+                          ),
+                        ),
                       ],
                 ),
               ],
@@ -255,12 +275,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 } else if (state is TransactionOperationSuccess) {
                   // Note: Success snackbar is handled by the Add Transaction page
                   // No need to show duplicate snackbar here
-
-                  // Show interstitial ad after every 3 transactions (only if online)
-                  _transactionAddCount++;
-                  if (_transactionAddCount % 3 == 0) {
-                    _showInterstitialAdIfOnline();
-                  }
 
                   // Force reload to ensure immediate UI update
                   context.read<TransactionBloc>().add(
@@ -364,38 +378,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 padding: EdgeInsets.symmetric(horizontal: 10.w),
-                itemCount:
-                    state.transactions.length +
-                    (state.transactions.length > 5 ? 1 : 0),
+                itemCount: _calculateItemCount(state.transactions.length),
                 itemBuilder: (context, index) {
-                  // Insert another banner ad after every 5 transactions
-                  if (index > 0 &&
-                      index % 6 == 5 &&
-                      state.transactions.length > 5) {
-                    return FutureBuilder<bool>(
-                      future: _shouldShowBannerAd(),
-                      builder: (context, snapshot) {
-                        final shouldShowAd = snapshot.data ?? false;
-                        return shouldShowAd
-                            ? AdBannerWidget(
-                              margin: EdgeInsets.symmetric(vertical: 16.h),
-                            )
-                            : const SizedBox.shrink();
-                      },
-                    );
-                  }
-
-                  final transactionIndex = index > 5 ? index - 1 : index;
-                  if (transactionIndex >= state.transactions.length) {
-                    return const SizedBox.shrink();
-                  }
-
-                  final transaction = state.transactions[transactionIndex];
-                  return TransactionListItem(
-                    transaction: transaction,
-                    onTap:
-                        () =>
-                            _navigateToTransactionDetail(context, transaction),
+                  return _buildTransactionListItem(
+                    context,
+                    index,
+                    state.transactions,
                   );
                 },
               ),
@@ -492,58 +480,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _showRewardedAdForPremium() async {
-    try {
-      await AdService.instance.showRewardedAd(
-        onUserEarnedReward: (ad, reward) async {
-          if (mounted) {
-            if (_isPremiumServiceAvailable()) {
-              try {
-                await serviceLocator<PremiumService>().setPremiumUnlocked(true);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('🎉 Premium features unlocked!'),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              } catch (e) {
-                AppLogger.error('Error setting premium status', e);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('🎉 Ad reward received!'),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              }
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('🎉 Ad reward received!'),
-                  backgroundColor: Colors.green,
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            }
-            // Refresh the page to update UI
-            setState(() {});
-          }
-        },
-      );
-    } catch (e) {
-      print('Error showing rewarded ad: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ad not ready. Please try again later.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    }
-  }
-
   Future<void> _showRewardedAdForAdFree() async {
     try {
       final connectivity = serviceLocator<ConnectivityService>();
@@ -559,14 +495,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
 
       final success = await AdService.instance.showRewardedAd(
+        allowDuringAdFree: true, // Allow extending ad-free time
         onUserEarnedReward: (ad, reward) async {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Ads removed for 2 hours!'),
-                backgroundColor: Colors.green,
-              ),
-            );
+            try {
+              // Actually set the ad-free status
+              await serviceLocator<PremiumService>().setAdFreeFor2Hours();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🚀 Ads removed for 2 hours!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+
+              // Reload the page to reflect ad-free status
+              setState(() {});
+            } catch (e) {
+              print('Error setting ad-free status: $e');
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('✅ Ad reward received!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
           }
         },
       );
@@ -579,6 +532,139 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
       );
     }
+  }
+
+  // Time-based interstitial ad management
+  void _startInterstitialAdTimer() {
+    // Cancel existing timer if any
+    _interstitialAdTimer?.cancel();
+
+    // Start new timer for 1.5 minutes interval
+    _interstitialAdTimer = Timer.periodic(_interstitialAdInterval, (timer) {
+      _showInterstitialAdIfOnline();
+    });
+
+    print(
+      '🕒 Interstitial ad timer started - showing ads every ${_interstitialAdInterval.inMinutes}:${(_interstitialAdInterval.inSeconds % 60).toString().padLeft(2, '0')}',
+    );
+  }
+
+  void _pauseInterstitialAdTimer() {
+    _interstitialAdTimer?.cancel();
+    _interstitialAdTimer = null;
+    print('⏸️ Interstitial ad timer paused');
+  }
+
+  // Calculate total item count including ads
+  int _calculateItemCount(int transactionCount) {
+    if (transactionCount <= 3)
+      return transactionCount; // No ads for small lists
+
+    int adCount = 0;
+    // Native ad every 4 transactions (starting from position 4)
+    adCount += (transactionCount / 4).floor();
+    // Banner ad every 8 transactions (starting from position 8)
+    if (transactionCount > 7) {
+      adCount += ((transactionCount - 4) / 8).floor();
+    }
+
+    return transactionCount + adCount;
+  }
+
+  // Build transaction list item with integrated ads
+  Widget _buildTransactionListItem(
+    BuildContext context,
+    int index,
+    List<TransactionEntity> transactions,
+  ) {
+    final totalTransactions = transactions.length;
+
+    // No ads for small lists
+    if (totalTransactions <= 3) {
+      if (index >= totalTransactions) return const SizedBox.shrink();
+      return TransactionListItem(
+        transaction: transactions[index],
+        onTap: () => _navigateToTransactionDetail(context, transactions[index]),
+      );
+    }
+
+    // Calculate ad positions
+    final nativeAdPositions = <int>[];
+    final bannerAdPositions = <int>[];
+
+    // Native ads every 4 transactions (positions: 4, 8, 12, 16...)
+    for (
+      int i = 4;
+      i <= totalTransactions + (totalTransactions / 4).floor();
+      i += 4
+    ) {
+      nativeAdPositions.add(i);
+    }
+
+    // Banner ads every 8 transactions, offset by 4 (positions: 8, 16, 24...)
+    for (
+      int i = 8;
+      i <= totalTransactions + (totalTransactions / 4).floor();
+      i += 8
+    ) {
+      if (!nativeAdPositions.contains(i)) {
+        bannerAdPositions.add(i + 1); // Offset to avoid collision
+      }
+    }
+
+    // Check if this position should show a native ad
+    if (nativeAdPositions.contains(index + 1)) {
+      return FutureBuilder<bool>(
+        future: _shouldShowBannerAd(), // Reuse same permission logic
+        builder: (context, snapshot) {
+          final shouldShowAd = snapshot.data ?? false;
+          return shouldShowAd
+              ? const NativeAdWidget(
+                template: TemplateType.medium,
+                margin: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                backgroundColor: Colors.white,
+                height: 120,
+              )
+              : const SizedBox.shrink();
+        },
+      );
+    }
+
+    // Check if this position should show a banner ad
+    if (bannerAdPositions.contains(index + 1)) {
+      return FutureBuilder<bool>(
+        future: _shouldShowBannerAd(),
+        builder: (context, snapshot) {
+          final shouldShowAd = snapshot.data ?? false;
+          return shouldShowAd
+              ? const AdBannerWidget()
+              : const SizedBox.shrink();
+        },
+      );
+    }
+
+    // Calculate actual transaction index (accounting for ads)
+    int transactionIndex = index;
+    for (int adPos in nativeAdPositions) {
+      if (index >= adPos) transactionIndex--;
+    }
+    for (int adPos in bannerAdPositions) {
+      if (index >= adPos) transactionIndex--;
+    }
+
+    // Show transaction if within bounds
+    if (transactionIndex >= 0 && transactionIndex < totalTransactions) {
+      return TransactionListItem(
+        transaction: transactions[transactionIndex],
+        onTap:
+            () => _navigateToTransactionDetail(
+              context,
+              transactions[transactionIndex],
+            ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 
   void _navigateToAddTransaction() {

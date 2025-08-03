@@ -65,7 +65,7 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
   }
 
   Future<void> _showInterstitialAd() async {
-    if (_isLoadingAd || _isPremium || !_hasInternet) return;
+    if (_isLoadingAd || !_hasInternet) return;
 
     setState(() => _isLoadingAd = true);
 
@@ -113,8 +113,18 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
 
     try {
       await AdService.instance.showRewardedAd(
-        onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
+        allowDuringAdFree:
+            true, // Allow extending ad-free time even during ad-free periods
+        onUserEarnedReward: (AdWithoutView ad, RewardItem reward) async {
           print('User earned reward: ${reward.amount} ${reward.type}');
+
+          // Actually set the ad-free status for 2 hours
+          try {
+            await serviceLocator<PremiumService>().setAdFreeFor2Hours();
+            print('✅ Ad-free status set for 2 hours');
+          } catch (e) {
+            print('❌ Error setting ad-free status: $e');
+          }
         },
         onAdDismissed: () {
           print('Rewarded ad dismissed - exiting app');
@@ -123,7 +133,9 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
             // Show thank you message briefly then exit the app
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Thank you for supporting us! 🎉 Exiting app...'),
+                content: Text(
+                  '🚀 Thank you! 2 hours ad-free access granted! Exiting app...',
+                ),
                 backgroundColor: Colors.green,
                 duration: Duration(seconds: 1),
               ),
@@ -176,9 +188,7 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
       contentPadding: EdgeInsets.zero,
       content: Container(
         width: 300.w,
-        constraints: BoxConstraints(
-          maxHeight: _hasInternet && !_isPremium ? 520.h : 250.h,
-        ),
+        constraints: BoxConstraints(maxHeight: _hasInternet ? 520.h : 250.h),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -225,8 +235,8 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
                       ),
                     ),
 
-                    // Show ad banner if internet available and not premium
-                    if (_hasInternet && !_isPremium) ...[
+                    // Show ad banner if internet available (allow ads even during ad-free period for rewarded ads)
+                    if (_hasInternet) ...[
                       SizedBox(height: 16.h),
                       Container(
                         height: 100.h,
@@ -308,8 +318,8 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
                               _isLoadingAd
                                   ? null
                                   : () async {
-                                    // Show interstitial ad before exit if internet available and not premium
-                                    if (_hasInternet && !_isPremium) {
+                                    // Show interstitial ad before exit if internet available
+                                    if (_hasInternet) {
                                       await _showInterstitialAd();
                                     }
                                     if (mounted) {

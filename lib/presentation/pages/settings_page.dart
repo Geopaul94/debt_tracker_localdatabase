@@ -1,7 +1,9 @@
 import 'package:debt_tracker/presentation/widgets/ad_banner_widget.dart';
+import 'package:debt_tracker/presentation/widgets/native_ad_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../core/services/currency_service.dart';
 import '../../core/services/trash_service.dart';
 import '../../core/services/premium_service.dart';
@@ -45,7 +47,7 @@ class SettingsPage extends StatelessWidget {
         appBar: AppBar(title: const Text('Settings'), centerTitle: true),
         body: ListView(
           padding: EdgeInsets.all(15.w),
-          children: [  
+          children: [
             _buildSectionHeader('Currency'),
             _buildCurrencyTile(context),
 
@@ -54,9 +56,7 @@ class SettingsPage extends StatelessWidget {
             _buildSectionHeader('Premium Features'),
 
             _buildPremiumUnderDevelopment(),
-            const AdBannerWidget(
-        
-            ),
+            const AdBannerWidget(),
 
             // _buildSectionHeader('Hybrid Backup'),
 
@@ -71,8 +71,12 @@ class SettingsPage extends StatelessWidget {
             _buildTrashTile(context),
 
             SizedBox(height: 15.h),
-              const AdBannerWidget(
-        
+
+            const NativeAdWidget(
+              template: TemplateType.medium,
+              margin: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              backgroundColor: Colors.white,
+              height: 120,
             ),
 
             _buildSectionHeader('Biometric Authentication'),
@@ -85,9 +89,7 @@ class SettingsPage extends StatelessWidget {
             _buildTermsConditionsTile(context),
 
             SizedBox(height: 15.h),
-  const AdBannerWidget(
-        
-            ),
+            const AdBannerWidget(),
             _buildSectionHeader('About'),
             _buildAppInfoTile(),
             _buildwithlove(),
@@ -386,9 +388,9 @@ class SettingsPage extends StatelessWidget {
         subtitle: const Text('View our privacy policy and data usage'),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()));
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()),
+          );
         },
       ),
     );
@@ -411,7 +413,9 @@ class SettingsPage extends StatelessWidget {
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const TermsConditionsPage()),
+            MaterialPageRoute(
+              builder: (context) => const TermsConditionsPage(),
+            ),
           );
         },
       ),
@@ -448,9 +452,9 @@ class SettingsPage extends StatelessWidget {
             ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (context) => const PremiumPage()));
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const PremiumPage()),
+              );
             },
           ),
         );
@@ -532,9 +536,9 @@ class SettingsPage extends StatelessWidget {
               ],
             ),
             onTap: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (context) => const TrashPage()));
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const TrashPage()),
+              );
             },
           ),
         );
@@ -588,7 +592,7 @@ class SettingsPage extends StatelessWidget {
         ),
         title: const Text('Premium Features'),
         subtitle: const Text('Coming Soon'),
-     //   trailing: Icon(Icons.chevron_right),
+        //   trailing: Icon(Icons.chevron_right),
         onTap: () => _showAppInfoDialog(),
       ),
     );
@@ -608,7 +612,7 @@ class SettingsPage extends StatelessWidget {
         ),
         title: const Text('Cloud Backup'),
         subtitle: const Text('Coming Soon'),
-       // trailing: Icon(Icons.chevron_right),
+        // trailing: Icon(Icons.chevron_right),
         onTap: () => _showAppInfoDialog(),
       ),
     );
