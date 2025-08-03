@@ -1,3 +1,4 @@
+import 'package:debt_tracker/presentation/widgets/ad_banner_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -143,6 +144,9 @@ class PrivacyPolicyPage extends StatelessWidget {
                     '11. Contact Us',
                     'If you have any questions or suggestions about our Privacy Policy, do not hesitate to contact us.\n\nEmail: geopaul.dev@gmail.com\n\nWe are committed to protecting your privacy and will respond to your inquiries promptly.',
                   ),
+                  const AdBannerWidget(
+        
+            ),
 
                   SizedBox(height: 40.h), // Extra space before button
                 ],

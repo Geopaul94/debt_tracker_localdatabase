@@ -1,4 +1,5 @@
 import 'package:debt_tracker/presentation/pages/cloud_backup_page.dart';
+import 'package:debt_tracker/presentation/widgets/ad_banner_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -45,21 +46,24 @@ class SettingsPage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(title: Text('Settings'), centerTitle: true),
         body: ListView(
-          padding: EdgeInsets.all(16.w),
-          children: [
+          padding: EdgeInsets.all(15.w),
+          children: [  
             _buildSectionHeader('Currency'),
             _buildCurrencyTile(context),
 
-            SizedBox(height: 24.h),
+            SizedBox(height: 5.h),
 
             _buildSectionHeader('Premium Features'),
 
             _buildPremiumUnderDevelopment(),
+            const AdBannerWidget(
+        
+            ),
 
             // _buildSectionHeader('Hybrid Backup'),
 
             //    _buildPremiumTile(context),
-            SizedBox(height: 24.h),
+            SizedBox(height: 15.h),
 
             _buildSectionHeader('Data Management'),
 
@@ -68,19 +72,24 @@ class SettingsPage extends StatelessWidget {
 
             _buildTrashTile(context),
 
-            SizedBox(height: 24.h),
+            SizedBox(height: 15.h),
+              const AdBannerWidget(
+        
+            ),
 
             _buildSectionHeader('Biometric Authentication'),
             _buildBiometricAuthentication(),
 
-            SizedBox(height: 24.h),
+            SizedBox(height: 15.h),
 
             _buildSectionHeader('Privacy & Legal'),
             _buildPrivacyPolicyTile(context),
             _buildTermsConditionsTile(context),
 
-            SizedBox(height: 24.h),
-
+            SizedBox(height: 15.h),
+  const AdBannerWidget(
+        
+            ),
             _buildSectionHeader('About'),
             _buildAppInfoTile(),
             _buildwithlove(),
@@ -92,11 +101,11 @@ class SettingsPage extends StatelessWidget {
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.only(bottom: 5.h),
       child: Text(
         title,
         style: TextStyle(
-          fontSize: 18.sp,
+          fontSize: 15.sp,
           fontWeight: FontWeight.bold,
           color: Colors.teal[800],
         ),

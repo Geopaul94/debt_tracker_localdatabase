@@ -1,3 +1,4 @@
+import 'package:debt_tracker/presentation/widgets/ad_banner_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -61,14 +62,15 @@ class TransactionDetailPage extends StatelessWidget {
         ],
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.w),
+        padding: EdgeInsets.all(8.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Transaction Type & Amount Card
+            
             Card(
               elevation: 3,
-              margin: EdgeInsets.only(bottom: 16.h),
+              margin: EdgeInsets.only(bottom: 10.h),
               child: Container(
                 width: double.infinity,
                 padding: EdgeInsets.all(20.w),
@@ -114,6 +116,10 @@ class TransactionDetailPage extends StatelessWidget {
                 ),
               ),
             ),
+   const AdBannerWidget(
+        
+            ),
+            SizedBox(height: 5.h,),
 
             // Person Details
             _buildDetailCard('Person', transaction.name, Icons.person, color),
@@ -142,7 +148,7 @@ class TransactionDetailPage extends StatelessWidget {
             if (transaction.attachments.isNotEmpty)
               _buildAttachmentsSection(context, color),
 
-            SizedBox(height: 20.h),
+            SizedBox(height: 5.h),
 
             // Action Buttons
             Row(
@@ -180,7 +186,13 @@ class TransactionDetailPage extends StatelessWidget {
                   ),
                 ),
               ],
+            ), 
+            SizedBox(height: 10.h,),  const AdBannerWidget(
+        
             ),
+               const AdBannerWidget(
+        
+            ),SizedBox(height: 10.h,),
           ],
         ),
       ),
@@ -288,7 +300,7 @@ class TransactionDetailPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                ],
+             ],
               ),
             ),
           ],

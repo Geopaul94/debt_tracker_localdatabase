@@ -1,3 +1,4 @@
+import 'package:debt_tracker/presentation/widgets/ad_banner_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -362,7 +363,13 @@ class _TrashPageState extends State<TrashPage> {
     }
 
     return Column(
-      children: [_buildTrashInfo(), Expanded(child: _buildTrashList())],
+      children: [
+        _buildTrashInfo(),
+        Expanded(child: _buildTrashList()),
+        const AdBannerWidget(
+          margin: EdgeInsets.symmetric(),
+        ),
+      ],
     );
   }
 
@@ -407,6 +414,23 @@ class _TrashPageState extends State<TrashPage> {
               ],
             ),
           ),
+          
+          SizedBox(height: 80.h,)
+          
+       ,   const AdBannerWidget(
+        
+            ),const AdBannerWidget(
+        
+            ),const AdBannerWidget(
+        
+            ),const AdBannerWidget(
+        
+            ),const AdBannerWidget(
+        
+          
+            ),
+
+            
         ],
       ),
     );

@@ -234,7 +234,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   : null,
         ),
         body: Padding(
-          padding: EdgeInsets.all(20.w),
+          padding: EdgeInsets.all(15.w),
           child: Form(
             key: _formKey,
             child: ListView(
@@ -257,7 +257,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     return null;
                   },
                 ),
-                SizedBox(height: 20.h),
+                SizedBox(height: 15.h),
                 TextFormField(
                   controller: _descriptionController,
                   decoration: InputDecoration(
@@ -271,7 +271,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     return null;
                   },
                 ),
-                SizedBox(height: 20.h),
+                SizedBox(height: 15.h),
                 Row(
                   children: [
                     Expanded(
@@ -304,8 +304,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                       borderRadius: BorderRadius.circular(8.r),
                       child: Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: 16.w,
-                          vertical: 14.h,
+                          horizontal: 10.w,
+                          vertical: 10.h,
                         ),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey[400]!),
@@ -340,7 +340,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     ),
                   ],
                 ),
-                SizedBox(height: 20.h),
+                SizedBox(height: 15.h),
                 DropdownButtonFormField<TransactionType>(
                   value: _selectedType,
                   decoration: InputDecoration(
@@ -379,7 +379,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     });
                   },
                 ),
-                SizedBox(height: 20.h),
+                SizedBox(height: 10.h),
                 Card(
                   child: ListTile(
                     leading: Icon(Icons.calendar_today),
@@ -401,7 +401,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     ),
                   ),
                 ),
-                SizedBox(height: 20.h),
+                SizedBox(height: 10.h),
 
                 // File Attachments
                 AttachmentWidget(
@@ -410,12 +410,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   onTakePhoto: _takePhoto,
                   onRemoveAttachment: _removeAttachment,
                 ),
-                SizedBox(height: 20.h),
+                 SizedBox(height: 10.h),
 
-                // Ad Banner in unused space
-                AdBannerWidget(margin: EdgeInsets.symmetric(vertical: 16.h)),
-
-                SizedBox(height: 20.h),
+                // SizedBox(height: 20.h),
                 ElevatedButton.icon(
                   onPressed: _submitData,
                   icon: Icon(_isEditing ? Icons.save : Icons.add),
@@ -439,8 +436,19 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 ],
 
                 // Additional ad space at bottom
-                SizedBox(height: 20.h),
-                AdBannerWidget(margin: EdgeInsets.only(bottom: 20.h)),
+                SizedBox(height:10.h),
+         const       AdBannerWidget(
+              //    margin: EdgeInsets.only(bottom: 2.h),
+                ), // Ad Banner in unused space
+          const      AdBannerWidget(
+                //  margin: EdgeInsets.symmetric(vertical: 2.h),
+                ), // Ad Banner in unused space
+          const      AdBannerWidget(
+              //    margin: EdgeInsets.symmetric(),
+                ), // Ad Banner in unused space
+                const AdBannerWidget(
+                //  margin: EdgeInsets.symmetric(vertical: 2.h)
+                  ),
               ],
             ),
           ),
@@ -890,7 +898,7 @@ class _CurrencySelectorDialogState extends State<_CurrencySelectorDialog> {
                           context,
                         ).primaryColor.withOpacity(0.2),
                       ),
-          
+
                       // Currency count
                       // FutureBuilder<List<Currency>>(
                       //   future: _currenciesFuture,
