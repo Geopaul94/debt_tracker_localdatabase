@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
 
 import '../../core/services/currency_service.dart';
-import '../../core/constants/currencies.dart';
 import '../../domain/entities/transaction_entity.dart';
+import '../../domain/entities/attachment_entity.dart';
 import '../bloc/transacton_bloc/transaction_bloc.dart';
 import '../bloc/transacton_bloc/transaction_event.dart';
 import 'add_transaction_page.dart';
@@ -136,6 +137,10 @@ class TransactionDetailPage extends StatelessWidget {
 
             // Currency Details
             _buildCurrencyCard(color),
+
+            // Attachments
+            if (transaction.attachments.isNotEmpty)
+              _buildAttachmentsSection(context, color),
 
             SizedBox(height: 20.h),
 
@@ -290,6 +295,221 @@ class TransactionDetailPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildAttachmentsSection(BuildContext context, MaterialColor color) {
+    return Card(
+      elevation: 2,
+      margin: EdgeInsets.only(bottom: 12.h),
+      child: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.attach_file, color: color[600], size: 24.sp),
+                SizedBox(width: 16.w),
+                Expanded(
+                  child: Text(
+                    'Attachments (${transaction.attachments.length})',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            ...transaction.attachments.map(
+              (attachment) => _buildAttachmentItem(context, attachment),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttachmentItem(
+    BuildContext context,
+    AttachmentEntity attachment,
+  ) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.blue[200]!, width: 1),
+      ),
+      child: InkWell(
+        onTap: () => _openAttachment(context, attachment),
+        borderRadius: BorderRadius.circular(8.r),
+        child: Row(
+          children: [
+            // File type icon
+            _buildFileIcon(attachment),
+            SizedBox(width: 12.w),
+
+            // File info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    attachment.fileName,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[800],
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 4.h),
+                  Row(
+                    children: [
+                      Text(
+                        attachment.formattedFileSize,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Text(
+                        '•',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Text(
+                        DateFormat('MMM d, yyyy').format(attachment.createdAt),
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Open icon
+            Icon(Icons.open_in_new, color: Colors.blue[600], size: 20.sp),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFileIcon(AttachmentEntity attachment) {
+    IconData iconData;
+    Color iconColor;
+
+    if (attachment.isImage) {
+      iconData = Icons.image;
+      iconColor = Colors.green[600]!;
+    } else if (attachment.isPdf) {
+      iconData = Icons.picture_as_pdf;
+      iconColor = Colors.red[600]!;
+    } else {
+      iconData = Icons.attach_file;
+      iconColor = Colors.blue[600]!;
+    }
+
+    return Container(
+      width: 40.w,
+      height: 40.h,
+      decoration: BoxDecoration(
+        color: iconColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Icon(iconData, color: iconColor, size: 24.sp),
+    );
+  }
+
+  void _openAttachment(BuildContext context, AttachmentEntity attachment) {
+    final file = File(attachment.filePath);
+
+    if (file.existsSync()) {
+      if (attachment.isImage) {
+        // Show image in a dialog
+        showDialog(
+          context: context,
+          builder:
+              (dialogContext) => Dialog(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppBar(
+                      title: Text(
+                        attachment.fileName,
+                        style: TextStyle(fontSize: 16.sp),
+                      ),
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      leading: IconButton(
+                        icon: Icon(Icons.close),
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                      ),
+                    ),
+                    Flexible(
+                      child: InteractiveViewer(
+                        child: Image.file(
+                          file,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              padding: EdgeInsets.all(20.w),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.error,
+                                    size: 48.sp,
+                                    color: Colors.red,
+                                  ),
+                                  SizedBox(height: 8.h),
+                                  Text('Failed to load image'),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+        );
+      } else {
+        // Show info that file needs external app
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('File saved at: ${attachment.filePath}'),
+            action: SnackBarAction(
+              label: 'Copy Path',
+              onPressed: () {
+                // Could add clipboard functionality here
+              },
+            ),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('File not found. It may have been deleted.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _navigateToEdit(BuildContext context) {

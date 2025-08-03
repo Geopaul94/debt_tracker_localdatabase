@@ -87,6 +87,15 @@ class GroupedTransactionListItem extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                if (_hasAttachments())
+                  Padding(
+                    padding: EdgeInsets.only(left: 8.w),
+                    child: Icon(
+                      Icons.attach_file,
+                      size: 14.sp,
+                      color: Colors.blue[600],
+                    ),
+                  ),
               ],
             ),
           ],
@@ -116,6 +125,12 @@ class GroupedTransactionListItem extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  bool _hasAttachments() {
+    return groupedTransaction.transactions.any(
+      (transaction) => transaction.attachments.isNotEmpty,
     );
   }
 }

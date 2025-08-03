@@ -34,16 +34,6 @@ class _CurrencySelectionContent extends StatefulWidget {
 class _CurrencySelectionContentState extends State<_CurrencySelectionContent> {
   final TextEditingController _searchController = TextEditingController();
 
-  final List<String> _regions = [
-    'All Regions',
-    'North America',
-    'Europe',
-    'Asia',
-    'Middle East & Africa',
-    'Oceania',
-    'South America',
-  ];
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -158,37 +148,6 @@ class _CurrencySelectionContentState extends State<_CurrencySelectionContent> {
                 },
               ),
               SizedBox(height: 16.h),
-
-              // Region Filter
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(horizontal: 12.w),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: state.selectedRegion,
-                    icon: Icon(Icons.expand_more),
-                    isExpanded: true,
-                    items:
-                        _regions.map((region) {
-                          return DropdownMenuItem(
-                            value: region,
-                            child: Text(region),
-                          );
-                        }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        context.read<CurrencyBloc>().add(
-                          UpdateSelectedRegionEvent(region: value),
-                        );
-                      }
-                    },
-                  ),
-                ),
-              ),
             ],
           ),
         ),

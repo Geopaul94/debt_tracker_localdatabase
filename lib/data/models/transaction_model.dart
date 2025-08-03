@@ -1,4 +1,6 @@
+import 'dart:convert';
 import '../../domain/entities/transaction_entity.dart';
+import '../../domain/entities/attachment_entity.dart';
 
 class TransactionModel extends TransactionEntity {
   final DateTime createdAt;
@@ -12,6 +14,7 @@ class TransactionModel extends TransactionEntity {
     required super.type,
     required super.date,
     required super.currency,
+    super.attachments = const [],
     required this.createdAt,
     required this.updatedAt,
   });
@@ -34,6 +37,7 @@ class TransactionModel extends TransactionEntity {
         name: map['currency_name'] as String? ?? 'US Dollar',
         flag: map['currency_flag'] as String? ?? '🇺🇸',
       ),
+      attachments: _parseAttachments(map['attachments'] as String? ?? '[]'),
       createdAt:
           map['created_at'] != null
               ? DateTime.parse(map['created_at'] as String)
@@ -55,6 +59,7 @@ class TransactionModel extends TransactionEntity {
       type: entity.type,
       date: entity.date,
       currency: entity.currency,
+      attachments: entity.attachments,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -73,6 +78,7 @@ class TransactionModel extends TransactionEntity {
       'currency_symbol': currency.symbol,
       'currency_name': currency.name,
       'currency_flag': currency.flag,
+      'attachments': _attachmentsToJson(attachments),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -88,6 +94,7 @@ class TransactionModel extends TransactionEntity {
       type: type,
       date: date,
       currency: currency,
+      attachments: attachments,
     );
   }
 
@@ -100,6 +107,7 @@ class TransactionModel extends TransactionEntity {
     TransactionType? type,
     DateTime? date,
     TransactionCurrency? currency,
+    List<AttachmentEntity>? attachments,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -111,6 +119,7 @@ class TransactionModel extends TransactionEntity {
       type: type ?? this.type,
       date: date ?? this.date,
       currency: currency ?? this.currency,
+      attachments: attachments ?? this.attachments,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
     );
@@ -148,5 +157,29 @@ class TransactionModel extends TransactionEntity {
         currency.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;
+  }
+
+  // Helper methods for attachment JSON conversion
+  static List<AttachmentEntity> _parseAttachments(String attachmentsJson) {
+    try {
+      final List<dynamic> jsonList = jsonDecode(attachmentsJson);
+      return jsonList
+          .map(
+            (json) => AttachmentEntity.fromJson(json as Map<String, dynamic>),
+          )
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static String _attachmentsToJson(List<AttachmentEntity> attachments) {
+    try {
+      final List<Map<String, dynamic>> jsonList =
+          attachments.map((attachment) => attachment.toJson()).toList();
+      return jsonEncode(jsonList);
+    } catch (e) {
+      return '[]';
+    }
   }
 }

@@ -21,7 +21,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _createDatabase,
       onUpgrade: _upgradeDatabase,
     );
@@ -41,7 +41,8 @@ class DatabaseHelper {
         currency_code TEXT NOT NULL DEFAULT 'USD',
         currency_symbol TEXT NOT NULL DEFAULT '\$',
         currency_name TEXT NOT NULL DEFAULT 'US Dollar',
-        currency_flag TEXT NOT NULL DEFAULT '🇺🇸'
+        currency_flag TEXT NOT NULL DEFAULT '🇺🇸',
+        attachments TEXT DEFAULT '[]'
       )
     ''');
 
@@ -60,7 +61,8 @@ class DatabaseHelper {
         currency_code TEXT NOT NULL DEFAULT 'USD',
         currency_symbol TEXT NOT NULL DEFAULT '\$',
         currency_name TEXT NOT NULL DEFAULT 'US Dollar',
-        currency_flag TEXT NOT NULL DEFAULT '🇺🇸'
+        currency_flag TEXT NOT NULL DEFAULT '🇺🇸',
+        attachments TEXT DEFAULT '[]'
       )
     ''');
 
@@ -135,6 +137,16 @@ class DatabaseHelper {
       ''');
       await db.execute('''
         ALTER TABLE trash ADD COLUMN currency_flag TEXT NOT NULL DEFAULT '🇺🇸'
+      ''');
+    }
+
+    if (oldVersion < 4) {
+      // Add attachments support
+      await db.execute('''
+        ALTER TABLE transactions ADD COLUMN attachments TEXT DEFAULT '[]'
+      ''');
+      await db.execute('''
+        ALTER TABLE trash ADD COLUMN attachments TEXT DEFAULT '[]'
       ''');
     }
   }

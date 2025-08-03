@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:flutter/services.dart';
+
 class Currency {
   final String code;
   final String symbol;
@@ -10,6 +13,24 @@ class Currency {
     required this.name,
     required this.flag,
   });
+
+  factory Currency.fromJson(Map<String, dynamic> json) {
+    return Currency(
+      code: json['currency_code'] as String,
+      symbol: json['currency_symbol'] as String,
+      name: json['currency_name'] as String,
+      flag: json['flag'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'currency_code': code,
+      'currency_symbol': symbol,
+      'currency_name': name,
+      'flag': flag,
+    };
+  }
 
   @override
   String toString() => '$symbol $code';
@@ -31,142 +52,126 @@ class Currency {
 }
 
 class CurrencyConstants {
-  static const List<Currency> supportedCurrencies = [
-    // North America
-    Currency(code: 'USD', symbol: '\$', name: 'US Dollar', flag: '🇺🇸'),
-    Currency(code: 'CAD', symbol: 'C\$', name: 'Canadian Dollar', flag: '🇨🇦'),
-    Currency(code: 'MXN', symbol: '\$', name: 'Mexican Peso', flag: '🇲🇽'),
+  static List<Currency>? _cachedCurrencies;
+  static List<Currency>? _popularCurrencies;
 
-    // Europe
-    Currency(code: 'EUR', symbol: '€', name: 'Euro', flag: '🇪🇺'),
-    Currency(code: 'GBP', symbol: '£', name: 'British Pound', flag: '🇬🇧'),
-    Currency(code: 'CHF', symbol: 'Fr', name: 'Swiss Franc', flag: '🇨🇭'),
-    Currency(code: 'NOK', symbol: 'kr', name: 'Norwegian Krone', flag: '🇳🇴'),
-    Currency(code: 'SEK', symbol: 'kr', name: 'Swedish Krona', flag: '🇸🇪'),
-    Currency(code: 'DKK', symbol: 'kr', name: 'Danish Krone', flag: '🇩🇰'),
+  /// Load currencies from JSON asset file
+  static Future<List<Currency>> loadCurrencies() async {
+    if (_cachedCurrencies != null) {
+      return _cachedCurrencies!;
+    }
 
-    // Asia
-    Currency(code: 'JPY', symbol: '¥', name: 'Japanese Yen', flag: '🇯🇵'),
-    Currency(code: 'CNY', symbol: '¥', name: 'Chinese Yuan', flag: '🇨🇳'),
-    Currency(code: 'KRW', symbol: '₩', name: 'South Korean Won', flag: '🇰🇷'),
-    Currency(code: 'INR', symbol: '₹', name: 'Indian Rupee', flag: '🇮🇳'),
-    Currency(
-      code: 'SGD',
-      symbol: 'S\$',
-      name: 'Singapore Dollar',
-      flag: '🇸🇬',
-    ),
-    Currency(
-      code: 'HKD',
-      symbol: 'HK\$',
-      name: 'Hong Kong Dollar',
-      flag: '🇭🇰',
-    ),
-    Currency(
-      code: 'MYR',
-      symbol: 'RM',
-      name: 'Malaysian Ringgit',
-      flag: '🇲🇾',
-    ),
-    Currency(code: 'THB', symbol: '฿', name: 'Thai Baht', flag: '🇹🇭'),
-    Currency(code: 'VND', symbol: '₫', name: 'Vietnamese Dong', flag: '🇻🇳'),
-    Currency(code: 'PHP', symbol: '₱', name: 'Philippine Peso', flag: '🇵🇭'),
-    Currency(
-      code: 'IDR',
-      symbol: 'Rp',
-      name: 'Indonesian Rupiah',
-      flag: '🇮🇩',
-    ),
-
-    // Middle East & Africa
-    Currency(code: 'AED', symbol: 'د.إ', name: 'UAE Dirham', flag: '🇦🇪'),
-    Currency(code: 'SAR', symbol: '﷼', name: 'Saudi Riyal', flag: '🇸🇦'),
-    Currency(
-      code: 'ZAR',
-      symbol: 'R',
-      name: 'South African Rand',
-      flag: '🇿🇦',
-    ),
-    Currency(code: 'EGP', symbol: '£', name: 'Egyptian Pound', flag: '🇪🇬'),
-
-    // Oceania
-    Currency(
-      code: 'AUD',
-      symbol: 'A\$',
-      name: 'Australian Dollar',
-      flag: '🇦🇺',
-    ),
-    Currency(
-      code: 'NZD',
-      symbol: 'NZ\$',
-      name: 'New Zealand Dollar',
-      flag: '🇳🇿',
-    ),
-
-    // South America
-    Currency(code: 'BRL', symbol: 'R\$', name: 'Brazilian Real', flag: '🇧🇷'),
-    Currency(code: 'ARS', symbol: '\$', name: 'Argentine Peso', flag: '🇦🇷'),
-    Currency(code: 'CLP', symbol: '\$', name: 'Chilean Peso', flag: '🇨🇱'),
-    Currency(code: 'COP', symbol: '\$', name: 'Colombian Peso', flag: '🇨🇴'),
-  ];
-
-  static Currency get defaultCurrency => supportedCurrencies.first; // USD
-
-  static Currency? findByCode(String code) {
     try {
-      return supportedCurrencies.firstWhere(
-        (currency) => currency.code == code,
+      final String jsonString = await rootBundle.loadString(
+        'assets/data/currencies.json',
+      );
+      final List<dynamic> jsonList = json.decode(jsonString);
+
+      _cachedCurrencies =
+          jsonList
+              .map((json) => Currency.fromJson(json as Map<String, dynamic>))
+              .toList();
+
+      // Sort alphabetically by currency name for better UX
+      _cachedCurrencies!.sort((a, b) => a.name.compareTo(b.name));
+
+      return _cachedCurrencies!;
+    } catch (e) {
+      // Fallback to a basic USD currency if loading fails
+      _cachedCurrencies = [
+        const Currency(
+          code: 'USD',
+          symbol: '\$',
+          name: 'US Dollar',
+          flag: '🇺🇸',
+        ),
+      ];
+      return _cachedCurrencies!;
+    }
+  }
+
+  /// Get popular/most used currencies for quick selection
+  static Future<List<Currency>> getPopularCurrencies() async {
+    if (_popularCurrencies != null) {
+      return _popularCurrencies!;
+    }
+
+    final allCurrencies = await loadCurrencies();
+
+    // List of popular currency codes
+    const popularCodes = [
+      'USD',
+      'EUR',
+      'GBP',
+      'JPY',
+      'AUD',
+      'CAD',
+      'CHF',
+      'CNY',
+      'SEK',
+      'NZD',
+      'MXN',
+      'SGD',
+      'HKD',
+      'NOK',
+      'TRY',
+      'ZAR',
+      'BRL',
+      'INR',
+      'KRW',
+      'DKK',
+    ];
+
+    _popularCurrencies =
+        allCurrencies
+            .where((currency) => popularCodes.contains(currency.code))
+            .toList();
+
+    // Sort popular currencies by the order in popularCodes
+    _popularCurrencies!.sort((a, b) {
+      final aIndex = popularCodes.indexOf(a.code);
+      final bIndex = popularCodes.indexOf(b.code);
+      return aIndex.compareTo(bIndex);
+    });
+
+    return _popularCurrencies!;
+  }
+
+  static Currency get defaultCurrency => const Currency(
+    code: 'USD',
+    symbol: '\$',
+    name: 'US Dollar',
+    flag: '🇺🇸',
+  );
+
+  static Future<Currency?> findByCode(String code) async {
+    final currencies = await loadCurrencies();
+    try {
+      return currencies.firstWhere(
+        (currency) => currency.code.toUpperCase() == code.toUpperCase(),
       );
     } catch (e) {
       return null;
     }
   }
 
-  static List<Currency> getCurrenciesByRegion(String region) {
-    switch (region.toLowerCase()) {
-      case 'north america':
-        return supportedCurrencies
-            .where((c) => ['USD', 'CAD', 'MXN'].contains(c.code))
-            .toList();
-      case 'europe':
-        return supportedCurrencies
-            .where(
-              (c) =>
-                  ['EUR', 'GBP', 'CHF', 'NOK', 'SEK', 'DKK'].contains(c.code),
-            )
-            .toList();
-      case 'asia':
-        return supportedCurrencies
-            .where(
-              (c) => [
-                'JPY',
-                'CNY',
-                'KRW',
-                'INR',
-                'SGD',
-                'HKD',
-                'MYR',
-                'THB',
-                'VND',
-                'PHP',
-                'IDR',
-              ].contains(c.code),
-            )
-            .toList();
-      case 'middle east & africa':
-        return supportedCurrencies
-            .where((c) => ['AED', 'SAR', 'ZAR', 'EGP'].contains(c.code))
-            .toList();
-      case 'oceania':
-        return supportedCurrencies
-            .where((c) => ['AUD', 'NZD'].contains(c.code))
-            .toList();
-      case 'south america':
-        return supportedCurrencies
-            .where((c) => ['BRL', 'ARS', 'CLP', 'COP'].contains(c.code))
-            .toList();
-      default:
-        return supportedCurrencies;
+  /// Search currencies by name, code, or symbol
+  static Future<List<Currency>> searchCurrencies(String query) async {
+    if (query.isEmpty) {
+      return await loadCurrencies();
     }
+
+    final currencies = await loadCurrencies();
+    final queryLower = query.toLowerCase();
+
+    return currencies.where((currency) {
+      return currency.name.toLowerCase().contains(queryLower) ||
+          currency.code.toLowerCase().contains(queryLower) ||
+          currency.symbol.toLowerCase().contains(queryLower);
+    }).toList();
   }
+
+  /// For backward compatibility with existing code
+  static Future<List<Currency>> get supportedCurrencies async =>
+      await loadCurrencies();
 }

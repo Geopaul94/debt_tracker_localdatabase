@@ -13,7 +13,6 @@ class CurrencyBloc extends Bloc<CurrencyEvent, CurrencyState> {
     on<LoadCurrentCurrencyEvent>(_onLoadCurrentCurrency);
     on<ChangeCurrencyEvent>(_onChangeCurrency);
     on<UpdateSearchQueryEvent>(_onUpdateSearchQuery);
-    on<UpdateSelectedRegionEvent>(_onUpdateSelectedRegion);
     on<ClearSearchEvent>(_onClearSearch);
   }
 
@@ -24,13 +23,12 @@ class CurrencyBloc extends Bloc<CurrencyEvent, CurrencyState> {
     emit(CurrencyLoading());
     try {
       final currentCurrency = _currencyService.currentCurrency;
-      final filteredCurrencies = _getFilteredCurrencies('', 'All Regions');
+      final filteredCurrencies = await _getFilteredCurrencies('');
 
       emit(
         CurrencyLoaded(
           currentCurrency: currentCurrency,
           searchQuery: '',
-          selectedRegion: 'All Regions',
           filteredCurrencies: filteredCurrencies,
         ),
       );
@@ -62,13 +60,10 @@ class CurrencyBloc extends Bloc<CurrencyEvent, CurrencyState> {
   void _onUpdateSearchQuery(
     UpdateSearchQueryEvent event,
     Emitter<CurrencyState> emit,
-  ) {
+  ) async {
     if (state is CurrencyLoaded) {
       final currentState = state as CurrencyLoaded;
-      final filteredCurrencies = _getFilteredCurrencies(
-        event.query,
-        currentState.selectedRegion,
-      );
+      final filteredCurrencies = await _getFilteredCurrencies(event.query);
 
       emit(
         currentState.copyWith(
@@ -79,33 +74,13 @@ class CurrencyBloc extends Bloc<CurrencyEvent, CurrencyState> {
     }
   }
 
-  void _onUpdateSelectedRegion(
-    UpdateSelectedRegionEvent event,
+  void _onClearSearch(
+    ClearSearchEvent event,
     Emitter<CurrencyState> emit,
-  ) {
+  ) async {
     if (state is CurrencyLoaded) {
       final currentState = state as CurrencyLoaded;
-      final filteredCurrencies = _getFilteredCurrencies(
-        currentState.searchQuery,
-        event.region,
-      );
-
-      emit(
-        currentState.copyWith(
-          selectedRegion: event.region,
-          filteredCurrencies: filteredCurrencies,
-        ),
-      );
-    }
-  }
-
-  void _onClearSearch(ClearSearchEvent event, Emitter<CurrencyState> emit) {
-    if (state is CurrencyLoaded) {
-      final currentState = state as CurrencyLoaded;
-      final filteredCurrencies = _getFilteredCurrencies(
-        '',
-        currentState.selectedRegion,
-      );
+      final filteredCurrencies = await _getFilteredCurrencies('');
 
       emit(
         currentState.copyWith(
@@ -116,14 +91,8 @@ class CurrencyBloc extends Bloc<CurrencyEvent, CurrencyState> {
     }
   }
 
-  List<Currency> _getFilteredCurrencies(
-    String searchQuery,
-    String selectedRegion,
-  ) {
-    List<Currency> currencies =
-        selectedRegion == 'All Regions'
-            ? CurrencyConstants.supportedCurrencies
-            : CurrencyConstants.getCurrenciesByRegion(selectedRegion);
+  Future<List<Currency>> _getFilteredCurrencies(String searchQuery) async {
+    List<Currency> currencies = await CurrencyConstants.supportedCurrencies;
 
     if (searchQuery.isNotEmpty) {
       currencies =

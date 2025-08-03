@@ -16,10 +16,6 @@ class UpdateSearchQueryEvent extends CurrencyEvent {
   UpdateSearchQueryEvent({required this.query});
 }
 
-class UpdateSelectedRegionEvent extends CurrencyEvent {
-  final String region;
 
-  UpdateSelectedRegionEvent({required this.region});
-}
 
 class ClearSearchEvent extends CurrencyEvent {}

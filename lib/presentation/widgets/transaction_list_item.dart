@@ -49,9 +49,25 @@ class TransactionListItem extends StatelessWidget {
               style: TextStyle(fontSize: 14.sp, color: Colors.grey[800]),
             ),
             SizedBox(height: 4.h),
-            Text(
-              dateFormat.format(transaction.date),
-              style: TextStyle(color: Colors.grey[600], fontSize: 12.sp),
+            Row(
+              children: [
+                Text(
+                  dateFormat.format(transaction.date),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12.sp),
+                ),
+                if (transaction.attachments.isNotEmpty) ...[
+                  SizedBox(width: 8.w),
+                  Icon(Icons.attach_file, size: 14.sp, color: Colors.blue[600]),
+                  Text(
+                    '${transaction.attachments.length}',
+                    style: TextStyle(
+                      color: Colors.blue[600],
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),

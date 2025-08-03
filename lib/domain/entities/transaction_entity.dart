@@ -1,3 +1,5 @@
+import 'attachment_entity.dart';
+
 enum TransactionType { iOwe, owesMe }
 
 class TransactionCurrency {
@@ -40,6 +42,7 @@ class TransactionEntity {
   final TransactionType type;
   final DateTime date;
   final TransactionCurrency currency;
+  final List<AttachmentEntity> attachments;
 
   const TransactionEntity({
     required this.id,
@@ -49,6 +52,7 @@ class TransactionEntity {
     required this.type,
     required this.date,
     required this.currency,
+    this.attachments = const [],
   });
 
   @override
@@ -61,7 +65,11 @@ class TransactionEntity {
         other.amount == amount &&
         other.type == type &&
         other.date == date &&
-        other.currency == currency;
+        other.currency == currency &&
+        other.attachments.length == attachments.length &&
+        other.attachments.every(
+          (attachment) => attachments.contains(attachment),
+        );
   }
 
   @override
@@ -72,12 +80,13 @@ class TransactionEntity {
         amount.hashCode ^
         type.hashCode ^
         date.hashCode ^
-        currency.hashCode;
+        currency.hashCode ^
+        attachments.hashCode;
   }
 
   @override
   String toString() {
-    return 'TransactionEntity(id: $id, name: $name, description: $description, amount: $amount, type: $type, date: $date, currency: $currency)';
+    return 'TransactionEntity(id: $id, name: $name, description: $description, amount: $amount, type: $type, date: $date, currency: $currency, attachments: ${attachments.length} files)';
   }
 
   TransactionEntity copyWith({
@@ -88,6 +97,7 @@ class TransactionEntity {
     TransactionType? type,
     DateTime? date,
     TransactionCurrency? currency,
+    List<AttachmentEntity>? attachments,
   }) {
     return TransactionEntity(
       id: id ?? this.id,
@@ -97,6 +107,7 @@ class TransactionEntity {
       type: type ?? this.type,
       date: date ?? this.date,
       currency: currency ?? this.currency,
+      attachments: attachments ?? this.attachments,
     );
   }
 }

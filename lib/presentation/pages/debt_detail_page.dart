@@ -113,52 +113,79 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
             ],
           ),
           SizedBox(height: 12.h),
-          ...breakdown.entries.map((entry) {
-            final currencyCode = entry.key;
-            final amount = entry.value;
-            final currency = CurrencyConstants.supportedCurrencies.firstWhere(
-              (c) => c.code == currencyCode,
-            );
+          FutureBuilder<List<Currency>>(
+            future: CurrencyConstants.supportedCurrencies,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.h),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
 
-            return Padding(
-              padding: EdgeInsets.symmetric(vertical: 4.h),
-              child: Row(
-                children: [
-                  Text(currency.flag, style: TextStyle(fontSize: 18.sp)),
-                  SizedBox(width: 8.w),
-                  Text(
-                    currency.code,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: Text(
-                      currency.name,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                  Text(
-                    CurrencyService.instance.formatAmountWithCurrency(
-                      amount,
-                      currency,
-                    ),
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                      color: color[700],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
+              if (snapshot.hasError || !snapshot.hasData) {
+                return Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.h),
+                  child: Text('Error loading currencies'),
+                );
+              }
+
+              final currencies = snapshot.data!;
+              return Column(
+                children:
+                    breakdown.entries.map((entry) {
+                      final currencyCode = entry.key;
+                      final amount = entry.value;
+                      final currency = currencies.firstWhere(
+                        (c) => c.code == currencyCode,
+                        orElse: () => CurrencyConstants.defaultCurrency,
+                      );
+
+                      return Padding(
+                        padding: EdgeInsets.symmetric(vertical: 4.h),
+                        child: Row(
+                          children: [
+                            Text(
+                              currency.flag,
+                              style: TextStyle(fontSize: 18.sp),
+                            ),
+                            SizedBox(width: 8.w),
+                            Text(
+                              currency.code,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            SizedBox(width: 8.w),
+                            Expanded(
+                              child: Text(
+                                currency.name,
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                            Text(
+                              CurrencyService.instance.formatAmountWithCurrency(
+                                amount,
+                                currency,
+                              ),
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.bold,
+                                color: color[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+              );
+            },
+          ),
         ],
       ),
     );
