@@ -29,6 +29,13 @@ void main() {
         amount: 50.0,
         type: TransactionType.iOwe,
         date: DateTime.now(),
+        currency: const TransactionCurrency(
+          code: 'USD',
+          symbol: '\$',
+          name: 'US Dollar',
+          flag: '🇺🇸',
+        ),
+        attachments: const [],
       );
     });
 
@@ -56,7 +63,7 @@ void main() {
       expect(find.text('John Doe'), findsOneWidget);
       expect(find.text('Test transaction'), findsOneWidget);
       // Test for the actual formatted amount with currency symbol and sign
-      expect(find.text('-\$50.00'), findsOneWidget);
+      expect(find.text('- \$50.00'), findsOneWidget);
     });
 
     testWidgets('should display transaction with proper styling', (
@@ -69,6 +76,13 @@ void main() {
         amount: 25.50,
         type: TransactionType.iOwe,
         date: DateTime.now(),
+        currency: const TransactionCurrency(
+          code: 'USD',
+          symbol: '\$',
+          name: 'US Dollar',
+          flag: '🇺🇸',
+        ),
+        attachments: const [],
       );
 
       await tester.pumpWidget(createTestWidget(sampleTransaction));
@@ -76,7 +90,7 @@ void main() {
 
       expect(find.text('Alex Johnson'), findsOneWidget);
       expect(find.text('Lunch at downtown cafe'), findsOneWidget);
-      expect(find.text('-\$25.50'), findsOneWidget);
+      expect(find.text('- \$25.50'), findsOneWidget);
     });
 
     testWidgets('should handle long text with ellipsis', (
@@ -90,6 +104,13 @@ void main() {
         amount: 100.0,
         type: TransactionType.owesMe,
         date: DateTime.now(),
+        currency: const TransactionCurrency(
+          code: 'EUR',
+          symbol: '€',
+          name: 'Euro',
+          flag: '🇪🇺',
+        ),
+        attachments: const [],
       );
 
       await tester.pumpWidget(createTestWidget(longTextTransaction));
@@ -98,7 +119,7 @@ void main() {
       // The text should be truncated but still findable
       expect(find.byType(Text), findsAtLeastNWidgets(3));
       // Check the amount is properly formatted for "owes me" type
-      expect(find.text('+\$100.00'), findsOneWidget);
+      expect(find.text('+ €100.00'), findsOneWidget);
     });
 
     testWidgets('should respond to tap events', (WidgetTester tester) async {
@@ -141,12 +162,19 @@ void main() {
         amount: 123.45,
         type: TransactionType.iOwe,
         date: DateTime.now(),
+        currency: const TransactionCurrency(
+          code: 'USD',
+          symbol: '\$',
+          name: 'US Dollar',
+          flag: '🇺🇸',
+        ),
+        attachments: const [],
       );
 
       await tester.pumpWidget(createTestWidget(decimalTransaction));
       await tester.pumpAndSettle();
 
-      expect(find.text('-\$123.45'), findsOneWidget);
+      expect(find.text('- \$123.45'), findsOneWidget);
     });
 
     testWidgets('should handle zero amount', (WidgetTester tester) async {
@@ -157,12 +185,19 @@ void main() {
         amount: 0.0,
         type: TransactionType.owesMe,
         date: DateTime.now(),
+        currency: const TransactionCurrency(
+          code: 'USD',
+          symbol: '\$',
+          name: 'US Dollar',
+          flag: '🇺🇸',
+        ),
+        attachments: const [],
       );
 
       await tester.pumpWidget(createTestWidget(zeroTransaction));
       await tester.pumpAndSettle();
 
-      expect(find.text('+\$0.00'), findsOneWidget);
+      expect(find.text('+ \$0.00'), findsOneWidget);
     });
 
     testWidgets('should display different transaction types', (
@@ -175,6 +210,13 @@ void main() {
         amount: 75.0,
         type: TransactionType.owesMe,
         date: DateTime.now(),
+        currency: const TransactionCurrency(
+          code: 'USD',
+          symbol: '\$',
+          name: 'US Dollar',
+          flag: '🇺🇸',
+        ),
+        attachments: const [],
       );
 
       await tester.pumpWidget(createTestWidget(owesTransaction));
@@ -182,7 +224,7 @@ void main() {
 
       expect(find.text('Test User'), findsOneWidget);
       expect(find.text('Someone owes me'), findsOneWidget);
-      expect(find.text('+\$75.00'), findsOneWidget);
+      expect(find.text('+ \$75.00'), findsOneWidget);
     });
   });
 }

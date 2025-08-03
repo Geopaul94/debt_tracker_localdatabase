@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -179,8 +180,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             context.read<TransactionBloc>().add(LoadTransactionsEvent());
           }
         },
-        child: WillPopScope(
-          onWillPop: _handleExitConfirmation,
+        child: PopScope(
+          canPop: false,
+          onPopInvoked: (bool didPop) async {
+            if (didPop) return;
+            final shouldExit = await _handleExitConfirmation();
+            if (shouldExit && mounted) {
+              SystemNavigator.pop();
+            }
+          },
           child: Scaffold(
             appBar: AppBar(
               title: Text('Debt Tracker'),
@@ -609,7 +617,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       );
       return shouldExit ?? false;
     } catch (e) {
-      print('Error showing exit confirmation dialog: $e');
+      debugPrint('Error showing exit confirmation dialog: $e');
       // Fallback to simple confirmation
       final shouldExit = await showDialog<bool>(
         context: context,

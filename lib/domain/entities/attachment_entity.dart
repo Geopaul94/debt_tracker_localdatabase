@@ -104,8 +104,10 @@ class AttachmentEntity {
       return '$fileSize B';
     } else if (fileSize < 1024 * 1024) {
       return '${(fileSize / 1024).toStringAsFixed(1)} KB';
-    } else {
+    } else if (fileSize < 1024 * 1024 * 1024) {
       return '${(fileSize / (1024 * 1024)).toStringAsFixed(1)} MB';
+    } else {
+      return '${(fileSize / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
     }
   }
 }

@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'preference_service.dart';
 import 'connectivity_service.dart';
@@ -20,25 +22,33 @@ class AdService {
   Timer? _backgroundLoadTimer;
   bool _isLoadingInBackground = false;
 
-  // Production Ad Unit IDs
+  // Ad Unit IDs - Use test ads for development, production ads for release
   static final String _bannerAdUnitId =
       Platform.isAndroid
-          ? 'ca-app-pub-5835078496383561/4425152477' // Production banner ad
+          ? (kDebugMode 
+              ? 'ca-app-pub-3940256099942544/6300978111' // Android test banner
+              : 'ca-app-pub-5835078496383561/4425152477') // Production banner ad
           : 'ca-app-pub-3940256099942544/2934735716'; // iOS test ad
 
   static final String _interstitialAdUnitId =
       Platform.isAndroid
-          ? 'ca-app-pub-5835078496383561/3282058826' // Production interstitial ad
+          ? (kDebugMode 
+              ? 'ca-app-pub-3940256099942544/1033173712' // Android test interstitial
+              : 'ca-app-pub-5835078496383561/3282058826') // Production interstitial ad
           : 'ca-app-pub-3940256099942544/4411468910'; // iOS test ad
 
   static final String _openAppAdUnitId =
       Platform.isAndroid
-          ? 'ca-app-pub-5835078496383561/5891428769' // Production app open ad
+          ? (kDebugMode 
+              ? 'ca-app-pub-3940256099942544/3419835294' // Android test app open
+              : 'ca-app-pub-5835078496383561/5891428769') // Production app open ad
           : 'ca-app-pub-5835078496383561/3262990911'; // iOS test ad
 
   static final String _rewardedAdUnitId =
       Platform.isAndroid
-          ? 'ca-app-pub-5835078496383561/2160067314' // Production rewarded ad
+          ? (kDebugMode 
+              ? 'ca-app-pub-3940256099942544/5224354917' // Android test rewarded
+              : 'ca-app-pub-5835078496383561/2160067314') // Production rewarded ad
           : 'ca-app-pub-3940256099942544/1712485313'; // iOS test ad
 
   // Initialize ads asynchronously
@@ -263,7 +273,10 @@ class AdService {
   }
 
   // Show interstitial ad with background preloading
-  Future<bool> showInterstitialAd() async {
+  Future<bool> showInterstitialAd({
+    VoidCallback? onAdDismissed,
+    VoidCallback? onAdFailedToShow,
+  }) async {
     if (!await _shouldShowAdType('interstitial')) {
       print('Interstitial ads not allowed');
       return false;
@@ -281,11 +294,19 @@ class AdService {
           _interstitialAd = null;
           // Preload next ad in background
           _loadInterstitialAdInBackground();
+          // Call the callback if provided
+          if (onAdDismissed != null) {
+            onAdDismissed();
+          }
         },
         onAdFailedToShowFullScreenContent: (ad, error) {
           print('Interstitial ad failed to show: $error');
           ad.dispose();
           _interstitialAd = null;
+          // Call the callback if provided
+          if (onAdFailedToShow != null) {
+            onAdFailedToShow();
+          }
         },
       );
 
@@ -300,6 +321,8 @@ class AdService {
   // Show rewarded ad with background preloading
   Future<bool> showRewardedAd({
     required OnUserEarnedRewardCallback onUserEarnedReward,
+    VoidCallback? onAdDismissed,
+    VoidCallback? onAdFailedToShow,
   }) async {
     if (!await _shouldShowAdType('rewarded')) {
       print('Rewarded ads not allowed');
@@ -318,11 +341,19 @@ class AdService {
           _rewardedAd = null;
           // Preload next ad in background
           _loadRewardedAdInBackground();
+          // Call the callback if provided
+          if (onAdDismissed != null) {
+            onAdDismissed();
+          }
         },
         onAdFailedToShowFullScreenContent: (ad, error) {
           print('Rewarded ad failed to show: $error');
           ad.dispose();
           _rewardedAd = null;
+          // Call the callback if provided
+          if (onAdFailedToShow != null) {
+            onAdFailedToShow();
+          }
         },
       );
 
