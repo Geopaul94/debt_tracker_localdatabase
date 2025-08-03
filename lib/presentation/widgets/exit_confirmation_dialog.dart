@@ -8,7 +8,7 @@ import '../../injection/injection_container.dart';
 import 'ad_banner_widget.dart';
 
 class ExitConfirmationDialog extends StatefulWidget {
-  const ExitConfirmationDialog({Key? key}) : super(key: key);
+  const ExitConfirmationDialog({super.key});
 
   @override
   State<ExitConfirmationDialog> createState() => _ExitConfirmationDialogState();
@@ -75,7 +75,7 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
           print('Interstitial ad dismissed - exiting app');
           _shouldExitAfterAd = true;
           if (mounted) {
-            Future.delayed(Duration(milliseconds: 100), () {
+            Future.delayed(const Duration(milliseconds: 100), () {
               if (mounted) {
                 Navigator.of(context).pop(true);
               }
@@ -86,7 +86,7 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
           print('Interstitial ad failed to show - exiting app');
           _shouldExitAfterAd = true;
           if (mounted) {
-            Future.delayed(Duration(milliseconds: 100), () {
+            Future.delayed(const Duration(milliseconds: 100), () {
               if (mounted) {
                 Navigator.of(context).pop(true);
               }
@@ -122,7 +122,7 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
           if (mounted) {
             // Show thank you message briefly then exit the app
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
+              const SnackBar(
                 content: Text('Thank you for supporting us! 🎉 Exiting app...'),
                 backgroundColor: Colors.green,
                 duration: Duration(seconds: 1),
@@ -130,7 +130,7 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
             );
 
             // Exit the app after a small delay
-            Future.delayed(Duration(milliseconds: 200), () {
+            Future.delayed(const Duration(milliseconds: 200), () {
               if (mounted) {
                 Navigator.of(context).pop(true);
               }
@@ -141,7 +141,7 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
           print('Rewarded ad failed to show - exiting app');
           _shouldExitAfterAd = true;
           if (mounted) {
-            Future.delayed(Duration(milliseconds: 100), () {
+            Future.delayed(const Duration(milliseconds: 100), () {
               if (mounted) {
                 Navigator.of(context).pop(true);
               }
@@ -153,7 +153,7 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
       print('Error showing rewarded ad: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Ad not available right now. Exiting app...'),
             backgroundColor: Colors.orange,
             duration: Duration(seconds: 2),
@@ -235,7 +235,7 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
                           border: Border.all(color: Colors.grey[300]!),
                           borderRadius: BorderRadius.circular(8.r),
                         ),
-                        child: AdBannerWidget(),
+                        child: const AdBannerWidget(),
                       ),
                       SizedBox(height: 2.h),
                       Text(
@@ -329,7 +329,7 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
                                   ? SizedBox(
                                     height: 16.h,
                                     width: 16.w,
-                                    child: CircularProgressIndicator(
+                                    child: const CircularProgressIndicator(
                                       strokeWidth: 2,
                                       valueColor: AlwaysStoppedAnimation<Color>(
                                         Colors.white,
@@ -369,7 +369,7 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
                                 ? SizedBox(
                                   height: 16.h,
                                   width: 16.w,
-                                  child: CircularProgressIndicator(
+                                  child: const CircularProgressIndicator(
                                     strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(
                                       Colors.white,

@@ -10,10 +10,10 @@ class GroupedTransactionListItem extends StatelessWidget {
   final VoidCallback? onTap;
 
   const GroupedTransactionListItem({
-    Key? key,
+    super.key,
     required this.groupedTransaction,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/error/failures.dart';
-import '../../../core/services/currency_service.dart';
 import '../../../core/usecases/usecase.dart';
 import '../../../domain/entities/transaction_entity.dart';
 import '../../../domain/entities/grouped_transaction_entity.dart';

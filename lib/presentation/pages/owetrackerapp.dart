@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:debt_tracker/domain/entities/transaction_entity.dart';
 import 'package:debt_tracker/injection/injection_container.dart';
@@ -11,13 +10,11 @@ import 'package:debt_tracker/presentation/pages/home_page.dart';
 import 'package:debt_tracker/presentation/pages/splash_screen.dart';
 import 'package:debt_tracker/presentation/pages/transaction_history.dart';
 import 'package:debt_tracker/presentation/pages/auth_screen.dart';
-import 'package:debt_tracker/presentation/pages/cloud_backup_page.dart';
 import 'package:debt_tracker/presentation/pages/trash_page.dart';
 import 'package:debt_tracker/presentation/pages/premium_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class OweTrackerApp extends StatelessWidget {
   const OweTrackerApp({super.key});
@@ -92,7 +89,7 @@ class OweTrackerApp extends StatelessWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.r),
-                  borderSide: BorderSide(color: Colors.teal, width: 2.0),
+                  borderSide: const BorderSide(color: Colors.teal, width: 2.0),
                 ),
                 labelStyle: TextStyle(color: Colors.teal[800]),
               ),
@@ -100,15 +97,15 @@ class OweTrackerApp extends StatelessWidget {
             ),
             initialRoute: '/',
             routes: {
-              '/': (context) => SplashScreen(),
-              '/first-time-setup': (context) => FirstTimeSetupPage(),
-              '/auth': (context) => AuthScreen(),
-              '/home': (context) => HomePage(),
-              '/add-transaction': (context) => AddTransactionPage(),
-              '/currency-selection': (context) => CurrencySelectionPage(),
+              '/': (context) => const SplashScreen(),
+              '/first-time-setup': (context) => const FirstTimeSetupPage(),
+              '/auth': (context) => const AuthScreen(),
+              '/home': (context) => const HomePage(),
+              '/add-transaction': (context) => const AddTransactionPage(),
+              '/currency-selection': (context) => const CurrencySelectionPage(),
           //    '/cloud-backup': (context) => CloudBackupPage(),
-              '/trash': (context) => TrashPage(),
-              '/premium': (context) => PremiumPage(),
+              '/trash': (context) => const TrashPage(),
+              '/premium': (context) => const PremiumPage(),
             },
             onGenerateRoute: (settings) {
               switch (settings.name) {
@@ -129,7 +126,7 @@ class OweTrackerApp extends StatelessWidget {
                         ),
                   );
                 default:
-                  return MaterialPageRoute(builder: (context) => HomePage());
+                  return MaterialPageRoute(builder: (context) => const HomePage());
               }
             },
             debugShowCheckedModeBanner: false,

@@ -12,11 +12,11 @@ class SummaryCard extends StatelessWidget {
   final double netAmount;
 
   const SummaryCard({
-    Key? key,
+    super.key,
     required this.totalIOwe,
     required this.totalOwesMe,
     required this.netAmount,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -275,7 +275,7 @@ class SummaryCard extends StatelessWidget {
 
   void _navigateToCurrencySelection(BuildContext context) async {
     final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (context) => CurrencySelectionPage()),
+      MaterialPageRoute(builder: (context) => const CurrencySelectionPage()),
     );
 
     // If currency was changed, trigger a rebuild by calling setState on parent

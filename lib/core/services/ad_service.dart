@@ -1,12 +1,10 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'preference_service.dart';
 import 'connectivity_service.dart';
 import 'premium_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AdService {
   static final AdService _instance = AdService._internal();
@@ -128,7 +126,7 @@ class AdService {
 
   // Background ad loading to reduce main thread load
   void _startBackgroundLoading() {
-    _backgroundLoadTimer = Timer.periodic(Duration(minutes: 2), (timer) {
+    _backgroundLoadTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
       if (!_isLoadingInBackground) {
         _loadAdsInBackground();
       }

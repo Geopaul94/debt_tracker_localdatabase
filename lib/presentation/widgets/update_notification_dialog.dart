@@ -7,11 +7,11 @@ class UpdateNotificationDialog extends StatelessWidget {
   final VoidCallback onClose;
 
   const UpdateNotificationDialog({
-    Key? key,
+    super.key,
     required this.version,
     required this.updates,
     required this.onClose,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +121,7 @@ class UpdateNotificationDialog extends StatelessWidget {
                           ),
                         ],
                       ),
-                    )).toList(),
+                    ),),
                   ],
                 ),
               ),

@@ -9,8 +9,7 @@ class TransactionListItem extends StatelessWidget {
   final TransactionEntity transaction;
   final VoidCallback? onTap;
 
-  const TransactionListItem({Key? key, required this.transaction, this.onTap})
-    : super(key: key);
+  const TransactionListItem({super.key, required this.transaction, this.onTap});
 
   @override
   Widget build(BuildContext context) {

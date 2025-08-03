@@ -165,7 +165,7 @@ class TransactionSQLiteDataSourceImpl implements TransactionSQLiteDataSource {
   @override
   Stream<List<TransactionModel>> watchTransactions() {
     if (_isDisposed) {
-      return Stream.empty();
+      return const Stream.empty();
     }
 
     // Initialize and get initial data

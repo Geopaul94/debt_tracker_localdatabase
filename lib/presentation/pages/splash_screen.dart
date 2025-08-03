@@ -1,20 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/services/authentication_service.dart';
-import '../../core/services/currency_service.dart';
 import '../../core/services/premium_service.dart';
 import '../../core/services/preference_service.dart';
 import '../../injection/injection_container.dart';
-import '../bloc/authentication/auth_bloc.dart';
-import '../bloc/authentication/auth_event.dart';
-import '../bloc/authentication/auth_state.dart';
-import '../bloc/currency_bloc/currency_bloc.dart';
-import '../bloc/currency_bloc/currency_event.dart';
-import '../bloc/currency_bloc/currency_state.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   _SplashScreenState createState() => _SplashScreenState();

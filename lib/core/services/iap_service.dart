@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/logger.dart';
@@ -198,17 +197,17 @@ class IAPService {
 
       DateTime expiryDate;
       if (purchaseDetails.productID == _premiumMonthlyProductId) {
-        expiryDate = DateTime.now().add(Duration(days: 30));
+        expiryDate = DateTime.now().add(const Duration(days: 30));
         AppLogger.info('Granting monthly premium access (30 days)');
       } else if (purchaseDetails.productID == _premiumYearlyProductId) {
-        expiryDate = DateTime.now().add(Duration(days: 365));
+        expiryDate = DateTime.now().add(const Duration(days: 365));
         AppLogger.info('Granting yearly premium access (365 days)');
       } else if (purchaseDetails.productID == _premium3YearProductId) {
-        expiryDate = DateTime.now().add(Duration(days: 365 * 3));
+        expiryDate = DateTime.now().add(const Duration(days: 365 * 3));
         AppLogger.info('Granting 3-year premium access (1095 days)');
       } else if (purchaseDetails.productID == _premiumLifetimeProductId) {
         expiryDate = DateTime.now().add(
-          Duration(days: 365 * 100),
+          const Duration(days: 365 * 100),
         ); // 100 years = lifetime
         AppLogger.info('Granting lifetime premium access');
       } else {
@@ -324,7 +323,7 @@ class IAPService {
           (e.toString().contains('network') ||
               e.toString().contains('timeout'))) {
         AppLogger.info('Retrying purchase due to network error...');
-        await Future.delayed(Duration(seconds: 2));
+        await Future.delayed(const Duration(seconds: 2));
         return await _purchaseProductWithRetry(
           productId,
           retryCount: retryCount + 1,

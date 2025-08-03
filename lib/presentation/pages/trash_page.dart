@@ -6,10 +6,9 @@ import '../../core/services/trash_service.dart';
 import '../../core/services/currency_service.dart';
 import '../bloc/transacton_bloc/transaction_bloc.dart';
 import '../bloc/transacton_bloc/transaction_event.dart';
-import '../../domain/entities/transaction_entity.dart';
 
 class TrashPage extends StatefulWidget {
-  const TrashPage({Key? key}) : super(key: key);
+  const TrashPage({super.key});
 
   @override
   State<TrashPage> createState() => _TrashPageState();
@@ -47,7 +46,7 @@ class _TrashPageState extends State<TrashPage> {
     if (success) {
       await _loadTrashItems();
       // Refresh transactions in the main app
-      context.read<TransactionBloc>().add(LoadTransactionsEvent());
+      context.read<TransactionBloc>().add(const LoadTransactionsEvent());
       _showSuccessSnackBar('✅ Transaction restored successfully!');
     } else {
       _showErrorSnackBar('❌ Failed to restore transaction');
@@ -102,12 +101,12 @@ class _TrashPageState extends State<TrashPage> {
           context: context,
           builder:
               (context) => AlertDialog(
-                title: Text('🔄 Restore Transaction'),
+                title: const Text('🔄 Restore Transaction'),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Do you want to restore this transaction?'),
+                    const Text('Do you want to restore this transaction?'),
                     SizedBox(height: 16.h),
                     _buildTransactionPreview(item),
                   ],
@@ -115,14 +114,14 @@ class _TrashPageState extends State<TrashPage> {
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
-                    child: Text('Cancel'),
+                    child: const Text('Cancel'),
                   ),
                   ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                     ),
-                    child: Text(
+                    child: const Text(
                       'Restore',
                       style: TextStyle(color: Colors.white),
                     ),
@@ -138,12 +137,12 @@ class _TrashPageState extends State<TrashPage> {
           context: context,
           builder:
               (context) => AlertDialog(
-                title: Text('🗑️ Permanent Delete'),
+                title: const Text('🗑️ Permanent Delete'),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('This action cannot be undone. Are you sure?'),
+                    const Text('This action cannot be undone. Are you sure?'),
                     SizedBox(height: 16.h),
                     _buildTransactionPreview(item),
                     SizedBox(height: 16.h),
@@ -175,14 +174,14 @@ class _TrashPageState extends State<TrashPage> {
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
-                    child: Text('Cancel'),
+                    child: const Text('Cancel'),
                   ),
                   ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                     ),
-                    child: Text(
+                    child: const Text(
                       'Delete Forever',
                       style: TextStyle(color: Colors.white),
                     ),
@@ -198,7 +197,7 @@ class _TrashPageState extends State<TrashPage> {
           context: context,
           builder:
               (context) => AlertDialog(
-                title: Text('🗑️ Empty Trash'),
+                title: const Text('🗑️ Empty Trash'),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,14 +237,14 @@ class _TrashPageState extends State<TrashPage> {
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
-                    child: Text('Cancel'),
+                    child: const Text('Cancel'),
                   ),
                   ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                     ),
-                    child: Text(
+                    child: const Text(
                       'Empty Trash',
                       style: TextStyle(color: Colors.white),
                     ),
@@ -315,7 +314,7 @@ class _TrashPageState extends State<TrashPage> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.green,
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -325,7 +324,7 @@ class _TrashPageState extends State<TrashPage> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -334,17 +333,17 @@ class _TrashPageState extends State<TrashPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('🗑️ Trash'),
+        title: const Text('🗑️ Trash'),
         centerTitle: true,
         actions: [
           if (_trashItems.isNotEmpty)
             IconButton(
-              icon: Icon(Icons.delete_forever),
+              icon: const Icon(Icons.delete_forever),
               onPressed: _emptyTrash,
               tooltip: 'Empty Trash',
             ),
           IconButton(
-            icon: Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh),
             onPressed: _loadTrashItems,
             tooltip: 'Refresh',
           ),
@@ -352,7 +351,7 @@ class _TrashPageState extends State<TrashPage> {
       ),
       body:
           _isLoading
-              ? Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator())
               : _buildTrashContent(),
     );
   }
@@ -622,10 +621,10 @@ class _TrashPageState extends State<TrashPage> {
                   child: OutlinedButton.icon(
                     onPressed: () => _restoreItem(item),
                     icon: Icon(Icons.restore, size: 16.sp),
-                    label: Text('Restore'),
+                    label: const Text('Restore'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.green,
-                      side: BorderSide(color: Colors.green),
+                      side: const BorderSide(color: Colors.green),
                     ),
                   ),
                 ),
@@ -634,10 +633,10 @@ class _TrashPageState extends State<TrashPage> {
                   child: OutlinedButton.icon(
                     onPressed: () => _permanentlyDeleteItem(item),
                     icon: Icon(Icons.delete_forever, size: 16.sp),
-                    label: Text('Delete'),
+                    label: const Text('Delete'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.red,
-                      side: BorderSide(color: Colors.red),
+                      side: const BorderSide(color: Colors.red),
                     ),
                   ),
                 ),

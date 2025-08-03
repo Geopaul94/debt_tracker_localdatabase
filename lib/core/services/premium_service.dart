@@ -93,7 +93,7 @@ class PremiumService {
   }
 
   Future<void> setAdFreeFor2Hours() async {
-    final adFreeUntil = DateTime.now().add(Duration(hours: 2));
+    final adFreeUntil = DateTime.now().add(const Duration(hours: 2));
     await _prefs?.setString(_adFreeUntilKey, adFreeUntil.toIso8601String());
   }
 

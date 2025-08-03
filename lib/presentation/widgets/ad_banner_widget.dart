@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../core/services/ad_service.dart';
 import '../../core/services/connectivity_service.dart';
@@ -85,7 +86,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
         return Container(
           margin: widget.margin,
           height: bannerAd.size.height.toDouble(),
-          width: bannerAd.size.width.toDouble(),
+          width: double.infinity,
           child: AdWidget(ad: bannerAd),
         );
       },

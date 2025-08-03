@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,7 +10,6 @@ import '../../core/services/preference_service.dart';
 import '../../core/services/premium_service.dart';
 import '../../core/services/update_notification_service.dart';
 import '../../core/utils/logger.dart';
-import '../../data/datasources/transaction_sqlite_data_source.dart';
 import '../../domain/entities/grouped_transaction_entity.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../../injection/injection_container.dart';
@@ -22,7 +20,6 @@ import '../bloc/currency_bloc/currency_bloc.dart';
 import '../bloc/currency_bloc/currency_event.dart';
 import '../bloc/currency_bloc/currency_state.dart';
 import '../widgets/summary_card.dart';
-import '../widgets/grouped_transaction_list_item.dart';
 import '../widgets/transaction_list_item.dart';
 import '../widgets/ad_banner_widget.dart';
 import '../widgets/exit_confirmation_dialog.dart';
@@ -33,6 +30,8 @@ import 'premium_page.dart';
 import 'transaction_detail_page.dart';
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   _HomePageState createState() => _HomePageState();
 }
@@ -59,7 +58,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // Load transactions when home page opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
-        context.read<TransactionBloc>().add(LoadTransactionsEvent());
+        context.read<TransactionBloc>().add(const LoadTransactionsEvent());
       } catch (e) {
         print('Error loading transactions: $e');
       }
@@ -85,7 +84,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // Initialize ads in background to avoid blocking UI
   Future<void> _initializeAdsInBackground() async {
     // Wait for a short delay to let the UI render first
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 500));
 
     try {
       // Initialize ad service asynchronously
@@ -99,7 +98,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // Show update notification if needed
   Future<void> _showUpdateNotificationIfNeeded() async {
     // Wait for the UI to render first
-    await Future.delayed(Duration(milliseconds: 1000));
+    await Future.delayed(const Duration(milliseconds: 1000));
 
     try {
       await UpdateNotificationService.instance.initialize();
@@ -131,7 +130,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       if (success) {
         _hasShownAppOpenAd = true;
         // Reset flag after some time to allow showing again later
-        Timer(Duration(minutes: 30), () {
+        Timer(const Duration(minutes: 30), () {
           _hasShownAppOpenAd = false;
         });
       }
@@ -177,7 +176,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         listener: (context, currencyState) {
           if (currencyState is CurrencyChangedSuccess) {
             // Currency changed, reload transactions to update formatting
-            context.read<TransactionBloc>().add(LoadTransactionsEvent());
+            context.read<TransactionBloc>().add(const LoadTransactionsEvent());
           }
         },
         child: PopScope(
@@ -191,7 +190,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           },
           child: Scaffold(
             appBar: AppBar(
-              title: Text('Debt Tracker'),
+              title: const Text('Debt Tracker'),
               actions: [
                 PopupMenuButton<String>(
                   onSelected: (value) {
@@ -214,8 +213,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           child: Row(
                             children: [
                               Icon(Icons.settings, color: Colors.grey[600]),
-                              SizedBox(width: 8),
-                              Text('Settings'),
+                              const SizedBox(width: 8),
+                              const Text('Settings'),
                             ],
                           ),
                         ),
@@ -264,16 +263,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   }
 
                   // Force reload to ensure immediate UI update
-                  context.read<TransactionBloc>().add(LoadTransactionsEvent());
+                  context.read<TransactionBloc>().add(
+                    const LoadTransactionsEvent(),
+                  );
                 }
               },
               builder: (context, state) {
                 // Handle initial state by triggering load
                 if (state is TransactionInitial) {
-                  context.read<TransactionBloc>().add(LoadTransactionsEvent());
-                  return Center(child: CircularProgressIndicator());
+                  context.read<TransactionBloc>().add(
+                    const LoadTransactionsEvent(),
+                  );
+                  return const Center(child: CircularProgressIndicator());
                 } else if (state is TransactionLoading) {
-                  return Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator());
                 } else if (state is TransactionLoaded) {
                   return _buildLoadedState(context, state);
                 } else if (state is TransactionError) {
@@ -281,37 +284,41 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, size: 64, color: Colors.red),
-                        SizedBox(height: 16),
-                        Text(
+                        const Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
                           'Failed to load transactions',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(state.message),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () {
                             context.read<TransactionBloc>().add(
-                              LoadTransactionsEvent(),
+                              const LoadTransactionsEvent(),
                             );
                           },
-                          child: Text('Retry'),
+                          child: const Text('Retry'),
                         ),
                       ],
                     ),
                   );
                 }
-                return Center(child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator());
               },
             ),
             floatingActionButton: FloatingActionButton(
               onPressed: () => _navigateToAddTransaction(),
               backgroundColor: Colors.teal,
-              child: Icon(Icons.add, color: Colors.white),
+              child: const Icon(Icons.add, color: Colors.white),
             ),
           ),
         ),
@@ -329,7 +336,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             netAmount: state.netAmount,
           ),
 
-          Row(
+          const Row(
             children: [
               SizedBox(width: 20),
               Icon(Icons.receipt_long, size: 24),
@@ -355,7 +362,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ? _buildEmptyState()
               : ListView.builder(
                 shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
+                physics: const NeverScrollableScrollPhysics(),
                 padding: EdgeInsets.symmetric(horizontal: 10.w),
                 itemCount:
                     state.transactions.length +
@@ -373,14 +380,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             ? AdBannerWidget(
                               margin: EdgeInsets.symmetric(vertical: 16.h),
                             )
-                            : SizedBox.shrink();
+                            : const SizedBox.shrink();
                       },
                     );
                   }
 
                   final transactionIndex = index > 5 ? index - 1 : index;
                   if (transactionIndex >= state.transactions.length) {
-                    return SizedBox.shrink();
+                    return const SizedBox.shrink();
                   }
 
                   final transaction = state.transactions[transactionIndex];
@@ -494,7 +501,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               try {
                 await serviceLocator<PremiumService>().setPremiumUnlocked(true);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
+                  const SnackBar(
                     content: Text('🎉 Premium features unlocked!'),
                     backgroundColor: Colors.green,
                     duration: Duration(seconds: 3),
@@ -512,7 +519,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               }
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
+                const SnackBar(
                   content: Text('🎉 Ad reward received!'),
                   backgroundColor: Colors.green,
                   duration: Duration(seconds: 3),
@@ -528,7 +535,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       print('Error showing rewarded ad: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Ad not ready. Please try again later.'),
             backgroundColor: Colors.orange,
           ),
@@ -543,7 +550,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       final hasInternet = await connectivity.checkInternetConnection();
       if (!hasInternet) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('No internet connection'),
             backgroundColor: Colors.red,
           ),
@@ -555,7 +562,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         onUserEarnedReward: (ad, reward) async {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
+              const SnackBar(
                 content: Text('Ads removed for 2 hours!'),
                 backgroundColor: Colors.green,
               ),
@@ -566,7 +573,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     } catch (e) {
       print('Error showing rewarded ad: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Failed to load ad'),
           backgroundColor: Colors.red,
         ),
@@ -577,7 +584,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void _navigateToAddTransaction() {
     Navigator.of(
       context,
-    ).push(MaterialPageRoute(builder: (context) => AddTransactionPage()));
+    ).push(MaterialPageRoute(builder: (context) => const AddTransactionPage()));
   }
 
   void _navigateToTransactionDetail(
@@ -592,20 +599,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   void _navigateToSettings() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => SettingsPage())).then((_) {
-      // Refresh currency bloc when returning from settings
-      _currencyBloc.add(LoadCurrentCurrencyEvent());
-      // Reload transactions in case settings changed
-      context.read<TransactionBloc>().add(LoadTransactionsEvent());
-    });
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (context) => const SettingsPage()))
+        .then((_) {
+          // Refresh currency bloc when returning from settings
+          _currencyBloc.add(LoadCurrentCurrencyEvent());
+          // Reload transactions in case settings changed
+          context.read<TransactionBloc>().add(const LoadTransactionsEvent());
+        });
   }
 
   void _navigateToPremium() {
     Navigator.of(
       context,
-    ).push(MaterialPageRoute(builder: (context) => PremiumPage()));
+    ).push(MaterialPageRoute(builder: (context) => const PremiumPage()));
   }
 
   Future<bool> _handleExitConfirmation() async {
@@ -613,7 +620,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       final shouldExit = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
-        builder: (context) => ExitConfirmationDialog(),
+        builder: (context) => const ExitConfirmationDialog(),
       );
       return shouldExit ?? false;
     } catch (e) {
@@ -623,17 +630,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         context: context,
         builder:
             (context) => AlertDialog(
-              title: Text('Exit App?'),
-              content: Text('Are you sure you want to exit Debt Tracker?'),
+              title: const Text('Exit App?'),
+              content: const Text(
+                'Are you sure you want to exit Debt Tracker?',
+              ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text('Cancel'),
+                  child: const Text('Cancel'),
                 ),
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(true),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  child: Text('Exit', style: TextStyle(color: Colors.white)),
+                  child: const Text(
+                    'Exit',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),

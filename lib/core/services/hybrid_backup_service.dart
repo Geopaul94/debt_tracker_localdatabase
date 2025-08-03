@@ -279,7 +279,7 @@ class HybridBackupService {
 
     if (backupDate == today) {
       return 'Today at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-    } else if (backupDate == today.subtract(Duration(days: 1))) {
+    } else if (backupDate == today.subtract(const Duration(days: 1))) {
       return 'Yesterday at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
     } else {
       return '${date.day}/${date.month}/${date.year} at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';

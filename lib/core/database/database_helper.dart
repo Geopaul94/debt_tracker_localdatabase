@@ -17,7 +17,7 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'debt_tracker.db');
+    final String path = join(await getDatabasesPath(), 'debt_tracker.db');
 
     return await openDatabase(
       path,
@@ -161,7 +161,7 @@ class DatabaseHelper {
 
   // Helper method to delete database (for testing/debugging)
   Future<void> deleteDatabase() async {
-    String path = join(await getDatabasesPath(), 'debt_tracker.db');
+    final String path = join(await getDatabasesPath(), 'debt_tracker.db');
     await databaseFactory.deleteDatabase(path);
     _database = null;
   }

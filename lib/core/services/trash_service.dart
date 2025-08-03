@@ -16,7 +16,7 @@ class TrashService {
   Future<void> initialize() async {
     // Start periodic cleanup (check every 24 hours)
     _cleanupTimer = Timer.periodic(
-      Duration(hours: 24),
+      const Duration(hours: 24),
       (_) => _cleanupExpiredItems(),
     );
 
@@ -191,7 +191,7 @@ class TrashService {
       final db = await dbHelper.database;
 
       final cutoffDate = DateTime.now().subtract(
-        Duration(days: _retentionDays),
+        const Duration(days: _retentionDays),
       );
 
       final expiredItems = await db.query(
@@ -235,7 +235,7 @@ class TrashService {
       final db = await dbHelper.database;
 
       final cutoffDate = DateTime.now().subtract(
-        Duration(days: _retentionDays - 7),
+        const Duration(days: _retentionDays - 7),
       );
 
       final trashMaps = await db.query(
@@ -345,7 +345,7 @@ class TrashItem {
 
   // Days remaining before permanent deletion
   int get daysUntilDeletion {
-    final deletionDate = deletedAt.add(Duration(days: 30));
+    final deletionDate = deletedAt.add(const Duration(days: 30));
     final remaining = deletionDate.difference(DateTime.now()).inDays;
     return remaining < 0 ? 0 : remaining;
   }

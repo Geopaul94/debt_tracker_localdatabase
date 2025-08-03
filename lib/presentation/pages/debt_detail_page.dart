@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:intl/intl.dart';
 
 import '../../core/services/currency_service.dart';
 import '../../core/constants/currencies.dart';
@@ -16,7 +15,7 @@ import 'transaction_history.dart';
 class DebtDetailPage extends StatefulWidget {
   final TransactionType type;
 
-  const DebtDetailPage({Key? key, required this.type}) : super(key: key);
+  const DebtDetailPage({super.key, required this.type});
 
   @override
   State<DebtDetailPage> createState() => _DebtDetailPageState();
@@ -24,13 +23,13 @@ class DebtDetailPage extends StatefulWidget {
 
 class _DebtDetailPageState extends State<DebtDetailPage> {
   List<TransactionEntity> _transactions = [];
-  Map<String, List<TransactionEntity>> _groupedTransactions = {};
-  Map<String, double> _personTotals = {};
+  final Map<String, List<TransactionEntity>> _groupedTransactions = {};
+  final Map<String, double> _personTotals = {};
 
   @override
   void initState() {
     super.initState();
-    context.read<TransactionBloc>().add(LoadTransactionsEvent());
+    context.read<TransactionBloc>().add(const LoadTransactionsEvent());
   }
 
   void _processTransactions(List<TransactionEntity> allTransactions) {
@@ -87,7 +86,7 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
             color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 5,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -119,14 +118,14 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Padding(
                   padding: EdgeInsets.symmetric(vertical: 8.h),
-                  child: Center(child: CircularProgressIndicator()),
+                  child: const Center(child: CircularProgressIndicator()),
                 );
               }
 
               if (snapshot.hasError || !snapshot.hasData) {
                 return Padding(
                   padding: EdgeInsets.symmetric(vertical: 8.h),
-                  child: Text('Error loading currencies'),
+                  child: const Text('Error loading currencies'),
                 );
               }
 
@@ -218,7 +217,7 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
         },
         builder: (context, state) {
           if (state is TransactionLoading) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           } else if (state is TransactionLoaded) {
             _processTransactions(state.transactions);
             return _buildContent(color);
@@ -226,15 +225,15 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
             return _buildErrorState(state);
           }
 
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addNewTransaction(),
         backgroundColor: color[600],
-        child: Icon(Icons.add, color: Colors.white),
         tooltip:
             'Add ${widget.type == TransactionType.iOwe ? 'Debt' : 'Credit'}',
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
@@ -265,7 +264,7 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
                 color: color.withOpacity(0.1),
                 spreadRadius: 1,
                 blurRadius: 10,
-                offset: Offset(0, 2),
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -331,7 +330,7 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
 
               final adjustedIndex = index > 4 ? index - 1 : index;
               if (adjustedIndex >= _personTotals.keys.length) {
-                return SizedBox.shrink();
+                return const SizedBox.shrink();
               }
 
               final personName = _personTotals.keys.elementAt(adjustedIndex);
@@ -481,7 +480,7 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
                               ),
                             ),
                           )
-                          .toList(),
+                          ,
                       if (transactions.length > 2)
                         Text(
                           '+${transactions.length - 2} more...',
@@ -542,7 +541,7 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
                 SizedBox(height: 32.h),
                 ElevatedButton.icon(
                   onPressed: _addNewTransaction,
-                  icon: Icon(Icons.add),
+                  icon: const Icon(Icons.add),
                   label: Text('Add ${isIOwe ? 'Debt' : 'Credit'}'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: color[600],
@@ -588,9 +587,9 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
           SizedBox(height: 24.h),
           ElevatedButton(
             onPressed: () {
-              context.read<TransactionBloc>().add(LoadTransactionsEvent());
+              context.read<TransactionBloc>().add(const LoadTransactionsEvent());
             },
-            child: Text('Try Again'),
+            child: const Text('Try Again'),
           ),
         ],
       ),
@@ -599,10 +598,10 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
 
   void _addNewTransaction() {
     Navigator.of(context)
-        .push(MaterialPageRoute(builder: (context) => AddTransactionPage()))
+        .push(MaterialPageRoute(builder: (context) => const AddTransactionPage()))
         .then((_) {
           // Reload transactions after adding
-          context.read<TransactionBloc>().add(LoadTransactionsEvent());
+          context.read<TransactionBloc>().add(const LoadTransactionsEvent());
         });
   }
 
@@ -622,7 +621,7 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
           )
           .then((_) {
             // Reload transactions after potential changes
-            context.read<TransactionBloc>().add(LoadTransactionsEvent());
+            context.read<TransactionBloc>().add(const LoadTransactionsEvent());
           });
     }
   }

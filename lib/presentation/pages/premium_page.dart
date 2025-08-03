@@ -7,7 +7,7 @@ import '../../core/services/pricing_service.dart';
 import '../../core/services/currency_service.dart';
 
 class PremiumPage extends StatefulWidget {
-   PremiumPage({Key? key}) : super(key: key);
+   const PremiumPage({super.key});
 
   @override
   State<PremiumPage> createState() => _PremiumPageState();
@@ -128,7 +128,7 @@ class _PremiumPageState extends State<PremiumPage> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.green,
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -138,7 +138,7 @@ class _PremiumPageState extends State<PremiumPage> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
-        duration: Duration(seconds: 4),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
@@ -154,29 +154,29 @@ class _PremiumPageState extends State<PremiumPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(message),
-                SizedBox(height: 16),
-                Text(
+                const SizedBox(height: 16),
+                const Text(
                   'Troubleshooting tips:',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 8),
-                Text('• Check your internet connection'),
-                Text('• Make sure you\'re signed into Google Play'),
-                Text('• Try restarting the app'),
-                Text('• Contact support if the problem persists'),
+                const SizedBox(height: 8),
+                const Text('• Check your internet connection'),
+                const Text('• Make sure you\'re signed into Google Play'),
+                const Text('• Try restarting the app'),
+                const Text('• Contact support if the problem persists'),
               ],
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('OK'),
+                child: const Text('OK'),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                   _showDebugDialog();
                 },
-                child: Text('Debug Info'),
+                child: const Text('Debug Info'),
               ),
             ],
           ),
@@ -189,7 +189,7 @@ class _PremiumPageState extends State<PremiumPage> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Text('Debug Information'),
+            title: const Text('Debug Information'),
             content: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,8 +200,8 @@ class _PremiumPageState extends State<PremiumPage> {
                   Text('Purchase Pending: ${debugInfo['purchasePending']}'),
                   if (debugInfo['lastError'] != null)
                     Text('Last Error: ${debugInfo['lastError']}'),
-                  SizedBox(height: 16),
-                  Text(
+                  const SizedBox(height: 16),
+                  const Text(
                     'Products:',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
@@ -215,7 +215,7 @@ class _PremiumPageState extends State<PremiumPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('Close'),
+                child: const Text('Close'),
               ),
             ],
           ),
@@ -226,23 +226,23 @@ class _PremiumPageState extends State<PremiumPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('⭐ Premium'),
+        title: const Text('⭐ Premium'),
         centerTitle: true,
         actions: [
           if (!_isPremium)
             TextButton(
               onPressed: _isLoading ? null : _restorePurchases,
-              child: Text('Restore', style: TextStyle(color: Colors.white)),
+              child: const Text('Restore', style: TextStyle(color: Colors.white)),
             ),
           IconButton(
             onPressed: () => setState(() => _showDebugInfo = !_showDebugInfo),
-            icon: Icon(Icons.bug_report, size: 20),
+            icon: const Icon(Icons.bug_report, size: 20),
           ),
         ],
       ),
       body:
           _isLoading
-              ? Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
                 padding: EdgeInsets.all(16.w),
                 child: Column(
@@ -277,13 +277,13 @@ class _PremiumPageState extends State<PremiumPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Debug Info', style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text('Debug Info', style: TextStyle(fontWeight: FontWeight.bold)),
           Text('IAP Available: ${debugInfo['isAvailable']}'),
           Text('Products: ${debugInfo['productsLoaded']}'),
           if (debugInfo['lastError'] != null)
             Text(
               'Error: ${debugInfo['lastError']}',
-              style: TextStyle(color: Colors.red),
+              style: const TextStyle(color: Colors.red),
             ),
         ],
       ),
@@ -301,13 +301,13 @@ class _PremiumPageState extends State<PremiumPage> {
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, color: Colors.red),
+          const Icon(Icons.error_outline, color: Colors.red),
           SizedBox(width: 8.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Purchase Issue',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
@@ -320,7 +320,7 @@ class _PremiumPageState extends State<PremiumPage> {
           ),
           TextButton(
             onPressed: () => _showErrorDialog('Purchase Issue', _lastError!),
-            child: Text('Help'),
+            child: const Text('Help'),
           ),
         ],
       ),
@@ -485,7 +485,7 @@ class _PremiumPageState extends State<PremiumPage> {
           style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 16.h),
-        ..._availablePlans.map((plan) => _buildPlanCard(plan)).toList(),
+        ..._availablePlans.map((plan) => _buildPlanCard(plan)),
       ],
     );
   }
@@ -507,7 +507,7 @@ class _PremiumPageState extends State<PremiumPage> {
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
             blurRadius: 8,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),

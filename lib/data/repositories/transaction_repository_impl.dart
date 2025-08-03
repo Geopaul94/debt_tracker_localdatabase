@@ -45,7 +45,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
     try {
       final transactionModel = TransactionModel.fromEntity(transaction);
       await sqliteDataSource.saveTransaction(transactionModel);
-      return Right(null);
+      return const Right(null);
     } catch (e) {
       return Left(CacheFailure());
     }
@@ -58,7 +58,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
     try {
       final transactionModel = TransactionModel.fromEntity(transaction);
       await sqliteDataSource.updateTransaction(transactionModel);
-      return Right(null);
+      return const Right(null);
     } catch (e) {
       return Left(CacheFailure());
     }
@@ -68,7 +68,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
   Future<Either<Failure, void>> deleteTransaction(String id) async {
     try {
       await sqliteDataSource.deleteTransaction(id);
-      return Right(null);
+      return const Right(null);
     } catch (e) {
       return Left(CacheFailure());
     }

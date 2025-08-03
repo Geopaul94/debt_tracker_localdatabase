@@ -181,7 +181,7 @@ class LocalBackupService {
               .toList();
 
       final cutoffDate = DateTime.now().subtract(
-        Duration(days: _maxBackupRetentionDays),
+        const Duration(days: _maxBackupRetentionDays),
       );
 
       for (final file in backupFiles) {
@@ -269,7 +269,7 @@ class BackupInfo {
 
     if (backupDate == today) {
       return 'Today at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-    } else if (backupDate == today.subtract(Duration(days: 1))) {
+    } else if (backupDate == today.subtract(const Duration(days: 1))) {
       return 'Yesterday at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
     } else {
       return '${date.day}/${date.month}/${date.year} at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
@@ -278,7 +278,7 @@ class BackupInfo {
 
   String get formattedSize {
     if (size < 1024) {
-      return '${size} B';
+      return '$size B';
     } else if (size < 1024 * 1024) {
       return '${(size / 1024).toStringAsFixed(1)} KB';
     } else {

@@ -15,8 +15,7 @@ import 'add_transaction_page.dart';
 class GroupedDebtDetailPage extends StatefulWidget {
   final GroupedTransactionEntity groupedTransaction;
 
-  const GroupedDebtDetailPage({Key? key, required this.groupedTransaction})
-    : super(key: key);
+  const GroupedDebtDetailPage({super.key, required this.groupedTransaction});
 
   @override
   _GroupedDebtDetailPageState createState() => _GroupedDebtDetailPageState();
@@ -49,7 +48,7 @@ class _GroupedDebtDetailPageState extends State<GroupedDebtDetailPage> {
       listener: (context, state) {
         if (state is TransactionOperationSuccess) {
           // Reload transactions to get updated data
-          context.read<TransactionBloc>().add(LoadTransactionsEvent());
+          context.read<TransactionBloc>().add(const LoadTransactionsEvent());
         }
       },
       child: BlocBuilder<TransactionBloc, TransactionState>(
@@ -76,7 +75,7 @@ class _GroupedDebtDetailPageState extends State<GroupedDebtDetailPage> {
   }
 
   Widget _buildContent(BuildContext context) {
-    print("+++++++++++++++++++++++++");
+    print('+++++++++++++++++++++++++');
     final currencyService = CurrencyService.instance;
 
     // Determine colors based on net amount
@@ -123,7 +122,7 @@ class _GroupedDebtDetailPageState extends State<GroupedDebtDetailPage> {
                   color: primaryColor.withOpacity(0.1),
                   spreadRadius: 1,
                   blurRadius: 10,
-                  offset: Offset(0, 2),
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -243,8 +242,8 @@ class _GroupedDebtDetailPageState extends State<GroupedDebtDetailPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addNewTransactionForUser(context),
         backgroundColor: primaryColor,
-        child: Icon(Icons.add, color: Colors.white),
         tooltip: 'Add Transaction for ${currentGroupedTransaction.userName}',
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

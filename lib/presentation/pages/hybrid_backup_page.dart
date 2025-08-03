@@ -9,7 +9,7 @@ import '../bloc/transacton_bloc/transaction_bloc.dart';
 import '../bloc/transacton_bloc/transaction_event.dart';
 
 class HybridBackupPage extends StatefulWidget {
-  const HybridBackupPage({Key? key}) : super(key: key);
+  const HybridBackupPage({super.key});
 
   @override
   State<HybridBackupPage> createState() => _HybridBackupPageState();
@@ -162,7 +162,7 @@ class _HybridBackupPageState extends State<HybridBackupPage> {
         // Reset backup ad status after successful restore
         await BackupPermissionService.instance.resetBackupAdStatus();
         // Refresh transactions in the app
-        context.read<TransactionBloc>().add(LoadTransactionsEvent());
+        context.read<TransactionBloc>().add(const LoadTransactionsEvent());
         _showSuccessSnackBar('✅ Data restored successfully!');
       } else {
         _showErrorSnackBar('❌ Failed to restore data');
@@ -179,19 +179,19 @@ class _HybridBackupPageState extends State<HybridBackupPage> {
           context: context,
           builder:
               (context) => AlertDialog(
-                title: Text('🔄 Restore Backup'),
+                title: const Text('🔄 Restore Backup'),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Are you sure you want to restore from this backup?'),
+                    const Text('Are you sure you want to restore from this backup?'),
                     SizedBox(height: 16.h),
                     Text(
                       '📅 Date: ${backup.formattedDate}',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text('📊 Size: ${backup.formattedSize}'),
-                    Text('📍 Location: Local Device'),
+                    const Text('📍 Location: Local Device'),
                     SizedBox(height: 16.h),
                     Container(
                       padding: EdgeInsets.all(12.w),
@@ -221,14 +221,14 @@ class _HybridBackupPageState extends State<HybridBackupPage> {
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
-                    child: Text('Cancel'),
+                    child: const Text('Cancel'),
                   ),
                   ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
                     ),
-                    child: Text(
+                    child: const Text(
                       'Restore',
                       style: TextStyle(color: Colors.white),
                     ),
@@ -264,7 +264,7 @@ class _HybridBackupPageState extends State<HybridBackupPage> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.green,
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -274,7 +274,7 @@ class _HybridBackupPageState extends State<HybridBackupPage> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -282,10 +282,10 @@ class _HybridBackupPageState extends State<HybridBackupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('💾 Local Backup'), centerTitle: true),
+      appBar: AppBar(title: const Text('💾 Local Backup'), centerTitle: true),
       body:
           _isLoading
-              ? Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
                 padding: EdgeInsets.all(16.w),
                 child: Column(
@@ -581,8 +581,8 @@ class _HybridBackupPageState extends State<HybridBackupPage> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: _createBackup,
-                icon: Icon(Icons.backup),
-                label: Text('Create Backup'),
+                icon: const Icon(Icons.backup),
+                label: const Text('Create Backup'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue[600],
                   foregroundColor: Colors.white,
@@ -614,7 +614,7 @@ class _HybridBackupPageState extends State<HybridBackupPage> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Spacer(),
+                const Spacer(),
                 Text(
                   '${_availableBackups.length} backups',
                   style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
@@ -641,7 +641,7 @@ class _HybridBackupPageState extends State<HybridBackupPage> {
             ] else ...[
               ListView.separated(
                 shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
+                physics: const NeverScrollableScrollPhysics(),
                 itemCount: _availableBackups.length,
                 separatorBuilder: (context, index) => SizedBox(height: 8.h),
                 itemBuilder: (context, index) {

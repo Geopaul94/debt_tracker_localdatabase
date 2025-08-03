@@ -10,7 +10,7 @@ import '../bloc/currency_bloc/currency_state.dart';
 import '../widgets/ad_banner_widget.dart';
 
 class CurrencySelectionPage extends StatelessWidget {
-  const CurrencySelectionPage({Key? key}) : super(key: key);
+  const CurrencySelectionPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +44,7 @@ class _CurrencySelectionContentState extends State<_CurrencySelectionContent> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Select Currency'),
+        title: const Text('Select Currency'),
         centerTitle: true,
         elevation: 2,
       ),
@@ -62,12 +62,12 @@ class _CurrencySelectionContentState extends State<_CurrencySelectionContent> {
                   ],
                 ),
                 backgroundColor: Colors.green,
-                duration: Duration(seconds: 2),
+                duration: const Duration(seconds: 2),
               ),
             );
 
             // Go back to previous screen after a short delay
-            Future.delayed(Duration(milliseconds: 500)).then((_) {
+            Future.delayed(const Duration(milliseconds: 500)).then((_) {
               if (mounted) {
                 Navigator.of(context).pop(true);
               }
@@ -83,14 +83,14 @@ class _CurrencySelectionContentState extends State<_CurrencySelectionContent> {
         },
         builder: (context, state) {
           if (state is CurrencyLoading) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           } else if (state is CurrencyLoaded) {
             return _buildLoadedContent(context, state);
           } else if (state is CurrencyError) {
             return _buildErrorState(context, state);
           }
 
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         },
       ),
     );
@@ -109,7 +109,7 @@ class _CurrencySelectionContentState extends State<_CurrencySelectionContent> {
                 color: Colors.grey.withOpacity(0.1),
                 spreadRadius: 1,
                 blurRadius: 5,
-                offset: Offset(0, 2),
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -120,11 +120,11 @@ class _CurrencySelectionContentState extends State<_CurrencySelectionContent> {
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Search currencies...',
-                  prefixIcon: Icon(Icons.search),
+                  prefixIcon: const Icon(Icons.search),
                   suffixIcon:
                       state.searchQuery.isNotEmpty
                           ? IconButton(
-                            icon: Icon(Icons.clear),
+                            icon: const Icon(Icons.clear),
                             onPressed: () {
                               _searchController.clear();
                               context.read<CurrencyBloc>().add(
@@ -163,7 +163,7 @@ class _CurrencySelectionContentState extends State<_CurrencySelectionContent> {
           ),
           child: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.blue),
+              const Icon(Icons.check_circle, color: Colors.blue),
               SizedBox(width: 12.w),
               Text(
                 'Current: ',
@@ -177,7 +177,7 @@ class _CurrencySelectionContentState extends State<_CurrencySelectionContent> {
                   color: Colors.blue[800],
                 ),
               ),
-              Spacer(),
+              const Spacer(),
               Text(
                 state.currentCurrency.symbol,
                 style: TextStyle(
@@ -237,7 +237,7 @@ class _CurrencySelectionContentState extends State<_CurrencySelectionContent> {
                     color: Colors.blue.withOpacity(0.1),
                     spreadRadius: 1,
                     blurRadius: 5,
-                    offset: Offset(0, 2),
+                    offset: const Offset(0, 2),
                   ),
                 ]
                 : [
@@ -245,7 +245,7 @@ class _CurrencySelectionContentState extends State<_CurrencySelectionContent> {
                     color: Colors.grey.withOpacity(0.05),
                     spreadRadius: 1,
                     blurRadius: 3,
-                    offset: Offset(0, 1),
+                    offset: const Offset(0, 1),
                   ),
                 ],
       ),
@@ -359,7 +359,7 @@ class _CurrencySelectionContentState extends State<_CurrencySelectionContent> {
             onPressed: () {
               context.read<CurrencyBloc>().add(LoadCurrentCurrencyEvent());
             },
-            child: Text('Try Again'),
+            child: const Text('Try Again'),
           ),
         ],
       ),

@@ -15,8 +15,7 @@ import 'add_transaction_page.dart';
 class TransactionDetailPage extends StatelessWidget {
   final TransactionEntity transaction;
 
-  const TransactionDetailPage({Key? key, required this.transaction})
-    : super(key: key);
+  const TransactionDetailPage({super.key, required this.transaction});
 
   @override
   Widget build(BuildContext context) {
@@ -28,14 +27,14 @@ class TransactionDetailPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Transaction Details'),
+        title: const Text('Transaction Details'),
         centerTitle: true,
         backgroundColor: color[600],
         foregroundColor: Colors.white,
         elevation: 2,
         actions: [
           IconButton(
-            icon: Icon(Icons.edit),
+            icon: const Icon(Icons.edit),
             onPressed: () => _navigateToEdit(context),
             tooltip: 'Edit Transaction',
           ),
@@ -47,7 +46,7 @@ class TransactionDetailPage extends StatelessWidget {
             },
             itemBuilder:
                 (context) => [
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'delete',
                     child: Row(
                       children: [
@@ -156,8 +155,8 @@ class TransactionDetailPage extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () => _navigateToEdit(context),
-                    icon: Icon(Icons.edit),
-                    label: Text('Edit Transaction'),
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Edit Transaction'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: color[600],
                       foregroundColor: Colors.white,
@@ -171,8 +170,8 @@ class TransactionDetailPage extends StatelessWidget {
                 SizedBox(width: 12.w),
                 ElevatedButton.icon(
                   onPressed: () => _showDeleteConfirmation(context),
-                  icon: Icon(Icons.delete),
-                  label: Text('Delete'),
+                  icon: const Icon(Icons.delete),
+                  label: const Text('Delete'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red[600],
                     foregroundColor: Colors.white,
@@ -467,7 +466,7 @@ class TransactionDetailPage extends StatelessWidget {
                       backgroundColor: Colors.black,
                       foregroundColor: Colors.white,
                       leading: IconButton(
-                        icon: Icon(Icons.close),
+                        icon: const Icon(Icons.close),
                         onPressed: () => Navigator.of(dialogContext).pop(),
                       ),
                     ),
@@ -487,7 +486,7 @@ class TransactionDetailPage extends StatelessWidget {
                                     color: Colors.red,
                                   ),
                                   SizedBox(height: 8.h),
-                                  Text('Failed to load image'),
+                                  const Text('Failed to load image'),
                                 ],
                               ),
                             );
@@ -510,13 +509,13 @@ class TransactionDetailPage extends StatelessWidget {
                 // Could add clipboard functionality here
               },
             ),
-            duration: Duration(seconds: 4),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('File not found. It may have been deleted.'),
           backgroundColor: Colors.red,
         ),
@@ -538,20 +537,20 @@ class TransactionDetailPage extends StatelessWidget {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Row(
+            title: const Row(
               children: [
                 Icon(Icons.warning, color: Colors.orange),
                 SizedBox(width: 8),
                 Text('Delete Transaction'),
               ],
             ),
-            content: Text(
+            content: const Text(
               'Are you sure you want to delete this transaction? This action cannot be undone.',
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('Cancel'),
+                child: const Text('Cancel'),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -562,7 +561,7 @@ class TransactionDetailPage extends StatelessWidget {
                   );
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: Text('Delete', style: TextStyle(color: Colors.white)),
+                child: const Text('Delete', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),

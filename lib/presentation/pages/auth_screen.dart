@@ -9,7 +9,7 @@ import '../bloc/authentication/auth_event.dart';
 import '../bloc/authentication/auth_state.dart';
 
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({Key? key}) : super(key: key);
+  const AuthScreen({super.key});
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -358,7 +358,7 @@ class _AuthScreenState extends State<AuthScreen> {
               await PremiumService.instance.setAdFreeFor2Hours();
 
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
+                const SnackBar(
                   content: Text('🚀 Ad-free access granted for 2 hours!'),
                   backgroundColor: Colors.green,
                   duration: Duration(seconds: 3),
@@ -367,7 +367,7 @@ class _AuthScreenState extends State<AuthScreen> {
             } catch (e) {
               print('Error setting ad-free status: $e');
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
+                const SnackBar(
                   content: Text(
                     '🚀 Ad reward received! You can now access the app.',
                   ),
@@ -378,7 +378,7 @@ class _AuthScreenState extends State<AuthScreen> {
             }
 
             // Navigate to home after successful ad watch
-            await Future.delayed(Duration(seconds: 1));
+            await Future.delayed(const Duration(seconds: 1));
             if (mounted) {
               Navigator.of(context).pushReplacementNamed('/home');
             }
@@ -388,7 +388,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
       if (!success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Ad not ready. Please try again in a moment.'),
             backgroundColor: Colors.orange,
           ),
@@ -398,7 +398,7 @@ class _AuthScreenState extends State<AuthScreen> {
       print('Error showing rewarded ad: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Failed to load ad. Please try again later.'),
             backgroundColor: Colors.red,
           ),

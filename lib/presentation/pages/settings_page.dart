@@ -1,4 +1,3 @@
-import 'package:debt_tracker/presentation/pages/cloud_backup_page.dart';
 import 'package:debt_tracker/presentation/widgets/ad_banner_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,10 +21,9 @@ import 'terms_conditions_page.dart';
 
 import 'trash_page.dart';
 import 'premium_page.dart';
-import 'hybrid_backup_page.dart';
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({Key? key}) : super(key: key);
+  const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +42,7 @@ class SettingsPage extends StatelessWidget {
         ),
       ],
       child: Scaffold(
-        appBar: AppBar(title: Text('Settings'), centerTitle: true),
+        appBar: AppBar(title: const Text('Settings'), centerTitle: true),
         body: ListView(
           padding: EdgeInsets.all(15.w),
           children: [  
@@ -129,23 +127,23 @@ class SettingsPage extends StatelessWidget {
                 ),
                 child: Icon(Icons.monetization_on, color: Colors.teal[600]),
               ),
-              title: Text('Currency'),
+              title: const Text('Currency'),
               subtitle: Text(
                 '${currentCurrency.flag} ${currentCurrency.name} (${currentCurrency.symbol})',
               ),
-              trailing: Icon(Icons.chevron_right),
+              trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.of(context)
                     .push(
                       MaterialPageRoute(
-                        builder: (context) => CurrencySelectionPage(),
+                        builder: (context) => const CurrencySelectionPage(),
                       ),
                     )
                     .then((currencyChanged) {
                       if (currencyChanged == true) {
                         // Reload transactions to update currency formatting
                         context.read<TransactionBloc>().add(
-                          LoadTransactionsEvent(),
+                          const LoadTransactionsEvent(),
                         );
                         // Refresh currency bloc
                         context.read<CurrencyBloc>().add(
@@ -170,23 +168,23 @@ class SettingsPage extends StatelessWidget {
                 ),
                 child: Icon(Icons.monetization_on, color: Colors.teal[600]),
               ),
-              title: Text('Currency'),
+              title: const Text('Currency'),
               subtitle: Text(
                 '${currentCurrency.flag} ${currentCurrency.name} (${currentCurrency.symbol})',
               ),
-              trailing: Icon(Icons.chevron_right),
+              trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.of(context)
                     .push(
                       MaterialPageRoute(
-                        builder: (context) => CurrencySelectionPage(),
+                        builder: (context) => const CurrencySelectionPage(),
                       ),
                     )
                     .then((currencyChanged) {
                       if (currencyChanged == true) {
                         // Reload transactions to update currency formatting
                         context.read<TransactionBloc>().add(
-                          LoadTransactionsEvent(),
+                          const LoadTransactionsEvent(),
                         );
                         // Refresh currency bloc
                         context.read<CurrencyBloc>().add(
@@ -214,9 +212,9 @@ class SettingsPage extends StatelessWidget {
           ),
           child: Icon(Icons.info, color: Colors.purple[600]),
         ),
-        title: Text('App Information'),
-        subtitle: Text('Version 1.0.0'),
-        trailing: Icon(Icons.chevron_right),
+        title: const Text('App Information'),
+        subtitle: const Text('Version 1.0.0'),
+        trailing: const Icon(Icons.chevron_right),
         onTap: () => _showAppInfoDialog(),
       ),
     );
@@ -340,9 +338,9 @@ class SettingsPage extends StatelessWidget {
                     child: Icon(Icons.fingerprint, color: Colors.teal[600]),
                   ),
                   SizedBox(width: 16.w),
-                  Text('Loading...'),
-                  Spacer(),
-                  CircularProgressIndicator(),
+                  const Text('Loading...'),
+                  const Spacer(),
+                  const CircularProgressIndicator(),
                 ],
               ),
             ),
@@ -359,9 +357,9 @@ class SettingsPage extends StatelessWidget {
                 ),
                 child: Icon(Icons.fingerprint, color: Colors.teal[600]),
               ),
-              title: Text('Biometric Authentication'),
-              subtitle: Text('Tap to configure'),
-              trailing: Icon(Icons.chevron_right),
+              title: const Text('Biometric Authentication'),
+              subtitle: const Text('Tap to configure'),
+              trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 context.read<AuthBloc>().add(LoadAuthSettingsEvent());
               },
@@ -384,13 +382,13 @@ class SettingsPage extends StatelessWidget {
           ),
           child: Icon(Icons.privacy_tip, color: Colors.blue[600]),
         ),
-        title: Text('Privacy Policy'),
-        subtitle: Text('View our privacy policy and data usage'),
-        trailing: Icon(Icons.chevron_right),
+        title: const Text('Privacy Policy'),
+        subtitle: const Text('View our privacy policy and data usage'),
+        trailing: const Icon(Icons.chevron_right),
         onTap: () {
           Navigator.of(
             context,
-          ).push(MaterialPageRoute(builder: (context) => PrivacyPolicyPage()));
+          ).push(MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()));
         },
       ),
     );
@@ -408,12 +406,12 @@ class SettingsPage extends StatelessWidget {
           ),
           child: Icon(Icons.description, color: Colors.green[600]),
         ),
-        title: Text('Terms & Conditions'),
-        subtitle: Text('View our terms of service and usage agreement'),
-        trailing: Icon(Icons.chevron_right),
+        title: const Text('Terms & Conditions'),
+        subtitle: const Text('View our terms of service and usage agreement'),
+        trailing: const Icon(Icons.chevron_right),
         onTap: () {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => TermsConditionsPage()),
+            MaterialPageRoute(builder: (context) => const TermsConditionsPage()),
           );
         },
       ),
@@ -448,11 +446,11 @@ class SettingsPage extends StatelessWidget {
                   ? 'Ad-free experience & automatic backups'
                   : 'Starting from ${pricing.formattedYearlyPrice}/year',
             ),
-            trailing: Icon(Icons.chevron_right),
+            trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.of(
                 context,
-              ).push(MaterialPageRoute(builder: (context) => PremiumPage()));
+              ).push(MaterialPageRoute(builder: (context) => const PremiumPage()));
             },
           ),
         );
@@ -501,7 +499,7 @@ class SettingsPage extends StatelessWidget {
               ),
               child: Icon(Icons.delete, color: Colors.red[600]),
             ),
-            title: Text('Trash'),
+            title: const Text('Trash'),
             subtitle: Text(
               count > 0
                   ? '$count deleted items (kept for 30 days)'
@@ -530,13 +528,13 @@ class SettingsPage extends StatelessWidget {
                     ),
                   ),
                 SizedBox(width: 8.w),
-                Icon(Icons.chevron_right),
+                const Icon(Icons.chevron_right),
               ],
             ),
             onTap: () {
               Navigator.of(
                 context,
-              ).push(MaterialPageRoute(builder: (context) => TrashPage()));
+              ).push(MaterialPageRoute(builder: (context) => const TrashPage()));
             },
           ),
         );
@@ -560,15 +558,15 @@ class SettingsPage extends StatelessWidget {
             ),
           ),
           Text(
-            "Version 1.4.0",
+            'Version 1.4.0',
             style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
           ),
           Text(
-            "Copyright 2025",
+            'Copyright 2025',
             style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
           ),
           Text(
-            "All rights reserved",
+            'All rights reserved',
             style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
           ),
         ],
@@ -588,8 +586,8 @@ class SettingsPage extends StatelessWidget {
           ),
           child: Icon(Icons.info, color: Colors.purple[600]),
         ),
-        title: Text('Premium Features'),
-        subtitle: Text('Coming Soon'),
+        title: const Text('Premium Features'),
+        subtitle: const Text('Coming Soon'),
      //   trailing: Icon(Icons.chevron_right),
         onTap: () => _showAppInfoDialog(),
       ),
@@ -608,8 +606,8 @@ class SettingsPage extends StatelessWidget {
           ),
           child: Icon(Icons.info, color: Colors.purple[600]),
         ),
-        title: Text('Cloud Backup'),
-        subtitle: Text('Coming Soon'),
+        title: const Text('Cloud Backup'),
+        subtitle: const Text('Coming Soon'),
        // trailing: Icon(Icons.chevron_right),
         onTap: () => _showAppInfoDialog(),
       ),

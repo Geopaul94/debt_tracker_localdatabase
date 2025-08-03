@@ -9,12 +9,12 @@ class AttachmentWidget extends StatelessWidget {
   final Function(AttachmentEntity) onRemoveAttachment;
 
   const AttachmentWidget({
-    Key? key,
+    super.key,
     required this.attachments,
     required this.onAddAttachment,
     required this.onTakePhoto,
     required this.onRemoveAttachment,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

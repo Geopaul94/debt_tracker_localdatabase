@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/logger.dart';
 import 'premium_service.dart';
 import 'local_backup_service.dart';
-import 'google_drive_service.dart';
 import 'backup_permission_service.dart';
 
 @pragma('vm:entry-point')
@@ -86,7 +85,7 @@ class AutoBackupService {
       await Workmanager().registerPeriodicTask(
         dailyBackupTaskName,
         dailyBackupTaskName,
-        frequency: Duration(hours: 24),
+        frequency: const Duration(hours: 24),
         constraints: Constraints(
           networkType: NetworkType.connected,
           requiresBatteryNotLow: true,
@@ -97,7 +96,7 @@ class AutoBackupService {
       await Workmanager().registerPeriodicTask(
         cleanupTaskName,
         cleanupTaskName,
-        frequency: Duration(days: 7),
+        frequency: const Duration(days: 7),
         constraints: Constraints(networkType: NetworkType.connected),
       );
 
@@ -123,7 +122,7 @@ class AutoBackupService {
 
   void _startPeriodicCheck() {
     _periodicTimer?.cancel();
-    _periodicTimer = Timer.periodic(Duration(hours: 1), (_) async {
+    _periodicTimer = Timer.periodic(const Duration(hours: 1), (_) async {
       await _checkAndPerformBackup();
     });
   }

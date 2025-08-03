@@ -113,7 +113,7 @@ class BackupPermissionService {
   DateTime? get nextAutoBackupDate {
     final lastBackup = lastAutoBackupDate;
     if (lastBackup == null) return null;
-    return lastBackup.add(Duration(days: 4));
+    return lastBackup.add(const Duration(days: 4));
   }
 
   // Check if user has watched backup ad

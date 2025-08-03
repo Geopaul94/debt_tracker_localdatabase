@@ -13,8 +13,7 @@ import 'add_transaction_page.dart';
 class TransactionHistoryPage extends StatefulWidget {
   final TransactionEntity transaction;
 
-  const TransactionHistoryPage({Key? key, required this.transaction})
-    : super(key: key);
+  const TransactionHistoryPage({super.key, required this.transaction});
 
   @override
   State<TransactionHistoryPage> createState() => _TransactionHistoryPageState();
@@ -32,18 +31,18 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   }
 
   void _loadRelatedTransactions() {
-    context.read<TransactionBloc>().add(LoadTransactionsEvent());
+    context.read<TransactionBloc>().add(const LoadTransactionsEvent());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Transaction Details'),
+        title: const Text('Transaction Details'),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(Icons.edit),
+            icon: const Icon(Icons.edit),
             onPressed: _editTransaction,
             tooltip: 'Edit Transaction',
           ),
@@ -64,13 +63,13 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                     value: 'add_related',
                     child: Row(
                       children: [
-                        Icon(Icons.person_add, color: Colors.green),
-                        SizedBox(width: 8),
+                        const Icon(Icons.person_add, color: Colors.green),
+                        const SizedBox(width: 8),
                         Text('Add for ${currentTransaction.name}'),
                       ],
                     ),
                   ),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'delete',
                     child: Row(
                       children: [
@@ -128,8 +127,8 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addRelatedTransaction,
-        child: Icon(Icons.add),
         tooltip: 'Add Transaction for ${currentTransaction.name}',
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -258,21 +257,21 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
         SizedBox(height: 16.h),
         ...relatedTransactions
             .map((transaction) => _buildTransactionItem(transaction))
-            .toList(),
+            ,
       ],
     );
   }
 
   Widget _buildTransactionSummary() {
-    double totalIOweThem = relatedTransactions
+    final double totalIOweThem = relatedTransactions
         .where((t) => t.type == TransactionType.iOwe)
         .fold(0.0, (sum, t) => sum + t.amount);
 
-    double totalTheyOweMe = relatedTransactions
+    final double totalTheyOweMe = relatedTransactions
         .where((t) => t.type == TransactionType.owesMe)
         .fold(0.0, (sum, t) => sum + t.amount);
 
-    double netAmount = totalTheyOweMe - totalIOweThem;
+    final double netAmount = totalTheyOweMe - totalIOweThem;
 
     return Card(
       color: netAmount >= 0 ? Colors.green[50] : Colors.red[50],
@@ -288,10 +287,10 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('I owe them:'),
+                const Text('I owe them:'),
                 Text(
                   CurrencyService.instance.formatAmount(totalIOweThem),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.red,
                     fontWeight: FontWeight.bold,
                   ),
@@ -301,21 +300,21 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('They owe me:'),
+                const Text('They owe me:'),
                 Text(
                   CurrencyService.instance.formatAmount(totalTheyOweMe),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.green,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
-            Divider(),
+            const Divider(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                const Text(
                   'Net Amount:',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
@@ -347,7 +346,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   }
 
   Widget _buildTransactionItem(TransactionEntity transaction) {
-    bool isCurrentTransaction = transaction.id == currentTransaction.id;
+    final bool isCurrentTransaction = transaction.id == currentTransaction.id;
 
     return Card(
       elevation: isCurrentTransaction ? 4 : 1,
@@ -454,20 +453,20 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Row(
+            title: const Row(
               children: [
                 Icon(Icons.warning, color: Colors.orange),
                 SizedBox(width: 8),
                 Text('Delete Transaction'),
               ],
             ),
-            content: Text(
+            content: const Text(
               'Are you sure you want to delete this transaction? This action cannot be undone.',
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('Cancel'),
+                child: const Text('Cancel'),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -480,7 +479,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                   Navigator.of(context).pop(); // Go back to home
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: Text('Delete', style: TextStyle(color: Colors.white)),
+                child: const Text('Delete', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),

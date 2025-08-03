@@ -24,10 +24,10 @@ class AddTransactionPage extends StatefulWidget {
   final String? prefilledName;
 
   const AddTransactionPage({
-    Key? key,
+    super.key,
     this.transactionToEdit,
     this.prefilledName,
-  }) : super(key: key);
+  });
 
   @override
   _AddTransactionPageState createState() => _AddTransactionPageState();
@@ -125,7 +125,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
       if (contacts.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('No contacts found on your device.'),
             backgroundColor: Colors.orange,
           ),
@@ -165,27 +165,27 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Row(
+            title: const Row(
               children: [
                 Icon(Icons.contact_phone, color: Colors.blue),
                 SizedBox(width: 8),
                 Text('Contacts Permission'),
               ],
             ),
-            content: Text(
+            content: const Text(
               'This app needs access to your contacts to help you select contact names. Please grant the permission in your device settings.',
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('Cancel'),
+                child: const Text('Cancel'),
               ),
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                   // Note: User will need to manually go to settings
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
+                    const SnackBar(
                       content: Text(
                         'Please go to Settings > Apps > Debt Tracker > Permissions and enable Contacts',
                       ),
@@ -194,7 +194,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     ),
                   );
                 },
-                child: Text('OK'),
+                child: const Text('OK'),
               ),
             ],
           ),
@@ -226,7 +226,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               _isEditing
                   ? [
                     IconButton(
-                      icon: Icon(Icons.delete),
+                      icon: const Icon(Icons.delete),
                       onPressed: _showDeleteConfirmation,
                       tooltip: 'Delete Transaction',
                     ),
@@ -243,9 +243,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   controller: _nameController,
                   decoration: InputDecoration(
                     labelText: 'Name',
-                    prefixIcon: Icon(Icons.person),
+                    prefixIcon: const Icon(Icons.person),
                     suffixIcon: IconButton(
-                      icon: Icon(Icons.contact_phone),
+                      icon: const Icon(Icons.contact_phone),
                       onPressed: _pickContact,
                       tooltip: 'Select from contacts',
                     ),
@@ -260,7 +260,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 SizedBox(height: 15.h),
                 TextFormField(
                   controller: _descriptionController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Description',
                     prefixIcon: Icon(Icons.description),
                   ),
@@ -277,11 +277,11 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     Expanded(
                       child: TextFormField(
                         controller: _amountController,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Amount',
                           prefixIcon: Icon(Icons.attach_money),
                         ),
-                        keyboardType: TextInputType.numberWithOptions(
+                        keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
                         validator: (value) {
@@ -343,7 +343,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 SizedBox(height: 15.h),
                 DropdownButtonFormField<TransactionType>(
                   value: _selectedType,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Transaction Type',
                     prefixIcon: Icon(Icons.swap_horiz),
                   ),
@@ -363,7 +363,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                                         : Colors.green,
                                 size: 16,
                               ),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(
                                 type == TransactionType.iOwe
                                     ? 'I Owe (Debit)'
@@ -382,8 +382,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 SizedBox(height: 10.h),
                 Card(
                   child: ListTile(
-                    leading: Icon(Icons.calendar_today),
-                    title: Text('Transaction Date'),
+                    leading: const Icon(Icons.calendar_today),
+                    title: const Text('Transaction Date'),
                     subtitle: Text(
                       _selectedDate == null
                           ? 'No Date Chosen!'
@@ -427,8 +427,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   SizedBox(height: 16.h),
                   OutlinedButton.icon(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.cancel),
-                    label: Text('Cancel'),
+                    icon: const Icon(Icons.cancel),
+                    label: const Text('Cancel'),
                     style: OutlinedButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 15.h),
                     ),
@@ -466,7 +466,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               primary: Colors.teal,
               onPrimary: Colors.white,
               onSurface: Colors.black,
@@ -499,7 +499,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
     if (enteredAmount == null || enteredAmount <= 0 || _selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Please enter a valid amount and select a date.'),
           backgroundColor: Colors.redAccent,
         ),
@@ -546,7 +546,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   Future<void> _pickFile() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      final FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.any,
         allowMultiple: false,
         allowedExtensions: null,
@@ -647,7 +647,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Photo captured and attached successfully!'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
@@ -687,20 +687,20 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Row(
+            title: const Row(
               children: [
                 Icon(Icons.warning, color: Colors.orange),
                 SizedBox(width: 8),
                 Text('Delete Transaction'),
               ],
             ),
-            content: Text(
+            content: const Text(
               'Are you sure you want to delete this transaction? This action cannot be undone.',
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('Cancel'),
+                child: const Text('Cancel'),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -712,7 +712,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   );
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: Text('Delete', style: TextStyle(color: Colors.white)),
+                child: const Text('Delete', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -813,7 +813,7 @@ class _CurrencySelectorDialogState extends State<_CurrencySelectorDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      child: Container(
+      child: SizedBox(
         width: MediaQuery.of(context).size.width * 1,
         height: MediaQuery.of(context).size.height * 1,
         child: Column(
@@ -840,7 +840,7 @@ class _CurrencySelectorDialogState extends State<_CurrencySelectorDialog> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Spacer(),
+                  const Spacer(),
                   IconButton(
                     icon: Icon(Icons.close, color: Colors.white, size: 24.sp),
                     onPressed: () => Navigator.of(context).pop(),
@@ -860,11 +860,11 @@ class _CurrencySelectorDialogState extends State<_CurrencySelectorDialog> {
                     controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'Search currencies...',
-                      prefixIcon: Icon(Icons.search),
+                      prefixIcon: const Icon(Icons.search),
                       suffixIcon:
                           _searchController.text.isNotEmpty
                               ? IconButton(
-                                icon: Icon(Icons.clear),
+                                icon: const Icon(Icons.clear),
                                 onPressed: () {
                                   _searchController.clear();
                                   _filterCurrencies('');
@@ -891,7 +891,7 @@ class _CurrencySelectorDialogState extends State<_CurrencySelectorDialog> {
                     children: [
                       // Popular filter toggle
                       FilterChip(
-                        label: Text('Popular currencies'),
+                        label: const Text('Popular currencies'),
                         selected: _showPopularOnly,
                         onSelected: (_) => _togglePopularCurrencies(),
                         selectedColor: Theme.of(
@@ -926,11 +926,11 @@ class _CurrencySelectorDialogState extends State<_CurrencySelectorDialog> {
                 future: _currenciesFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   if (snapshot.hasError) {
-                    return Center(
+                    return const Center(
                       child: Text(
                         'Error loading currencies',
                         style: TextStyle(color: Colors.red),
@@ -1051,8 +1051,7 @@ class _CurrencySelectorDialogState extends State<_CurrencySelectorDialog> {
 class ContactPickerDialog extends StatefulWidget {
   final List<Contact> contacts;
 
-  const ContactPickerDialog({Key? key, required this.contacts})
-    : super(key: key);
+  const ContactPickerDialog({super.key, required this.contacts});
 
   @override
   _ContactPickerDialogState createState() => _ContactPickerDialogState();
@@ -1095,7 +1094,7 @@ class _ContactPickerDialogState extends State<ContactPickerDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      child: Container(
+      child: SizedBox(
         width: double.maxFinite,
         height: MediaQuery.of(context).size.height * 0.7,
         child: Column(
@@ -1112,7 +1111,7 @@ class _ContactPickerDialogState extends State<ContactPickerDialog> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.contact_phone, color: Colors.white),
+                  const Icon(Icons.contact_phone, color: Colors.white),
                   SizedBox(width: 8.w),
                   Text(
                     'Select Contact',
@@ -1122,9 +1121,9 @@ class _ContactPickerDialogState extends State<ContactPickerDialog> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Spacer(),
+                  const Spacer(),
                   IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
+                    icon: const Icon(Icons.close, color: Colors.white),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -1138,7 +1137,7 @@ class _ContactPickerDialogState extends State<ContactPickerDialog> {
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Search contacts...',
-                  prefixIcon: Icon(Icons.search),
+                  prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8.r),
                   ),
@@ -1170,7 +1169,7 @@ class _ContactPickerDialogState extends State<ContactPickerDialog> {
                                 contact.displayName.isNotEmpty
                                     ? contact.displayName[0].toUpperCase()
                                     : '?',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1178,7 +1177,7 @@ class _ContactPickerDialogState extends State<ContactPickerDialog> {
                             ),
                             title: Text(
                               contact.displayName,
-                              style: TextStyle(fontWeight: FontWeight.w500),
+                              style: const TextStyle(fontWeight: FontWeight.w500),
                             ),
                             subtitle:
                                 contact.phones.isNotEmpty

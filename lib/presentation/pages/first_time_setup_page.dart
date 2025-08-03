@@ -358,7 +358,7 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
                                 ? SizedBox(
                                   width: 20.w,
                                   height: 20.w,
-                                  child: CircularProgressIndicator(
+                                  child: const CircularProgressIndicator(
                                     strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(
                                       Colors.white,
@@ -435,7 +435,7 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
               border: Border.all(color: Colors.teal[300]!),
               borderRadius: BorderRadius.circular(8.r),
             ),
-            child: Center(child: CircularProgressIndicator()),
+            child: const Center(child: CircularProgressIndicator()),
           );
         } else {
           // Fallback to default
@@ -484,7 +484,7 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
 
   Future<void> _navigateToCurrencySelection(BuildContext context) async {
     final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (context) => CurrencySelectionPage()),
+      MaterialPageRoute(builder: (context) => const CurrencySelectionPage()),
     );
 
     if (result == true) {
@@ -510,7 +510,7 @@ class _FirstTimeSetupPageState extends State<FirstTimeSetupPage> {
       print('Error completing setup: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Error setting up the app. Please try again.'),
             backgroundColor: Colors.red,
           ),

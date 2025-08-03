@@ -747,7 +747,7 @@ class GoogleAuthClient extends http.BaseClient {
 }
 
 class CloudBackupPage extends StatefulWidget {
-  const CloudBackupPage({Key? key}) : super(key: key);
+  const CloudBackupPage({super.key});
 
   @override
   State<CloudBackupPage> createState() => _CloudBackupPageState();
@@ -928,7 +928,7 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
       final tempDir = await getTemporaryDirectory();
       final tempFile = File(path.join(tempDir.path, 'temp_backup.json'));
       final sink = tempFile.openWrite();
-      await for (var chunk in media.stream) {
+      await for (final chunk in media.stream) {
         sink.add(chunk);
       }
       await sink.close();
@@ -937,11 +937,11 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
       final data = jsonDecode(content) as List<dynamic>;
 
       await _db.delete('Transactions');
-      for (var item in data) {
+      for (final item in data) {
         await _db.insert('Transactions', Map<String, dynamic>.from(item));
       }
 
-      context.read<TransactionBloc>().add(LoadTransactionsEvent());
+      context.read<TransactionBloc>().add(const LoadTransactionsEvent());
       await BackupPermissionService.instance.resetBackupAdStatus();
       _showSuccessSnackBar('✅ Google Drive data restored successfully!');
     } catch (e) {
@@ -1465,7 +1465,7 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Spacer(),
+                const Spacer(),
                 Text(
                   '${_availableDriveBackups.length} backups',
                   style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
