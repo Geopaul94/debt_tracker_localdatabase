@@ -22,6 +22,7 @@ import '../bloc/currency_bloc/currency_event.dart';
 import '../bloc/currency_bloc/currency_state.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/grouped_transaction_list_item.dart';
+import '../widgets/transaction_list_item.dart';
 import '../widgets/ad_banner_widget.dart';
 import '../widgets/exit_confirmation_dialog.dart';
 import 'add_transaction_page.dart';
@@ -322,10 +323,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           Row(
             children: [
               SizedBox(width: 20),
-              Icon(Icons.people, size: 24),
+              Icon(Icons.receipt_long, size: 24),
               SizedBox(width: 8),
               Text(
-                'People',
+                'Recent Transactions',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
               ),
             ],
@@ -341,20 +342,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   : const SizedBox.shrink();
             },
           ),
-          state.groupedTransactions.isEmpty
+          state.transactions.isEmpty
               ? _buildEmptyState()
               : ListView.builder(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
                 padding: EdgeInsets.symmetric(horizontal: 10.w),
                 itemCount:
-                    state.groupedTransactions.length +
-                    (state.groupedTransactions.length > 5 ? 1 : 0),
+                    state.transactions.length +
+                    (state.transactions.length > 5 ? 1 : 0),
                 itemBuilder: (context, index) {
                   // Insert another banner ad after every 5 transactions
                   if (index > 0 &&
                       index % 6 == 5 &&
-                      state.groupedTransactions.length > 5) {
+                      state.transactions.length > 5) {
                     return FutureBuilder<bool>(
                       future: _shouldShowBannerAd(),
                       builder: (context, snapshot) {
@@ -369,17 +370,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   }
 
                   final transactionIndex = index > 5 ? index - 1 : index;
-                  if (transactionIndex >= state.groupedTransactions.length) {
+                  if (transactionIndex >= state.transactions.length) {
                     return SizedBox.shrink();
                   }
 
-                  final groupedTransaction =
-                      state.groupedTransactions[transactionIndex];
-                  return GroupedTransactionListItem(
-                    groupedTransaction: groupedTransaction,
+                  final transaction = state.transactions[transactionIndex];
+                  return TransactionListItem(
+                    transaction: transaction,
                     onTap:
                         () =>
-                            _navigateToDebtDetail(context, groupedTransaction),
+                            _navigateToTransactionDetail(context, transaction),
                   );
                 },
               ),
@@ -569,6 +569,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => AddTransactionPage()));
+  }
+
+  void _navigateToTransactionDetail(
+    BuildContext context,
+    TransactionEntity transaction,
+  ) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (context) => AddTransactionPage(transactionToEdit: transaction),
+      ),
+    );
   }
 
   void _navigateToSettings() {

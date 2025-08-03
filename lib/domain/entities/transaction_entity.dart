@@ -1,5 +1,37 @@
 enum TransactionType { iOwe, owesMe }
 
+class TransactionCurrency {
+  final String code;
+  final String symbol;
+  final String name;
+  final String flag;
+
+  const TransactionCurrency({
+    required this.code,
+    required this.symbol,
+    required this.name,
+    required this.flag,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TransactionCurrency &&
+        other.code == code &&
+        other.symbol == symbol &&
+        other.name == name &&
+        other.flag == flag;
+  }
+
+  @override
+  int get hashCode {
+    return code.hashCode ^ symbol.hashCode ^ name.hashCode ^ flag.hashCode;
+  }
+
+  @override
+  String toString() => '$symbol $code';
+}
+
 class TransactionEntity {
   final String id;
   final String name;
@@ -7,6 +39,7 @@ class TransactionEntity {
   final double amount;
   final TransactionType type;
   final DateTime date;
+  final TransactionCurrency currency;
 
   const TransactionEntity({
     required this.id,
@@ -15,6 +48,7 @@ class TransactionEntity {
     required this.amount,
     required this.type,
     required this.date,
+    required this.currency,
   });
 
   @override
@@ -26,7 +60,8 @@ class TransactionEntity {
         other.description == description &&
         other.amount == amount &&
         other.type == type &&
-        other.date == date;
+        other.date == date &&
+        other.currency == currency;
   }
 
   @override
@@ -36,12 +71,13 @@ class TransactionEntity {
         description.hashCode ^
         amount.hashCode ^
         type.hashCode ^
-        date.hashCode;
+        date.hashCode ^
+        currency.hashCode;
   }
 
   @override
   String toString() {
-    return 'TransactionEntity(id: $id, name: $name, description: $description, amount: $amount, type: $type, date: $date)';
+    return 'TransactionEntity(id: $id, name: $name, description: $description, amount: $amount, type: $type, date: $date, currency: $currency)';
   }
 
   TransactionEntity copyWith({
@@ -51,6 +87,7 @@ class TransactionEntity {
     double? amount,
     TransactionType? type,
     DateTime? date,
+    TransactionCurrency? currency,
   }) {
     return TransactionEntity(
       id: id ?? this.id,
@@ -59,6 +96,7 @@ class TransactionEntity {
       amount: amount ?? this.amount,
       type: type ?? this.type,
       date: date ?? this.date,
+      currency: currency ?? this.currency,
     );
   }
 }

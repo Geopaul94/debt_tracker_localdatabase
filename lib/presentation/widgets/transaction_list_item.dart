@@ -29,7 +29,7 @@ class TransactionListItem extends StatelessWidget {
           child: Icon(
             transaction.type == TransactionType.iOwe
                 ? Icons.arrow_upward_rounded
-                : Icons.   arrow_downward_rounded  ,
+                : Icons.arrow_downward_rounded,
             color:
                 transaction.type == TransactionType.iOwe
                     ? Colors.red[700]
@@ -56,7 +56,7 @@ class TransactionListItem extends StatelessWidget {
           ],
         ),
         trailing: Text(
-          '${transaction.type == TransactionType.iOwe ? '-' : '+'}${currencyService.formatAmount(transaction.amount)}',
+          '${transaction.type == TransactionType.iOwe ? '- ' : '+ '}${currencyService.formatAmountWithCurrency(transaction.amount, CurrencyService.transactionCurrencyToCurrency(transaction.currency))}',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 17.sp,

@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/services/currency_service.dart';
+import '../../core/constants/currencies.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../bloc/transacton_bloc/transaction_bloc.dart';
 import '../bloc/transacton_bloc/transaction_event.dart';
@@ -53,6 +54,114 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
       _groupedTransactions[name]!.add(transaction);
       _personTotals[name] = _personTotals[name]! + transaction.amount;
     }
+  }
+
+  Map<String, double> _getCurrencyBreakdown() {
+    final breakdown = <String, double>{};
+    for (final transaction in _transactions) {
+      final currencyCode = transaction.currency.code;
+      breakdown[currencyCode] =
+          (breakdown[currencyCode] ?? 0.0) + transaction.amount;
+    }
+    return breakdown;
+  }
+
+  double _getTotalInDefaultCurrency() {
+    // Include all transactions and treat amounts as equivalent in default currency
+    // In a real app, you'd use exchange rates here
+    return _transactions.fold<double>(0.0, (sum, t) => sum + t.amount);
+  }
+
+  Widget _buildCurrencyBreakdown(
+    Map<String, double> breakdown,
+    MaterialColor color,
+  ) {
+    return Container(
+      margin: EdgeInsets.all(16.w),
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.account_balance_wallet,
+                color: color[600],
+                size: 20.sp,
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                'Breakdown by Currency',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                  color: color[700],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          ...breakdown.entries.map((entry) {
+            final currencyCode = entry.key;
+            final amount = entry.value;
+            final currency = CurrencyConstants.supportedCurrencies.firstWhere(
+              (c) => c.code == currencyCode,
+            );
+
+            return Padding(
+              padding: EdgeInsets.symmetric(vertical: 4.h),
+              child: Row(
+                children: [
+                  Text(currency.flag, style: TextStyle(fontSize: 18.sp)),
+                  SizedBox(width: 8.w),
+                  Text(
+                    currency.code,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      currency.name,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                  Text(
+                    CurrencyService.instance.formatAmountWithCurrency(
+                      amount,
+                      currency,
+                    ),
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                      color: color[700],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
   }
 
   @override
@@ -109,14 +218,12 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
     }
 
     final currencyService = CurrencyService.instance;
-    final totalAmount = _transactions.fold<double>(
-      0.0,
-      (sum, transaction) => sum + transaction.amount,
-    );
+    final defaultCurrencyTotal = _getTotalInDefaultCurrency();
+    final currencyBreakdown = _getCurrencyBreakdown();
 
     return Column(
       children: [
-        // Summary Header
+        // Default Currency Total
         Container(
           width: double.infinity,
           padding: EdgeInsets.all(20.w),
@@ -146,7 +253,7 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
               ),
               SizedBox(height: 12.h),
               Text(
-                'Total Amount',
+                'Total Equivalent in ${currencyService.currentCurrency.name}',
                 style: TextStyle(
                   fontSize: 16.sp,
                   color: color[700],
@@ -155,7 +262,7 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
               ),
               SizedBox(height: 8.h),
               Text(
-                currencyService.formatAmount(totalAmount),
+                currencyService.formatAmount(defaultCurrencyTotal),
                 style: TextStyle(
                   fontSize: 32.sp,
                   fontWeight: FontWeight.bold,
@@ -170,6 +277,10 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
             ],
           ),
         ),
+
+        // Currency Breakdown
+        if (currencyBreakdown.length > 1)
+          _buildCurrencyBreakdown(currencyBreakdown, color),
 
         // Ad Banner
         AdBannerWidget(

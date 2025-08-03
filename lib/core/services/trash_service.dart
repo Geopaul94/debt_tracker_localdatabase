@@ -59,6 +59,10 @@ class TrashService {
         'created_at': transaction.createdAt.toIso8601String(),
         'updated_at': transaction.updatedAt.toIso8601String(),
         'deleted_at': DateTime.now().toIso8601String(),
+        'currency_code': transaction.currency.code,
+        'currency_symbol': transaction.currency.symbol,
+        'currency_name': transaction.currency.name,
+        'currency_flag': transaction.currency.flag,
       });
 
       // Remove from transactions table
@@ -121,6 +125,10 @@ class TrashService {
         'date': trashItem.date.toIso8601String(),
         'created_at': trashItem.createdAt.toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(), // Update timestamp
+        'currency_code': trashItem.currencyCode,
+        'currency_symbol': trashItem.currencySymbol,
+        'currency_name': trashItem.currencyName,
+        'currency_flag': trashItem.currencyFlag,
       });
 
       // Remove from trash table
@@ -226,7 +234,6 @@ class TrashService {
       final dbHelper = DatabaseHelper();
       final db = await dbHelper.database;
 
-      final sevenDaysFromNow = DateTime.now().add(Duration(days: 7));
       final cutoffDate = DateTime.now().subtract(
         Duration(days: _retentionDays - 7),
       );
@@ -256,6 +263,10 @@ class TrashItem {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime deletedAt;
+  final String currencyCode;
+  final String currencySymbol;
+  final String currencyName;
+  final String currencyFlag;
 
   const TrashItem({
     required this.id,
@@ -267,6 +278,10 @@ class TrashItem {
     required this.createdAt,
     required this.updatedAt,
     required this.deletedAt,
+    required this.currencyCode,
+    required this.currencySymbol,
+    required this.currencyName,
+    required this.currencyFlag,
   });
 
   factory TrashItem.fromMap(Map<String, dynamic> map) {
@@ -280,6 +295,10 @@ class TrashItem {
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
       deletedAt: DateTime.parse(map['deleted_at'] as String),
+      currencyCode: map['currency_code'] as String? ?? 'USD',
+      currencySymbol: map['currency_symbol'] as String? ?? '\$',
+      currencyName: map['currency_name'] as String? ?? 'US Dollar',
+      currencyFlag: map['currency_flag'] as String? ?? '🇺🇸',
     );
   }
 
@@ -294,6 +313,10 @@ class TrashItem {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'deleted_at': deletedAt.toIso8601String(),
+      'currency_code': currencyCode,
+      'currency_symbol': currencySymbol,
+      'currency_name': currencyName,
+      'currency_flag': currencyFlag,
     };
   }
 
@@ -309,6 +332,12 @@ class TrashItem {
         orElse: () => TransactionType.iOwe,
       ),
       date: date,
+      currency: TransactionCurrency(
+        code: currencyCode,
+        symbol: currencySymbol,
+        name: currencyName,
+        flag: currencyFlag,
+      ),
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );

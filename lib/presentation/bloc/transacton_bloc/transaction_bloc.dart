@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/error/failures.dart';
+import '../../../core/services/currency_service.dart';
 import '../../../core/usecases/usecase.dart';
 import '../../../domain/entities/transaction_entity.dart';
 import '../../../domain/entities/grouped_transaction_entity.dart';
@@ -47,11 +48,17 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       (failure) =>
           emit(TransactionError(message: _mapFailureToMessage(failure))),
       (transactions) {
-        final groupedTransactions = _groupTransactionsByUser(transactions);
-        final totals = _calculateTotals(transactions);
+        // Sort transactions by date (newest first)
+        final sortedTransactions = [...transactions];
+        sortedTransactions.sort((a, b) => b.date.compareTo(a.date));
+
+        final groupedTransactions = _groupTransactionsByUser(
+          sortedTransactions,
+        );
+        final totals = _calculateTotals(sortedTransactions);
         emit(
           TransactionLoaded(
-            transactions: transactions,
+            transactions: sortedTransactions,
             groupedTransactions: groupedTransactions,
             totalIOwe: totals['iOwe']!,
             totalOwesMe: totals['owesMe']!,
@@ -161,6 +168,8 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     double totalIOwe = 0;
     double totalOwesMe = 0;
 
+    // Include all transactions and treat amounts as equivalent in default currency
+    // In a real app, you would convert using exchange rates here
     for (final transaction in transactions) {
       if (transaction.type == TransactionType.iOwe) {
         totalIOwe += transaction.amount;

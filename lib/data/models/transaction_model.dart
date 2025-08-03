@@ -11,6 +11,7 @@ class TransactionModel extends TransactionEntity {
     required super.amount,
     required super.type,
     required super.date,
+    required super.currency,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -27,6 +28,12 @@ class TransactionModel extends TransactionEntity {
         orElse: () => TransactionType.iOwe,
       ),
       date: DateTime.parse(map['date'] as String),
+      currency: TransactionCurrency(
+        code: map['currency_code'] as String? ?? 'USD',
+        symbol: map['currency_symbol'] as String? ?? '\$',
+        name: map['currency_name'] as String? ?? 'US Dollar',
+        flag: map['currency_flag'] as String? ?? '🇺🇸',
+      ),
       createdAt:
           map['created_at'] != null
               ? DateTime.parse(map['created_at'] as String)
@@ -47,6 +54,7 @@ class TransactionModel extends TransactionEntity {
       amount: entity.amount,
       type: entity.type,
       date: entity.date,
+      currency: entity.currency,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -61,6 +69,10 @@ class TransactionModel extends TransactionEntity {
       'amount': amount,
       'type': type.toString().split('.').last,
       'date': date.toIso8601String(),
+      'currency_code': currency.code,
+      'currency_symbol': currency.symbol,
+      'currency_name': currency.name,
+      'currency_flag': currency.flag,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -75,6 +87,7 @@ class TransactionModel extends TransactionEntity {
       amount: amount,
       type: type,
       date: date,
+      currency: currency,
     );
   }
 
@@ -86,6 +99,7 @@ class TransactionModel extends TransactionEntity {
     double? amount,
     TransactionType? type,
     DateTime? date,
+    TransactionCurrency? currency,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -96,6 +110,7 @@ class TransactionModel extends TransactionEntity {
       amount: amount ?? this.amount,
       type: type ?? this.type,
       date: date ?? this.date,
+      currency: currency ?? this.currency,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
     );
@@ -103,7 +118,7 @@ class TransactionModel extends TransactionEntity {
 
   @override
   String toString() {
-    return 'TransactionModel(id: $id, name: $name, description: $description, amount: $amount, type: $type, date: $date, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'TransactionModel(id: $id, name: $name, description: $description, amount: $amount, type: $type, date: $date, currency: $currency, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -117,6 +132,7 @@ class TransactionModel extends TransactionEntity {
         other.amount == amount &&
         other.type == type &&
         other.date == date &&
+        other.currency == currency &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
@@ -129,6 +145,7 @@ class TransactionModel extends TransactionEntity {
         amount.hashCode ^
         type.hashCode ^
         date.hashCode ^
+        currency.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;
   }

@@ -13,6 +13,21 @@ class Currency {
 
   @override
   String toString() => '$symbol $code';
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Currency &&
+        other.code == code &&
+        other.symbol == symbol &&
+        other.name == name &&
+        other.flag == flag;
+  }
+
+  @override
+  int get hashCode {
+    return code.hashCode ^ symbol.hashCode ^ name.hashCode ^ flag.hashCode;
+  }
 }
 
 class CurrencyConstants {

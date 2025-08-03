@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 
 import '../../core/services/currency_service.dart';
+import '../../core/constants/currencies.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../bloc/transacton_bloc/transaction_bloc.dart';
 import '../bloc/transacton_bloc/transaction_event.dart';
@@ -34,6 +35,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   TransactionType _selectedType = TransactionType.iOwe;
   DateTime? _selectedDate;
+  Currency? _selectedCurrency;
   final _uuid = Uuid();
 
   bool get _isEditing => widget.transactionToEdit != null;
@@ -43,6 +45,13 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     super.initState();
     _selectedDate = DateTime.now();
 
+    // Ensure we use a currency from the supported list
+    final currentCurrency = CurrencyService.instance.currentCurrency;
+    _selectedCurrency = CurrencyConstants.supportedCurrencies.firstWhere(
+      (c) => c.code == currentCurrency.code,
+      orElse: () => CurrencyConstants.defaultCurrency,
+    );
+
     if (_isEditing) {
       // Populate fields for editing
       final transaction = widget.transactionToEdit!;
@@ -51,6 +60,15 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       _amountController.text = transaction.amount.toString();
       _selectedType = transaction.type;
       _selectedDate = transaction.date;
+
+      // Ensure we use a currency from the supported list
+      final transactionCurrency = CurrencyService.transactionCurrencyToCurrency(
+        transaction.currency,
+      );
+      _selectedCurrency = CurrencyConstants.supportedCurrencies.firstWhere(
+        (c) => c.code == transactionCurrency.code,
+        orElse: () => CurrencyConstants.defaultCurrency,
+      );
     } else if (widget.prefilledName != null) {
       // Prefill name for new transaction with same person
       _nameController.text = widget.prefilledName!;
@@ -228,25 +246,73 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   },
                 ),
                 SizedBox(height: 20.h),
-                TextFormField(
-                  controller: _amountController,
-                  decoration: InputDecoration(
-                    labelText: CurrencyService.instance.getAmountPlaceholder(),
-                    prefixIcon: Icon(Icons.attach_money),
-                  ),
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter an amount.';
-                    }
-                    if (double.tryParse(value) == null) {
-                      return 'Please enter a valid number.';
-                    }
-                    if (double.parse(value) <= 0) {
-                      return 'Please enter an amount greater than zero.';
-                    }
-                    return null;
-                  },
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _amountController,
+                        decoration: InputDecoration(
+                          labelText: 'Amount',
+                          prefixIcon: Icon(Icons.attach_money),
+                        ),
+                        keyboardType: TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter an amount.';
+                          }
+                          if (double.tryParse(value) == null) {
+                            return 'Please enter a valid number.';
+                          }
+                          if (double.parse(value) <= 0) {
+                            return 'Please enter an amount greater than zero.';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    InkWell(
+                      onTap: _showCurrencySelector,
+                      borderRadius: BorderRadius.circular(8.r),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 14.h,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey[400]!),
+                          borderRadius: BorderRadius.circular(8.r),
+                          color: Colors.grey[50],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _selectedCurrency?.flag ?? '🇺🇸',
+                              style: TextStyle(fontSize: 20.sp),
+                            ),
+                            SizedBox(width: 6.w),
+                            Text(
+                              _selectedCurrency?.code ?? 'USD',
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            SizedBox(width: 4.w),
+                            Icon(
+                              Icons.arrow_drop_down,
+                              color: Colors.grey[600],
+                              size: 20.sp,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 SizedBox(height: 20.h),
                 DropdownButtonFormField<TransactionType>(
@@ -405,6 +471,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       amount: enteredAmount,
       type: _selectedType,
       date: _selectedDate!,
+      currency: CurrencyService.currencyToTransactionCurrency(
+        _selectedCurrency!,
+      ),
     );
 
     if (_isEditing) {
@@ -429,6 +498,95 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           return word[0].toUpperCase() + word.substring(1).toLowerCase();
         })
         .join(' ');
+  }
+
+  void _showCurrencySelector() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            child: Container(
+              width: double.maxFinite,
+              height: MediaQuery.of(context).size.height * 0.7,
+              child: Column(
+                children: [
+                  // Header
+                  Container(
+                    padding: EdgeInsets.all(16.w),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(8.r),
+                        topRight: Radius.circular(8.r),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.monetization_on, color: Colors.white),
+                        SizedBox(width: 8.w),
+                        Text(
+                          'Select Currency',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Spacer(),
+                        IconButton(
+                          icon: Icon(Icons.close, color: Colors.white),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Currency list
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: CurrencyConstants.supportedCurrencies.length,
+                      itemBuilder: (context, index) {
+                        final currency =
+                            CurrencyConstants.supportedCurrencies[index];
+                        final isSelected =
+                            _selectedCurrency?.code == currency.code;
+
+                        return ListTile(
+                          leading: Text(
+                            currency.flag,
+                            style: TextStyle(fontSize: 24.sp),
+                          ),
+                          title: Text(
+                            '${currency.symbol} ${currency.code}',
+                            style: TextStyle(
+                              fontWeight:
+                                  isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                            ),
+                          ),
+                          subtitle: Text(currency.name),
+                          trailing:
+                              isSelected
+                                  ? Icon(
+                                    Icons.check,
+                                    color: Theme.of(context).primaryColor,
+                                  )
+                                  : null,
+                          onTap: () {
+                            setState(() {
+                              _selectedCurrency = currency;
+                            });
+                            Navigator.of(context).pop();
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
   }
 
   void _showDeleteConfirmation() {

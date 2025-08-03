@@ -21,7 +21,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createDatabase,
       onUpgrade: _upgradeDatabase,
     );
@@ -37,7 +37,11 @@ class DatabaseHelper {
         type TEXT NOT NULL,
         date TEXT NOT NULL,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        currency_code TEXT NOT NULL DEFAULT 'USD',
+        currency_symbol TEXT NOT NULL DEFAULT '\$',
+        currency_name TEXT NOT NULL DEFAULT 'US Dollar',
+        currency_flag TEXT NOT NULL DEFAULT '🇺🇸'
       )
     ''');
 
@@ -52,7 +56,11 @@ class DatabaseHelper {
         date TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
-        deleted_at TEXT NOT NULL
+        deleted_at TEXT NOT NULL,
+        currency_code TEXT NOT NULL DEFAULT 'USD',
+        currency_symbol TEXT NOT NULL DEFAULT '\$',
+        currency_name TEXT NOT NULL DEFAULT 'US Dollar',
+        currency_flag TEXT NOT NULL DEFAULT '🇺🇸'
       )
     ''');
 
@@ -98,6 +106,35 @@ class DatabaseHelper {
 
       await db.execute('''
         CREATE INDEX idx_trash_deleted_at ON trash(deleted_at)
+      ''');
+    }
+
+    if (oldVersion < 3) {
+      // Add currency fields to existing tables
+      await db.execute('''
+        ALTER TABLE transactions ADD COLUMN currency_code TEXT NOT NULL DEFAULT 'USD'
+      ''');
+      await db.execute('''
+        ALTER TABLE transactions ADD COLUMN currency_symbol TEXT NOT NULL DEFAULT '\$'
+      ''');
+      await db.execute('''
+        ALTER TABLE transactions ADD COLUMN currency_name TEXT NOT NULL DEFAULT 'US Dollar'
+      ''');
+      await db.execute('''
+        ALTER TABLE transactions ADD COLUMN currency_flag TEXT NOT NULL DEFAULT '🇺🇸'
+      ''');
+
+      await db.execute('''
+        ALTER TABLE trash ADD COLUMN currency_code TEXT NOT NULL DEFAULT 'USD'
+      ''');
+      await db.execute('''
+        ALTER TABLE trash ADD COLUMN currency_symbol TEXT NOT NULL DEFAULT '\$'
+      ''');
+      await db.execute('''
+        ALTER TABLE trash ADD COLUMN currency_name TEXT NOT NULL DEFAULT 'US Dollar'
+      ''');
+      await db.execute('''
+        ALTER TABLE trash ADD COLUMN currency_flag TEXT NOT NULL DEFAULT '🇺🇸'
       ''');
     }
   }

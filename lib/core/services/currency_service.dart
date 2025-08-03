@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/currencies.dart';
+import '../../domain/entities/transaction_entity.dart';
 
 class CurrencyService {
   static const String _currencyCodeKey = 'selected_currency_code';
@@ -55,7 +56,10 @@ class CurrencyService {
 
   String formatAmount(double amount) {
     final currency = currentCurrency;
+    return formatAmountWithCurrency(amount, currency);
+  }
 
+  String formatAmountWithCurrency(double amount, Currency currency) {
     // Format based on currency type
     if (currency.code == 'JPY' ||
         currency.code == 'KRW' ||
@@ -102,12 +106,32 @@ class CurrencyService {
 
   String getAmountPlaceholder() {
     final currency = currentCurrency;
-    if (currency.code == 'JPY' ||
-        currency.code == 'KRW' ||
-        currency.code == 'VND') {
-      return 'Amount (${currency.symbol})';
-    } else {
-      return 'Amount (${currency.symbol})';
-    }
+    return getAmountPlaceholderForCurrency(currency);
+  }
+
+  String getAmountPlaceholderForCurrency(Currency currency) {
+    return 'Amount (${currency.symbol})';
+  }
+
+  // Convert Currency to TransactionCurrency
+  static TransactionCurrency currencyToTransactionCurrency(Currency currency) {
+    return TransactionCurrency(
+      code: currency.code,
+      symbol: currency.symbol,
+      name: currency.name,
+      flag: currency.flag,
+    );
+  }
+
+  // Convert TransactionCurrency to Currency
+  static Currency transactionCurrencyToCurrency(
+    TransactionCurrency transactionCurrency,
+  ) {
+    return Currency(
+      code: transactionCurrency.code,
+      symbol: transactionCurrency.symbol,
+      name: transactionCurrency.name,
+      flag: transactionCurrency.flag,
+    );
   }
 }

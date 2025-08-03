@@ -39,6 +39,8 @@ class GroupedTransactionEntity {
     double totalOwesMe = 0;
     DateTime latestDate = userTransactions.first.date;
 
+    // For now, we'll calculate totals including all currencies
+    // In a real app, you might want to convert to default currency using exchange rates
     for (final transaction in userTransactions) {
       if (transaction.type == TransactionType.iOwe) {
         totalIOwe += transaction.amount;
