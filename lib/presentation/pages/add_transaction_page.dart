@@ -1,6 +1,8 @@
+import 'package:debt_tracker/presentation/widgets/native_ad_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
@@ -436,19 +438,25 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 ],
 
                 // Additional ad space at bottom
-                SizedBox(height:10.h),
+                SizedBox(height:50.h),
          const       AdBannerWidget(
               //    margin: EdgeInsets.only(bottom: 2.h),
                 ), // Ad Banner in unused space
+        
+       const    NativeAdWidget(
+              key: const ValueKey(
+                'settings_native_ad',
+              ), // Unique key for settings page
+              template: TemplateType.medium,
+              margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+              backgroundColor: Colors.white,
+              height: 100,
+            ),
+        
           const      AdBannerWidget(
                 //  margin: EdgeInsets.symmetric(vertical: 2.h),
                 ), // Ad Banner in unused space
-          const      AdBannerWidget(
-              //    margin: EdgeInsets.symmetric(),
-                ), // Ad Banner in unused space
-                const AdBannerWidget(
-                //  margin: EdgeInsets.symmetric(vertical: 2.h)
-                  ),
+        
               ],
             ),
           ),

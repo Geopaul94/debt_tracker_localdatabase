@@ -68,6 +68,8 @@ class ConnectivityService {
     }
   }
 
+
+
   /// Dispose of the service
   void dispose() {
     _connectivitySubscription?.cancel();

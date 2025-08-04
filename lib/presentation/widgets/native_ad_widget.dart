@@ -28,7 +28,9 @@ class NativeAdWidget extends StatefulWidget {
 class _NativeAdWidgetState extends State<NativeAdWidget> {
   NativeAd? _nativeAd;
   bool _isLoaded = false;
+  bool _isLoading = false;
   bool _disposed = false;
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -37,26 +39,61 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
   }
 
   Future<void> _loadNativeAd() async {
-    if (_disposed) return;
+    if (_disposed || _isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
 
     try {
-      final ad = await AdService.instance.createNativeAd(
-        factoryId: widget.factoryId ?? 'listTile',
-        template: widget.template,
-      );
+      // Add small delay to prevent rapid concurrent requests
+      await Future.delayed(const Duration(milliseconds: 100));
 
-      if (!_disposed && ad != null) {
-        _nativeAd = ad;
-        setState(() => _isLoaded = true);
+      if (_disposed) return;
+
+      // Add timeout for ad loading (10 seconds max)
+      final ad = await Future.any([
+        AdService.instance.createNativeAd(
+          factoryId: widget.factoryId ?? 'listTile',
+          template: widget.template,
+        ),
+        Future.delayed(const Duration(seconds: 10), () => null),
+      ]);
+
+      if (!_disposed && mounted) {
+        if (ad != null) {
+          _nativeAd = ad;
+          setState(() {
+            _isLoaded = true;
+            _isLoading = false;
+          });
+          print('✅ Native ad loaded and ready to display');
+        } else {
+          setState(() {
+            _hasError = true;
+            _isLoading = false;
+          });
+          print('❌ Native ad failed to load or timed out');
+        }
+      } else {
+        // Widget was disposed while loading, dispose the ad
+        ad?.dispose();
       }
     } catch (e) {
       print('Error loading native ad: $e');
+      if (!_disposed && mounted) {
+        setState(() {
+          _hasError = true;
+          _isLoading = false;
+        });
+      }
     }
   }
 
   double _getAdHeight() {
     if (widget.height != null) return widget.height!;
-    
+
     switch (widget.template) {
       case TemplateType.small:
         return 90.h;
@@ -67,12 +104,20 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isLoaded || _nativeAd == null) {
+    // Don't show anything if loading, error, or not loaded
+    if (_isLoading || _hasError || !_isLoaded || _nativeAd == null) {
+      return const SizedBox.shrink();
+    }
+
+    // Double-check the ad is still valid before rendering
+    if (_disposed) {
       return const SizedBox.shrink();
     }
 
     return Container(
-      margin: widget.margin ?? EdgeInsets.symmetric(vertical: 8.h, horizontal: 16.w),
+      margin:
+          widget.margin ??
+          EdgeInsets.symmetric(vertical: 8.h, horizontal: 16.w),
       decoration: BoxDecoration(
         color: widget.backgroundColor ?? Colors.grey[50],
         borderRadius: BorderRadius.circular(8.r),
@@ -102,14 +147,14 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
                 ),
               ),
             ),
-          
-          // Native ad content
+
+          // Native ad content with error handling
           Container(
             height: _getAdHeight(),
             width: double.infinity,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8.r),
-              child: AdWidget(ad: _nativeAd!),
+              child: _buildAdContent(),
             ),
           ),
         ],
@@ -117,10 +162,34 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
     );
   }
 
+  Widget _buildAdContent() {
+    try {
+      if (_nativeAd != null && !_disposed) {
+        return AdWidget(ad: _nativeAd!);
+      }
+    } catch (e) {
+      print('Error rendering native ad widget: $e');
+      // Set error state when rendering fails and trigger rebuild
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_disposed) {
+          setState(() {
+            _hasError = true;
+          });
+        }
+      });
+    }
+    // This should never be reached now since we handle errors above
+    return const SizedBox.shrink();
+  }
+
   @override
   void dispose() {
     _disposed = true;
-    _nativeAd?.dispose();
+    if (_nativeAd != null) {
+      _nativeAd!.dispose();
+      // Notify AdService that this native ad is disposed
+      AdService.instance.onNativeAdDisposed();
+    }
     super.dispose();
   }
 }

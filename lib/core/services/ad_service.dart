@@ -21,6 +21,10 @@ class AdService {
   Timer? _backgroundLoadTimer;
   bool _isLoadingInBackground = false;
 
+  // Native ad management
+  int _activeNativeAds = 0;
+  static const int _maxConcurrentNativeAds = 3; // Limit concurrent native ads
+
   // Ad Unit IDs - Use test ads for development, production ads for release
   static final String _bannerAdUnitId =
       Platform.isAndroid
@@ -433,26 +437,84 @@ class AdService {
     String factoryId = 'listTile',
     TemplateType template = TemplateType.medium,
   }) async {
-    if (!_isInitialized) await initialize();
-
-    // Check if ads should be shown
-    if (!await _shouldShowAdType('native')) {
-      print('Native ads not allowed');
-      return null;
-    }
-
     try {
+      if (!_isInitialized) await initialize();
+
+      // Limit concurrent native ads to prevent memory issues
+      if (_activeNativeAds >= _maxConcurrentNativeAds) {
+        print(
+          '⚠️ Max concurrent native ads reached ($_activeNativeAds/$_maxConcurrentNativeAds)',
+        );
+        return null;
+      }
+
+      // Check if ads should be shown
+      if (!await _shouldShowAdType('native')) {
+        print('Native ads not allowed');
+        return null;
+      }
+
+      // Add delay to prevent rapid requests and reduce load
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      // Double-check internet connection
+      if (!await _hasInternetConnection()) {
+        print('No internet connection for native ad');
+        return null;
+      }
+
+      // Increment active counter
+      _activeNativeAds++;
+      print(
+        '📈 Creating native ad (Active: $_activeNativeAds/$_maxConcurrentNativeAds)',
+      );
       final nativeAd = NativeAd(
         adUnitId: _nativeAdUnitId,
         factoryId: factoryId,
         request: const AdRequest(),
         listener: NativeAdListener(
-          onAdLoaded: (ad) => print('✅ Native ad loaded'),
+          onAdLoaded: (ad) {
+            print(
+              '✅ Native ad loaded successfully (Active: $_activeNativeAds)',
+            );
+          },
           onAdFailedToLoad: (ad, error) {
             print('❌ Native ad failed to load: $error');
-            ad.dispose();
+
+            // Decrement counter for failed ad
+            if (_activeNativeAds > 0) {
+              _activeNativeAds--;
+              print(
+                '📉 Native ad failed, decremented counter (Active: $_activeNativeAds)',
+              );
+            }
+
+            if (error.message.contains('JavascriptEngine')) {
+              print(
+                '⚠️ WebView JavascriptEngine issue - device compatibility problem',
+              );
+            } else if (error.message.contains('disposed')) {
+              print('⚠️ Ad was disposed before loading completed');
+            } else if (error.code == 0) {
+              print('⚠️ Internal error - AdMob issue');
+            } else if (error.code == 1) {
+              print('⚠️ Invalid request - check ad unit ID');
+            } else if (error.code == 2) {
+              print('⚠️ Network error - check internet connection');
+            } else if (error.code == 3) {
+              print('⚠️ No fill - no ads available for this request');
+            } else {
+              print('⚠️ Unknown error code: ${error.code}');
+            }
+            // Always dispose failed ads to prevent memory leaks
+            try {
+              ad.dispose();
+            } catch (e) {
+              print('Error disposing failed native ad: $e');
+            }
           },
           onAdClicked: (ad) => print('👆 Native ad clicked'),
+          onAdImpression: (ad) => print('👁️ Native ad impression'),
         ),
         nativeTemplateStyle: NativeTemplateStyle(
           templateType: template,
@@ -477,11 +539,36 @@ class AdService {
         ),
       );
 
+      // Load the ad with timeout
       await nativeAd.load();
+      print('🎯 Native ad load initiated successfully');
       return nativeAd;
     } catch (e) {
+      // Decrement counter if we incremented it earlier
+      if (_activeNativeAds > 0) {
+        _activeNativeAds--;
+        print(
+          '📉 Native ad creation failed, decremented counter (Active: $_activeNativeAds)',
+        );
+      }
+
       print('❌ Error creating native ad: $e');
+      if (e.toString().contains('JavascriptEngine')) {
+        print('💡 Tip: Update Android System WebView in Play Store');
+      } else if (e.toString().contains('INTERNAL_ERROR')) {
+        print('💡 AdMob internal error - try again later');
+      } else if (e.toString().contains('NETWORK_ERROR')) {
+        print('💡 Network error - check internet connection');
+      }
       return null;
+    }
+  }
+
+  // Method to call when native ad is disposed
+  void onNativeAdDisposed() {
+    if (_activeNativeAds > 0) {
+      _activeNativeAds--;
+      print('📉 Native ad disposed (Active: $_activeNativeAds)');
     }
   }
 

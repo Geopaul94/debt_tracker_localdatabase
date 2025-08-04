@@ -325,9 +325,10 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
             itemBuilder: (context, index) {
               // Insert native ad after every 4 people (better integration)
               if (index > 0 && index % 5 == 4 && _personTotals.length > 3) {
-                return const NativeAdWidget(
+                return NativeAdWidget(
+                  key: ValueKey('debt_detail_ad_$index'), // Unique key for each ad position
                   template: TemplateType.medium,
-                  margin: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                  margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                   backgroundColor: Colors.white,
                   height: 110,
                 );

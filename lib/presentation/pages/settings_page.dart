@@ -8,6 +8,7 @@ import '../../core/services/currency_service.dart';
 import '../../core/services/trash_service.dart';
 import '../../core/services/premium_service.dart';
 import '../../core/services/pricing_service.dart';
+
 import '../../injection/injection_container.dart';
 import '../bloc/transacton_bloc/transaction_bloc.dart';
 import '../bloc/transacton_bloc/transaction_event.dart';
@@ -63,6 +64,8 @@ class SettingsPage extends StatelessWidget {
             //    _buildPremiumTile(context),
             SizedBox(height: 15.h),
 
+            SizedBox(height: 15.h),
+
             _buildSectionHeader('Data Management'),
 
             //  _buildCloudBackupTile(context),
@@ -72,11 +75,14 @@ class SettingsPage extends StatelessWidget {
 
             SizedBox(height: 15.h),
 
-            const NativeAdWidget(
+            NativeAdWidget(
+              key: const ValueKey(
+                'settings_native_ad',
+              ), // Unique key for settings page
               template: TemplateType.medium,
-              margin: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
               backgroundColor: Colors.white,
-              height: 120,
+              height: 100,
             ),
 
             _buildSectionHeader('Biometric Authentication'),

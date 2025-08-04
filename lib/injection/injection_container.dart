@@ -1,4 +1,3 @@
-
 import 'package:get_it/get_it.dart';
 
 // Core
@@ -9,11 +8,13 @@ import '../core/services/auto_backup_service.dart';
 import '../core/services/backup_permission_service.dart';
 import '../core/services/connectivity_service.dart';
 import '../core/services/currency_service.dart';
+import '../core/services/dummy_data_service.dart';
 
 import '../core/services/iap_service.dart';
 import '../core/services/local_backup_service.dart';
 import '../core/services/premium_service.dart';
 import '../core/services/trash_service.dart';
+
 import '../core/utils/logger.dart';
 
 // Data
@@ -42,6 +43,7 @@ Future<void> initializeDependencies() async {
     serviceLocator.registerLazySingleton(() => AdService.instance);
     serviceLocator.registerLazySingleton(() => CurrencyService.instance);
     serviceLocator.registerLazySingleton(() => ConnectivityService.instance);
+    serviceLocator.registerLazySingleton(() => DummyDataService.instance);
     serviceLocator.registerLazySingleton(
       () => BackupPermissionService.instance,
     );

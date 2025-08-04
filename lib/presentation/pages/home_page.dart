@@ -25,6 +25,7 @@ import '../widgets/transaction_list_item.dart';
 import '../widgets/ad_banner_widget.dart';
 import '../widgets/native_ad_widget.dart';
 import '../widgets/exit_confirmation_dialog.dart';
+
 import 'add_transaction_page.dart';
 import 'settings_page.dart';
 import 'grouped_debt_detail_page.dart';
@@ -344,6 +345,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return SingleChildScrollView(
       child: Column(
         children: [
+          // Dummy data banner
+          if (state.isDummyData) _buildDummyDataBanner(),
+
           SummaryCard(
             totalIOwe: state.totalIOwe,
             totalOwesMe: state.totalOwesMe,
@@ -387,6 +391,34 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   );
                 },
               ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDummyDataBanner() {
+    return Container(
+      margin: EdgeInsets.all(16.w),
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        border: Border.all(color: Colors.blue[200]!),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, color: Colors.blue[600], size: 20.sp),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Text(
+              '📝 This is sample data to show you how the app works. It will automatically disappear when you add your first transaction.',
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: Colors.blue[800],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -592,23 +624,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final nativeAdPositions = <int>[];
     final bannerAdPositions = <int>[];
 
-    // Native ads every 4 transactions (positions: 4, 8, 12, 16...)
+    // Native ads every 8 transactions (positions: 8, 16, 24...) - reduced frequency to prevent overload
     for (
-      int i = 4;
-      i <= totalTransactions + (totalTransactions / 4).floor();
-      i += 4
+      int i = 8;
+      i <= totalTransactions + (totalTransactions / 8).floor();
+      i += 8
     ) {
       nativeAdPositions.add(i);
     }
 
-    // Banner ads every 8 transactions, offset by 4 (positions: 8, 16, 24...)
+    // Banner ads every 12 transactions, offset to avoid native ads (positions: 12, 24, 36...)
     for (
-      int i = 8;
-      i <= totalTransactions + (totalTransactions / 4).floor();
-      i += 8
+      int i = 12;
+      i <= totalTransactions + (totalTransactions / 12).floor();
+      i += 12
     ) {
       if (!nativeAdPositions.contains(i)) {
-        bannerAdPositions.add(i + 1); // Offset to avoid collision
+        bannerAdPositions.add(i);
       }
     }
 
@@ -619,9 +651,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         builder: (context, snapshot) {
           final shouldShowAd = snapshot.data ?? false;
           return shouldShowAd
-              ? const NativeAdWidget(
+              ? NativeAdWidget(
+                key: ValueKey('native_ad_$index'), // Unique key for each ad
                 template: TemplateType.medium,
-                margin: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                 backgroundColor: Colors.white,
                 height: 120,
               )

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/error/failures.dart';
 import '../../../core/usecases/usecase.dart';
+import '../../../core/services/dummy_data_service.dart';
+import '../../../core/services/preference_service.dart';
 import '../../../domain/entities/transaction_entity.dart';
 import '../../../domain/entities/grouped_transaction_entity.dart';
 import '../../../domain/usecases/add_transaction.dart';
@@ -41,30 +43,64 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   ) async {
     emit(const TransactionLoading());
 
-    final result = await getAllTransactions(const NoParams());
+    try {
+      final result = await getAllTransactions(const NoParams());
 
-    result.fold(
-      (failure) =>
-          emit(TransactionError(message: _mapFailureToMessage(failure))),
-      (transactions) {
-        // Sort transactions by date (newest first)
-        final sortedTransactions = [...transactions];
-        sortedTransactions.sort((a, b) => b.date.compareTo(a.date));
+      // Handle failure case
+      if (result.isLeft()) {
+        final failure = result.fold(
+          (failure) => failure,
+          (transactions) => null,
+        );
+        emit(TransactionError(message: _mapFailureToMessage(failure)));
+        return;
+      }
 
-        final groupedTransactions = _groupTransactionsByUser(
-          sortedTransactions,
-        );
-        final totals = _calculateTotals(sortedTransactions);
-        emit(
-          TransactionLoaded(
-            transactions: sortedTransactions,
-            groupedTransactions: groupedTransactions,
-            totalIOwe: totals['iOwe']!,
-            totalOwesMe: totals['owesMe']!,
-          ),
-        );
-      },
-    );
+      // Extract transactions from result
+      final transactions = result.fold<List<TransactionEntity>>(
+        (failure) => [],
+        (transactions) => transactions,
+      );
+
+      List<TransactionEntity> finalTransactions = [...transactions];
+
+      // Check if we should show dummy data for first-time users
+      try {
+        final shouldShowDummy =
+            await PreferenceService.instance.shouldShowDummyData();
+        if (shouldShowDummy && transactions.isEmpty) {
+          // Add dummy data for first-time users when no real transactions exist
+          final dummyTransactions =
+              DummyDataService.instance.createDummyTransactions();
+          finalTransactions = [...dummyTransactions];
+          print('📝 Showing dummy data for first-time user');
+        }
+      } catch (e) {
+        print('Error checking dummy data preferences: $e');
+        // Continue with normal flow if preference check fails
+      }
+
+      // Sort transactions by date (newest first)
+      finalTransactions.sort((a, b) => b.date.compareTo(a.date));
+
+      final groupedTransactions = _groupTransactionsByUser(finalTransactions);
+      final totals = _calculateTotals(finalTransactions);
+
+      emit(
+        TransactionLoaded(
+          transactions: finalTransactions,
+          groupedTransactions: groupedTransactions,
+          totalIOwe: totals['iOwe']!,
+          totalOwesMe: totals['owesMe']!,
+          isDummyData:
+              finalTransactions.isNotEmpty &&
+              finalTransactions.every((t) => t.id.startsWith('dummy_')),
+        ),
+      );
+    } catch (e) {
+      print('Error in _onLoadTransactions: $e');
+      emit(const TransactionError(message: 'Failed to load transactions'));
+    }
   }
 
   Future<void> _onWatchTransactions(
@@ -90,6 +126,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
                   groupedTransactions: groupedTransactions,
                   totalIOwe: totals['iOwe']!,
                   totalOwesMe: totals['owesMe']!,
+                  isDummyData: false, // Real-time data is never dummy
                 ),
               );
             },
@@ -110,19 +147,36 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     AddTransactionEvent event,
     Emitter<TransactionState> emit,
   ) async {
-    final result = await addTransaction(
-      AddTransactionParams(transaction: event.transaction),
-    );
+    try {
+      final result = await addTransaction(
+        AddTransactionParams(transaction: event.transaction),
+      );
 
-    result.fold(
-      (failure) =>
-          emit(TransactionError(message: _mapFailureToMessage(failure))),
-      (_) => emit(
+      // Handle failure case
+      if (result.isLeft()) {
+        final failure = result.fold((failure) => failure, (_) => null);
+        emit(TransactionError(message: _mapFailureToMessage(failure)));
+        return;
+      }
+
+      // Mark dummy data as viewed when user adds their first real transaction
+      try {
+        await PreferenceService.instance.markDummyDataViewed();
+        print('✅ Dummy data cleared after first real transaction');
+      } catch (e) {
+        print('Error clearing dummy data: $e');
+        // Continue even if clearing dummy data fails
+      }
+
+      emit(
         const TransactionOperationSuccess(
           message: 'Transaction added successfully',
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      print('Error in _onAddTransaction: $e');
+      emit(const TransactionError(message: 'Failed to add transaction'));
+    }
   }
 
   Future<void> _onUpdateTransaction(

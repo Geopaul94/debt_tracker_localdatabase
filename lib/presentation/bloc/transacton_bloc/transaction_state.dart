@@ -18,12 +18,14 @@ class TransactionLoaded extends TransactionState {
   final List<GroupedTransactionEntity> groupedTransactions;
   final double totalIOwe;
   final double totalOwesMe;
+  final bool isDummyData;
 
   const TransactionLoaded({
     required this.transactions,
     required this.groupedTransactions,
     required this.totalIOwe,
     required this.totalOwesMe,
+    this.isDummyData = false,
   });
 
   double get netAmount => totalOwesMe - totalIOwe;
