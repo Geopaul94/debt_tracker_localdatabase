@@ -58,7 +58,7 @@ class AdService {
       Platform.isAndroid
           ? (kDebugMode
               ? 'ca-app-pub-3940256099942544/2247696110' // Android test native
-              : 'ca-app-pub-5835078496383561/3804321478') // Production native ad
+              : 'ca-app-pub-5835078496383561/2074524567') // NEW native ad unit
           : 'ca-app-pub-3940256099942544/3986624511'; // iOS test ad
 
   // Initialize ads asynchronously
@@ -432,10 +432,11 @@ class AdService {
     };
   }
 
-  // Create native ad
+  // Create native ad with retry logic
   Future<NativeAd?> createNativeAd({
-    String factoryId = 'listTile',
+    String? factoryId, // Make nullable to use built-in templates
     TemplateType template = TemplateType.medium,
+    int maxRetries = 2,
   }) async {
     try {
       if (!_isInitialized) await initialize();
@@ -468,81 +469,12 @@ class AdService {
       print(
         '📈 Creating native ad (Active: $_activeNativeAds/$_maxConcurrentNativeAds)',
       );
-      final nativeAd = NativeAd(
-        adUnitId: _nativeAdUnitId,
+      return await _createNativeAdWithRetry(
         factoryId: factoryId,
-        request: const AdRequest(),
-        listener: NativeAdListener(
-          onAdLoaded: (ad) {
-            print(
-              '✅ Native ad loaded successfully (Active: $_activeNativeAds)',
-            );
-          },
-          onAdFailedToLoad: (ad, error) {
-            print('❌ Native ad failed to load: $error');
-
-            // Decrement counter for failed ad
-            if (_activeNativeAds > 0) {
-              _activeNativeAds--;
-              print(
-                '📉 Native ad failed, decremented counter (Active: $_activeNativeAds)',
-              );
-            }
-
-            if (error.message.contains('JavascriptEngine')) {
-              print(
-                '⚠️ WebView JavascriptEngine issue - device compatibility problem',
-              );
-            } else if (error.message.contains('disposed')) {
-              print('⚠️ Ad was disposed before loading completed');
-            } else if (error.code == 0) {
-              print('⚠️ Internal error - AdMob issue');
-            } else if (error.code == 1) {
-              print('⚠️ Invalid request - check ad unit ID');
-            } else if (error.code == 2) {
-              print('⚠️ Network error - check internet connection');
-            } else if (error.code == 3) {
-              print('⚠️ No fill - no ads available for this request');
-            } else {
-              print('⚠️ Unknown error code: ${error.code}');
-            }
-            // Always dispose failed ads to prevent memory leaks
-            try {
-              ad.dispose();
-            } catch (e) {
-              print('Error disposing failed native ad: $e');
-            }
-          },
-          onAdClicked: (ad) => print('👆 Native ad clicked'),
-          onAdImpression: (ad) => print('👁️ Native ad impression'),
-        ),
-        nativeTemplateStyle: NativeTemplateStyle(
-          templateType: template,
-          mainBackgroundColor: Colors.white,
-          cornerRadius: 8.0,
-          callToActionTextStyle: NativeTemplateTextStyle(
-            textColor: Colors.white,
-            backgroundColor: Colors.blue,
-            style: NativeTemplateFontStyle.bold,
-            size: 14.0,
-          ),
-          primaryTextStyle: NativeTemplateTextStyle(
-            textColor: Colors.black87,
-            style: NativeTemplateFontStyle.normal,
-            size: 16.0,
-          ),
-          secondaryTextStyle: NativeTemplateTextStyle(
-            textColor: Colors.black54,
-            style: NativeTemplateFontStyle.normal,
-            size: 14.0,
-          ),
-        ),
+        template: template,
+        maxRetries: maxRetries,
+        currentAttempt: 0,
       );
-
-      // Load the ad with timeout
-      await nativeAd.load();
-      print('🎯 Native ad load initiated successfully');
-      return nativeAd;
     } catch (e) {
       // Decrement counter if we incremented it earlier
       if (_activeNativeAds > 0) {
@@ -559,6 +491,165 @@ class AdService {
         print('💡 AdMob internal error - try again later');
       } else if (e.toString().contains('NETWORK_ERROR')) {
         print('💡 Network error - check internet connection');
+      }
+      return null;
+    }
+  }
+
+  // Helper method for native ad creation with retry logic
+  Future<NativeAd?> _createNativeAdWithRetry({
+    String? factoryId,
+    TemplateType template = TemplateType.medium,
+    required int maxRetries,
+    required int currentAttempt,
+  }) async {
+    final completer = Completer<NativeAd?>();
+
+    final nativeAd = NativeAd(
+      adUnitId: _nativeAdUnitId,
+      factoryId: factoryId, // Will be null for built-in templates
+      request: const AdRequest(),
+      listener: NativeAdListener(
+        onAdLoaded: (ad) {
+          print('✅ Native ad loaded successfully (Active: $_activeNativeAds)');
+          if (!completer.isCompleted) {
+            completer.complete(ad as NativeAd);
+          }
+        },
+        onAdFailedToLoad: (ad, error) {
+          print('❌ Native ad failed to load: $error');
+
+          // Decrement counter for failed ad
+          if (_activeNativeAds > 0) {
+            _activeNativeAds--;
+            print(
+              '📉 Native ad failed, decremented counter (Active: $_activeNativeAds)',
+            );
+          }
+
+          // Always dispose failed ads to prevent memory leaks
+          try {
+            ad.dispose();
+          } catch (e) {
+            print('Error disposing failed native ad: $e');
+          }
+
+          // Handle specific error types and retry logic
+          bool shouldRetry = false;
+
+          if (error.message.contains('JavascriptEngine')) {
+            print(
+              '⚠️ WebView JavascriptEngine issue - device compatibility problem',
+            );
+          } else if (error.message.contains('disposed')) {
+            print('⚠️ Ad was disposed before loading completed');
+          } else if (error.code == 0) {
+            print('⚠️ Internal error - AdMob issue');
+            shouldRetry = true; // Retry internal errors
+          } else if (error.code == 1) {
+            print('⚠️ Invalid request - check ad unit ID');
+          } else if (error.code == 2) {
+            print('⚠️ Network error - check internet connection');
+            shouldRetry = true; // Retry network errors
+          } else if (error.code == 3) {
+            print('⚠️ No fill - no native ads available for this request');
+            print('💡 This usually means:');
+            print('   - New ad unit needs up to 1 hour to activate');
+            print('   - Ad unit needs approval in AdMob console');
+            print('   - No advertisers targeting your region yet');
+            print('   - Ad unit ID: $_nativeAdUnitId');
+          } else {
+            print('⚠️ Unknown error code: ${error.code}');
+          }
+
+          // Retry logic for retryable errors
+          if (shouldRetry && currentAttempt < maxRetries) {
+            print(
+              '🔄 Retrying native ad creation (attempt ${currentAttempt + 1}/$maxRetries)',
+            );
+
+            // Increment counter again for retry
+            _activeNativeAds++;
+
+            // Wait before retry with exponential backoff
+            final delayMs = 1000 * (currentAttempt + 1);
+            Future.delayed(Duration(milliseconds: delayMs), () async {
+              try {
+                final retryAd = await _createNativeAdWithRetry(
+                  factoryId: factoryId,
+                  template: template,
+                  maxRetries: maxRetries,
+                  currentAttempt: currentAttempt + 1,
+                );
+                if (!completer.isCompleted) {
+                  completer.complete(retryAd);
+                }
+              } catch (e) {
+                if (!completer.isCompleted) {
+                  completer.complete(null);
+                }
+              }
+            });
+          } else {
+            if (!completer.isCompleted) {
+              completer.complete(null);
+            }
+          }
+        },
+        onAdClicked: (ad) => print('👆 Native ad clicked'),
+        onAdImpression: (ad) => print('👁️ Native ad impression'),
+      ),
+      nativeTemplateStyle: NativeTemplateStyle(
+        templateType: template,
+        mainBackgroundColor: Colors.white,
+        cornerRadius: 8.0,
+        callToActionTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.white,
+          backgroundColor: const Color(0xFF2196F3),
+          style: NativeTemplateFontStyle.bold,
+          size: 14.0,
+        ),
+        primaryTextStyle: NativeTemplateTextStyle(
+          textColor: const Color(0xFF212121),
+          style: NativeTemplateFontStyle.bold,
+          size: 16.0,
+        ),
+        secondaryTextStyle: NativeTemplateTextStyle(
+          textColor: const Color(0xFF757575),
+          style: NativeTemplateFontStyle.normal,
+          size: 14.0,
+        ),
+        tertiaryTextStyle: NativeTemplateTextStyle(
+          textColor: const Color(0xFF757575),
+          style: NativeTemplateFontStyle.normal,
+          size: 12.0,
+        ),
+      ),
+    );
+
+    try {
+      // Load the ad with timeout
+      await nativeAd.load();
+      print('🎯 Native ad load initiated successfully');
+
+      // Return the completer future, which will resolve when ad loads or fails
+      return await completer.future;
+    } catch (e) {
+      // Decrement counter for loading error
+      if (_activeNativeAds > 0) {
+        _activeNativeAds--;
+      }
+
+      // Dispose the ad on load error
+      try {
+        nativeAd.dispose();
+      } catch (disposeError) {
+        print('Error disposing native ad after load error: $disposeError');
+      }
+
+      print('❌ Error loading native ad: $e');
+      if (!completer.isCompleted) {
+        completer.complete(null);
       }
       return null;
     }

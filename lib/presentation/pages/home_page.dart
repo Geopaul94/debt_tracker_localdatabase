@@ -42,13 +42,14 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late CurrencyBloc _currencyBloc;
   bool _hasShownAppOpenAd = false;
+  DateTime? _appStartTime;
+  bool _hasUserInteracted = false;
 
   // Time-based interstitial ad system
   Timer? _interstitialAdTimer;
   static const Duration _interstitialAdInterval = Duration(
-    minutes: 1,
-    seconds: 30,
-  ); // 1.5 minutes
+    minutes: 5, // 5 minutes - AdMob policy compliant
+  );
 
   @override
   void initState() {
@@ -79,8 +80,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // Show update notification if needed
     _showUpdateNotificationIfNeeded();
 
-    // Start time-based interstitial ad timer
-    _startInterstitialAdTimer();
+    // Record app start time
+    _appStartTime = DateTime.now();
+
+    // DO NOT start ads immediately - wait for user interaction
   }
 
   // Track app session
@@ -130,11 +133,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
 
     if (state == AppLifecycleState.resumed) {
-      if (!_hasShownAppOpenAd) {
-        _showAppOpenAdIfNeeded();
+      // Only show app open ads if:
+      // 1. App has been running for at least 30 seconds
+      // 2. User has interacted with the app
+      // 3. Haven't shown recently
+      _showAppOpenAdIfNeeded();
+
+      // Only resume timer if user has already interacted
+      if (_hasUserInteracted) {
+        _startInterstitialAdTimer();
       }
-      // Resume interstitial ad timer when app comes to foreground
-      _startInterstitialAdTimer();
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       // Pause interstitial ad timer when app goes to background
@@ -144,6 +152,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> _showAppOpenAdIfNeeded() async {
     if (_hasShownAppOpenAd) return;
+
+    // AdMob Policy Compliance: Don't show app open ads if:
+    // 1. App just started (less than 30 seconds ago)
+    // 2. User hasn't interacted with the app yet
+    if (_appStartTime != null) {
+      final appRunTime = DateTime.now().difference(_appStartTime!);
+      if (appRunTime.inSeconds < 30) {
+        print(
+          'App open ad blocked: App running for only ${appRunTime.inSeconds}s',
+        );
+        return;
+      }
+    }
+
+    if (!_hasUserInteracted) {
+      print('App open ad blocked: No user interaction yet');
+      return;
+    }
 
     try {
       final success = await AdService.instance.showAppOpenAd();
@@ -215,6 +241,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               actions: [
                 PopupMenuButton<String>(
                   onSelected: (value) {
+                    _onUserInteraction(); // Track interaction
                     switch (value) {
                       case 'settings':
                         _navigateToSettings();
@@ -624,25 +651,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final nativeAdPositions = <int>[];
     final bannerAdPositions = <int>[];
 
-    // Native ads every 8 transactions (positions: 8, 16, 24...) - reduced frequency to prevent overload
+    // Native ads every 15 transactions (positions: 15, 30, 45...) - AdMob policy compliant
     for (
-      int i = 8;
-      i <= totalTransactions + (totalTransactions / 8).floor();
-      i += 8
+      int i = 15;
+      i <= totalTransactions + (totalTransactions / 15).floor();
+      i += 15
     ) {
       nativeAdPositions.add(i);
     }
 
-    // Banner ads every 12 transactions, offset to avoid native ads (positions: 12, 24, 36...)
-    for (
-      int i = 12;
-      i <= totalTransactions + (totalTransactions / 12).floor();
-      i += 12
-    ) {
-      if (!nativeAdPositions.contains(i)) {
-        bannerAdPositions.add(i);
-      }
-    }
+    // Remove banner ads from transaction list to reduce ad density
+    // Only use native ads to comply with AdMob policies
 
     // Check if this position should show a native ad
     if (nativeAdPositions.contains(index + 1)) {
@@ -676,12 +695,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       );
     }
 
-    // Calculate actual transaction index (accounting for ads)
+    // Calculate actual transaction index (accounting for native ads only)
     int transactionIndex = index;
     for (int adPos in nativeAdPositions) {
-      if (index >= adPos) transactionIndex--;
-    }
-    for (int adPos in bannerAdPositions) {
       if (index >= adPos) transactionIndex--;
     }
 
@@ -700,7 +716,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return const SizedBox.shrink();
   }
 
+  // Track user interaction and start ads if appropriate
+  void _onUserInteraction() {
+    if (!_hasUserInteracted) {
+      _hasUserInteracted = true;
+      print('✅ User interaction detected - ads can now be shown');
+
+      // Start interstitial ad timer after first interaction
+      // with a 2-minute delay to comply with policies
+      Timer(const Duration(minutes: 2), () {
+        if (mounted && _hasUserInteracted) {
+          _startInterstitialAdTimer();
+        }
+      });
+    }
+  }
+
   void _navigateToAddTransaction() {
+    _onUserInteraction(); // Track interaction
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => const AddTransactionPage()));
@@ -710,6 +743,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     BuildContext context,
     TransactionEntity transaction,
   ) {
+    _onUserInteraction(); // Track interaction
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => TransactionDetailPage(transaction: transaction),

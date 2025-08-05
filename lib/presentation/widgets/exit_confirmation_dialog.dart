@@ -249,7 +249,7 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
                       ),
                       SizedBox(height: 2.h),
                       Text(
-                        'Support us by viewing ads 😊',
+                        'Thank you for supporting us! 😊',
                         style: TextStyle(
                           fontSize: 12.sp,
                           color: Colors.grey[600],
@@ -314,18 +314,10 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
                       SizedBox(width: 12.w),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed:
-                              _isLoadingAd
-                                  ? null
-                                  : () async {
-                                    // Show interstitial ad before exit if internet available
-                                    if (_hasInternet) {
-                                      await _showInterstitialAd();
-                                    }
-                                    if (mounted) {
-                                      Navigator.of(context).pop(true);
-                                    }
-                                  },
+                          onPressed: () {
+                            // Direct exit without any ads - user wants to leave
+                            Navigator.of(context).pop(true);
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
                             foregroundColor: Colors.white,
@@ -334,25 +326,13 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
                               borderRadius: BorderRadius.circular(8.r),
                             ),
                           ),
-                          child:
-                              _isLoadingAd
-                                  ? SizedBox(
-                                    height: 16.h,
-                                    width: 16.w,
-                                    child: const CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                    ),
-                                  )
-                                  : Text(
-                                    'Exit',
-                                    style: TextStyle(
-                                      fontSize: 16.sp,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                          child: Text(
+                            'Exit',
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -390,7 +370,7 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
                         label: Text(
                           _isLoadingRewardedAd
                               ? 'Loading...'
-                              : 'Watch ad & exit app',
+                              : 'Support us (2h ad-free)',
                           style: TextStyle(
                             fontSize: 14.sp,
                             fontWeight: FontWeight.w600,

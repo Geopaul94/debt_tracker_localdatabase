@@ -118,7 +118,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   // Permissions
                   _buildSection(
                     '7. App Permissions',
-                    'The app may request the following permissions:\n\n• Biometric/Fingerprint: For secure app access (optional)\n• Storage: For local data storage\n• Network: For displaying advertisements\n\nAll permissions are used solely for their stated purpose and do not compromise your privacy.',
+                    'The app may request the following permissions:\n\n• Biometric/Fingerprint: For secure app access (optional)\n• Storage: For local data storage\n• Network: For displaying advertisements\n• Contacts: For selecting contact names when adding transactions (optional - you can also type names manually)\n\nYour contact information is only used locally within the app to populate transaction names and is never transmitted or shared with any third parties. All permissions are used solely for their stated purpose and do not compromise your privacy.',
                   ),
 
                   // Data Retention
